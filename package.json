@@ -1,7 +1,7 @@
 {
   "name": "gitworthy",
   "version": "0.1.0",
-  "description": "is it worth your commit?",
+  "description": "is it worth your commit? A pre-flight tool for OSS contribution targets: checks whether an issue is already done, in flight, fixed but unreleased, duplicated, or genuinely open.",
   "type": "module",
   "license": "MIT",
   "bin": {
