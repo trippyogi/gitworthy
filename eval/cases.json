@@ -11,8 +11,9 @@
     "id": 2,
     "name": "PostHog code close tab branch scan",
     "function": "branch_scan",
-    "input": { "repo": "PostHog/code", "keywords": ["cmd", "close-tab", "window"], "force_refresh": true },
+    "input": { "repo": "PostHog/code", "keywords": ["close-tab"], "force_refresh": true },
     "expect": { "no_signal": "in_flight" },
+    "note": "Branch-scan keywords must be specific enough to survive normal repo activity; broad terms like cmd and window are intentionally avoided.",
     "time_sensitive": true
   },
   {

@@ -19,11 +19,13 @@ async function walk(dir: string): Promise<string[]> {
 }
 
 function globMatch(relative: string, pattern: string): boolean {
-  if (pattern.includes('**/')) {
-    const [prefix, suffix] = pattern.split('**/');
-    return relative.startsWith(prefix) && relative.endsWith(suffix);
+  const normalizedRelative = relative.replace(/\\/g, '/');
+  const normalizedPattern = pattern.replace(/\\/g, '/');
+  if (normalizedPattern.includes('**/')) {
+    const [prefix, suffix] = normalizedPattern.split('**/');
+    return normalizedRelative.startsWith(prefix) && normalizedRelative.endsWith(suffix);
   }
-  return relative === pattern || relative.endsWith(pattern.replace(/^\*\//, ''));
+  return normalizedRelative === normalizedPattern || normalizedRelative.endsWith(normalizedPattern.replace(/^\*\//, ''));
 }
 
 function contextLines(text: string, needle: string): string[] {

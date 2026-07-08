@@ -34,6 +34,10 @@ function pathTerms(issue: GithubIssue): string[] {
   return [...explicit, ...inferredExamples];
 }
 
+function normalizePath(value: string): string {
+  return value.replace(/\\/g, '/');
+}
+
 export async function issue_vs_main(input: Input): Promise<Envelope> {
   const issue = await githubJson<GithubIssue>(`/repos/${input.repo}/issues/${input.issue_number}`);
   const candidates = terms(issue);
@@ -41,11 +45,11 @@ export async function issue_vs_main(input: Input): Promise<Envelope> {
   const clone = await shallowClone(input.repo);
   try {
     const files = await walk(clone.dir);
-    const allTreeMatches = files.map((file) => path.relative(clone.dir, file)).filter((relative) => candidates.some((term) => relative.toLowerCase().includes(term.toLowerCase())));
+    const allTreeMatches = files.map((file) => normalizePath(path.relative(clone.dir, file))).filter((relative) => candidates.some((term) => relative.toLowerCase().includes(term.toLowerCase())));
     const treeMatches = allTreeMatches.sort((left, right) => Number(exactPathTerms.some((term) => right.toLowerCase().includes(term.toLowerCase()))) - Number(exactPathTerms.some((term) => left.toLowerCase().includes(term.toLowerCase())))).slice(0, 50);
     const grepMatches = [] as Array<Record<string, unknown>>;
     for (const file of files.slice(0, 2000)) {
-      const relative = path.relative(clone.dir, file);
+      const relative = normalizePath(path.relative(clone.dir, file));
       const text = await readFile(file, 'utf8').catch(() => '');
       const lines = text.split('\n');
       for (let index = 0; index < lines.length; index += 1) {
