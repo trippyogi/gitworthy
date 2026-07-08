@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { parseArgs } from 'node:util';
+import { pathToFileURL } from 'node:url';
 import { branch_scan, contrib_policy, dupe_cluster, issue_vs_main, release_gap, worth_check } from '../core/index.js';
 import { startMcpServer } from '../mcp/server.js';
 
@@ -109,7 +110,8 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
   }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+const invokedPath = process.argv[1];
+if (invokedPath && import.meta.url === pathToFileURL(invokedPath).href) {
   runCli().then((code) => {
     process.exitCode = code;
   }).catch((error: unknown) => {
