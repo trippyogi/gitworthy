@@ -1,0 +1,4 @@
+node_modules/
+dist/
+coverage/
+.gitworthy-cache-test/
