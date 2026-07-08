@@ -1,10 +1,10 @@
+# gitworthy
 is it worth your commit?
 
 <img width="1082" height="689" alt="image" src="https://github.com/user-attachments/assets/eaaf2d91-5939-4b53-a9e6-727d6002be7c" />
+*worth_check on a real issue: SKIP, because the fix is already on an internal branch*
 
 gitworthy is an open-source pre-flight tool for OSS contribution targets. Before a human or agent invests time in someone else's issue or feature request, it checks whether the work is already done, already in flight, already fixed but unreleased, duplicated, or genuinely open.
-
-
 
 It ships as one package with a shared TypeScript core and two thin adapters:
 
@@ -41,6 +41,8 @@ Exit codes for `check`:
 - 1 means error.
 
 ## Use from an MCP client
+
+```json
 {
   "mcpServers": {
     "gitworthy": {
@@ -50,6 +52,9 @@ Exit codes for `check`:
     }
   }
 }
+```
+
+The token needs only fine-grained, read-only access to public repositories.
 
 ## Configuration
 
