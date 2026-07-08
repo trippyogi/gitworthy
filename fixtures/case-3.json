@@ -1,0 +1,144 @@
+{
+  "verdict_summary": "ask appears shipped on main, verify intent.",
+  "evidence": [
+    {
+      "issue": 49,
+      "title": "Add FastAPI Python example",
+      "state": "open",
+      "labels": [],
+      "comments": 0,
+      "url": "https://github.com/PostHog/context-mill/issues/49"
+    },
+    {
+      "tree_matches": [
+        "example-apps/fastapi/.env.example",
+        "example-apps/fastapi/.gitignore",
+        "example-apps/fastapi/README.md",
+        "example-apps/fastapi/app/__init__.py",
+        "example-apps/fastapi/app/config.py",
+        "example-apps/fastapi/app/database.py",
+        "example-apps/fastapi/app/dependencies.py",
+        "example-apps/fastapi/app/main.py",
+        "example-apps/fastapi/app/middleware.py",
+        "example-apps/fastapi/app/models.py",
+        "example-apps/fastapi/app/routers/__init__.py",
+        "example-apps/fastapi/app/routers/api.py",
+        "example-apps/fastapi/app/routers/main.py",
+        "example-apps/fastapi/app/templates/base.html",
+        "example-apps/fastapi/app/templates/burrito.html",
+        "example-apps/fastapi/app/templates/dashboard.html",
+        "example-apps/fastapi/app/templates/errors/404.html",
+        "example-apps/fastapi/app/templates/errors/500.html",
+        "example-apps/fastapi/app/templates/home.html",
+        "example-apps/fastapi/app/templates/profile.html",
+        "example-apps/fastapi/app/templates/signup.html",
+        "example-apps/fastapi/requirements.txt",
+        "example-apps/fastapi/run.py",
+        "example-apps/android/.gitignore",
+        "example-apps/android/README.md",
+        "example-apps/android/app/.gitignore",
+        "example-apps/android/app/build.gradle.kts",
+        "example-apps/android/app/proguard-rules.pro",
+        "example-apps/android/app/src/androidTest/java/com/example/posthog/ExampleInstrumentedTest.kt",
+        "example-apps/android/app/src/main/AndroidManifest.xml",
+        "example-apps/android/app/src/main/java/com/example/posthog/BurritoApp.kt",
+        "example-apps/android/app/src/main/java/com/example/posthog/MainActivity.kt",
+        "example-apps/android/app/src/main/java/com/example/posthog/data/User.kt",
+        "example-apps/android/app/src/main/java/com/example/posthog/data/UserRepository.kt",
+        "example-apps/android/app/src/main/java/com/example/posthog/navigation/NavGraph.kt",
+        "example-apps/android/app/src/main/java/com/example/posthog/ui/components/AppHeader.kt",
+        "example-apps/android/app/src/main/java/com/example/posthog/ui/components/BottomNavBar.kt",
+        "example-apps/android/app/src/main/java/com/example/posthog/ui/components/StatsCard.kt",
+        "example-apps/android/app/src/main/java/com/example/posthog/ui/screens/BurritoScreen.kt",
+        "example-apps/android/app/src/main/java/com/example/posthog/ui/screens/HomeScreen.kt",
+        "example-apps/android/app/src/main/java/com/example/posthog/ui/screens/ProfileScreen.kt",
+        "example-apps/android/app/src/main/java/com/example/posthog/ui/theme/Color.kt",
+        "example-apps/android/app/src/main/java/com/example/posthog/ui/theme/Theme.kt",
+        "example-apps/android/app/src/main/java/com/example/posthog/ui/theme/Type.kt",
+        "example-apps/android/app/src/main/java/com/example/posthog/viewmodel/AuthViewModel.kt",
+        "example-apps/android/app/src/main/res/drawable/ic_launcher_background.xml",
+        "example-apps/android/app/src/main/res/drawable/ic_launcher_foreground.xml",
+        "example-apps/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml",
+        "example-apps/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml",
+        "example-apps/android/app/src/main/res/mipmap-hdpi/ic_launcher.webp"
+      ]
+    },
+    {
+      "grep_matches": [
+        {
+          "path": ".claude/skills/author-stepwise-skill/SKILL.md",
+          "line": 20,
+          "term": "example",
+          "sample": "- The skill is **docs-only**. There is no example project to bundle."
+        },
+        {
+          "path": ".claude/skills/author-stepwise-skill/SKILL.md",
+          "line": 121,
+          "term": "example",
+          "sample": "- **`[STATUS] <message>`** updates the live \"Working on…\" banner. Use these often. They are cheap. Each step file should list the exact `[STATUS]` strings to emit at each sub-step (for example, `[STAT"
+        },
+        {
+          "path": ".claude/skills/author-stepwise-skill/SKILL.md",
+          "line": 146,
+          "term": "example",
+          "sample": "## Example: a 2-step skill"
+        },
+        {
+          "path": ".claude/skills/author-stepwise-skill/SKILL.md",
+          "line": 153,
+          "term": "example",
+          "sample": "context/skills/example-stepwise/"
+        },
+        {
+          "path": ".claude/skills/author-stepwise-skill/SKILL.md",
+          "line": 166,
+          "term": "example",
+          "sample": "description: Two-step example skill. Discover, then emit."
+        },
+        {
+          "path": ".claude/skills/author-stepwise-skill/SKILL.md",
+          "line": 167,
+          "term": "example",
+          "sample": "tags: [example]"
+        },
+        {
+          "path": ".claude/skills/author-stepwise-skill/SKILL.md",
+          "line": 173,
+          "term": "example",
+          "sample": "    display_name: Example stepwise skill"
+        },
+        {
+          "path": ".claude/skills/author-stepwise-skill/SKILL.md",
+          "line": 174,
+          "term": "example",
+          "sample": "    tags: [example]"
+        },
+        {
+          "path": ".claude/skills/author-stepwise-skill/SKILL.md",
+          "line": 181,
+          "term": "example",
+          "sample": "# Example stepwise skill"
+        },
+        {
+          "path": ".github/workflows/build.yml",
+          "line": 16,
+          "term": "example",
+          "sample": "      examples: ${{ steps.set-examples.outputs.examples }}"
+        }
+      ]
+    }
+  ],
+  "signals": [
+    "shipped"
+  ],
+  "checked": [
+    "fetched issue PostHog/context-mill#49",
+    "shallow cloned PostHog/context-mill",
+    "searched candidate terms in tree and file contents"
+  ],
+  "not_checked": [
+    "directory or string existence does not prove the issue's intent is satisfied; read both before making any public claim."
+  ],
+  "cached": false,
+  "fetched_at": "2026-07-08T20:37:48.958Z"
+}

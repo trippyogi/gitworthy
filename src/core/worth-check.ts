@@ -22,7 +22,8 @@ export async function worth_check(input: Input): Promise<WorthEnvelope> {
     const issue = await issue_vs_main(input);
     sub_results.push({ name: 'issue_vs_main', ok: true, result: issue });
     const issueEvidence = issue.evidence[0] as { title?: string };
-    issueKeywords = (issueEvidence.title?.toLowerCase().match(/[a-z][a-z0-9_-]{3,}/g) ?? issueKeywords).slice(0, 6);
+    const titleTerms = (issueEvidence.title?.toLowerCase().match(/[a-z][a-z0-9_-]{3,}/g) ?? issueKeywords).slice(0, 12);
+    issueKeywords = [...new Set(titleTerms.flatMap((term) => term.endsWith('s') ? [term, term.slice(0, -1)] : [term]))];
   } catch (error) {
     sub_results.push(err('issue_vs_main', error));
   }

@@ -1,0 +1,32 @@
+{
+  "verdict_summary": "recent in-flight work found in 2 matching branches.",
+  "evidence": [
+    {
+      "branch": "fix/warm-resume-no-premature-turn",
+      "sha": "4814dde2b08d2097314616bb17982f5b1cb87751",
+      "url": "https://github.com/PostHog/code/commit/4814dde2b08d2097314616bb17982f5b1cb87751",
+      "date": "2026-06-19T14:32:24Z",
+      "subject": "fix(agent): don't speak on a warm resume boot"
+    },
+    {
+      "branch": "posthog-code/recover-sleep-interrupted-turns",
+      "sha": "8ba042a454cc45908087044f943506b76710634a",
+      "url": "https://github.com/PostHog/code/commit/8ba042a454cc45908087044f943506b76710634a",
+      "date": "2026-07-05T19:19:29Z",
+      "subject": "fix(sessions): address review feedback on sleep-recovery logging and test"
+    }
+  ],
+  "signals": [
+    "in_flight"
+  ],
+  "checked": [
+    "listed remote heads for PostHog/code",
+    "matched branch names against keywords: sleep, resume"
+  ],
+  "not_checked": [
+    "fork branches are invisible to this remote branch scan.",
+    "branch name matching is lexical and can miss renamed or differently named work."
+  ],
+  "cached": false,
+  "fetched_at": "2026-07-08T20:37:44.679Z"
+}

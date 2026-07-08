@@ -1,0 +1,46 @@
+{
+  "verdict_summary": "recent in-flight work found in 4 matching branches.",
+  "evidence": [
+    {
+      "branch": "feat/cmd-f-conversation-search",
+      "sha": "8d7b0be54c340c1acd4657828ab8a4af220bfbf7",
+      "url": "https://github.com/PostHog/code/commit/8d7b0be54c340c1acd4657828ab8a4af220bfbf7",
+      "date": "2026-05-05T23:18:59Z",
+      "subject": "couple fixes to task search"
+    },
+    {
+      "branch": "perf/disable-refetch-on-window-focus",
+      "sha": "a63a647d4d64469b52654931aae893bbf3991c2f",
+      "url": "https://github.com/PostHog/code/commit/a63a647d4d64469b52654931aae893bbf3991c2f",
+      "date": "2026-06-20T16:40:21Z",
+      "subject": "test(renderer): pin refetchOnWindowFocus default to false"
+    },
+    {
+      "branch": "posthog-code/fix-windows-console-flash",
+      "sha": "f2952cc9a110440930f546f14d8938710c95d02e",
+      "url": "https://github.com/PostHog/code/commit/f2952cc9a110440930f546f14d8938710c95d02e",
+      "date": "2026-07-08T18:47:18Z",
+      "subject": "fix: hide Windows console windows for spawned child processes"
+    },
+    {
+      "branch": "posthog-code/gate-cmdk-channels-bluebird",
+      "sha": "a3288b6ae73f8e12aeae01f7e9173324140bed25",
+      "url": "https://github.com/PostHog/code/commit/a3288b6ae73f8e12aeae01f7e9173324140bed25",
+      "date": "2026-06-16T15:14:09Z",
+      "subject": "feat(command): gate cmd-k channels behind project-bluebird"
+    }
+  ],
+  "signals": [
+    "in_flight"
+  ],
+  "checked": [
+    "listed remote heads for PostHog/code",
+    "matched branch names against keywords: cmd, close-tab, window"
+  ],
+  "not_checked": [
+    "fork branches are invisible to this remote branch scan.",
+    "branch name matching is lexical and can miss renamed or differently named work."
+  ],
+  "cached": false,
+  "fetched_at": "2026-07-08T20:37:45.884Z"
+}

@@ -1,0 +1,49 @@
+{
+  "verdict_summary": "main and npm are equal at 0.5.5, published 2026-07-06.",
+  "evidence": [
+    {
+      "repo": "elevenlabs/cli",
+      "ref": "main package.json",
+      "version": "0.5.5",
+      "url": "https://github.com/elevenlabs/cli/blob/main/package.json"
+    },
+    {
+      "package": "@elevenlabs/cli",
+      "version": "0.5.5",
+      "published_at": "2026-07-06T16:22:18.825Z",
+      "url": "https://www.npmjs.com/package/@elevenlabs/cli/v/0.5.5"
+    },
+    {
+      "probe": {
+        "file_glob": "dist/**/add.js",
+        "contains": "shell: true"
+      },
+      "matches": [
+        {
+          "path": "dist/components/commands/add.js",
+          "context": [
+            "        .action(async (componentName) => {",
+            "        try {",
+            "            // Check if npx is available. shell:true lets Windows resolve npx.cmd/npx.ps1.",
+            "            const npxCheck = spawnSync('npx', ['--version'], { encoding: 'utf-8', shell: true });",
+            "            if (npxCheck.error) {",
+            "                console.error('Error: npx is not available. Please install Node.js/npm.');",
+            "                process.exit(1);"
+          ]
+        }
+      ]
+    }
+  ],
+  "signals": [
+    "released_fix"
+  ],
+  "checked": [
+    "fetched npm metadata for @elevenlabs/cli",
+    "read package.json from elevenlabs/cli"
+  ],
+  "not_checked": [
+    "npm registry comparison only covers npm packages in v0.1."
+  ],
+  "cached": false,
+  "fetched_at": "2026-07-08T20:37:50.333Z"
+}

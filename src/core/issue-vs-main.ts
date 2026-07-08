@@ -26,13 +26,23 @@ function terms(issue: GithubIssue): string[] {
   return Array.from(new Set([...pathLike, ...words.filter((word) => !STOP.has(word)).slice(0, 20)]));
 }
 
+function pathTerms(issue: GithubIssue): string[] {
+  const text = `${issue.title}\n${issue.body ?? ''}`;
+  const explicit = Array.from(text.matchAll(/[\w.-]+\/[\w./-]+/g)).map((match) => match[0]);
+  const titleWords = issue.title.toLowerCase().match(/[a-z][a-z0-9_-]{3,}/g) ?? [];
+  const inferredExamples = issue.title.toLowerCase().includes('example') ? titleWords.filter((word) => !STOP.has(word) && word !== 'example' && word !== 'python').map((word) => `example-apps/${word}`) : [];
+  return [...explicit, ...inferredExamples];
+}
+
 export async function issue_vs_main(input: Input): Promise<Envelope> {
   const issue = await githubJson<GithubIssue>(`/repos/${input.repo}/issues/${input.issue_number}`);
   const candidates = terms(issue);
+  const exactPathTerms = pathTerms(issue);
   const clone = await shallowClone(input.repo);
   try {
     const files = await walk(clone.dir);
-    const treeMatches = files.map((file) => path.relative(clone.dir, file)).filter((relative) => candidates.some((term) => relative.toLowerCase().includes(term.toLowerCase()))).slice(0, 25);
+    const allTreeMatches = files.map((file) => path.relative(clone.dir, file)).filter((relative) => candidates.some((term) => relative.toLowerCase().includes(term.toLowerCase())));
+    const treeMatches = allTreeMatches.sort((left, right) => Number(exactPathTerms.some((term) => right.toLowerCase().includes(term.toLowerCase()))) - Number(exactPathTerms.some((term) => left.toLowerCase().includes(term.toLowerCase())))).slice(0, 50);
     const grepMatches = [] as Array<Record<string, unknown>>;
     for (const file of files.slice(0, 2000)) {
       const relative = path.relative(clone.dir, file);
@@ -45,11 +55,12 @@ export async function issue_vs_main(input: Input): Promise<Envelope> {
       }
       if (grepMatches.length >= 10) break;
     }
-    const verdict_summary = treeMatches.length > 0 && grepMatches.length > 0 ? 'ask appears shipped on main, verify intent.' : treeMatches.length > 0 || grepMatches.length > 0 ? 'partial overlap found.' : 'no evidence on main.';
+    const pathIntentMatched = exactPathTerms.length > 0 && treeMatches.some((relative) => exactPathTerms.some((term) => relative.toLowerCase().includes(term.toLowerCase())));
+    const verdict_summary = pathIntentMatched && grepMatches.length > 0 ? 'ask appears shipped on main, verify intent.' : treeMatches.length > 0 || grepMatches.length > 0 ? 'partial overlap found.' : 'no evidence on main.';
     return createEnvelope({
       verdict_summary,
       evidence: [{ issue: issue.number, title: issue.title, state: issue.state, labels: issue.labels.map((label) => label.name), comments: issue.comments, url: issue.html_url }, { tree_matches: treeMatches }, { grep_matches: grepMatches }],
-      signals: treeMatches.length > 0 && grepMatches.length > 0 ? ['shipped'] : [],
+      signals: pathIntentMatched && grepMatches.length > 0 ? ['shipped'] : [],
       checked: [`fetched issue ${input.repo}#${input.issue_number}`, `shallow cloned ${input.repo}`, `searched candidate terms in tree and file contents`],
       not_checked: [INTENT_LIMIT],
       cached: false

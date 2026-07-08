@@ -1,0 +1,34 @@
+{
+  "verdict_summary": "2 lexical duplicate candidates found.",
+  "evidence": [
+    {
+      "number": 65,
+      "title": "[BUG] npx detection fails on Windows despite Node.js/npm being properly installed",
+      "state": "open",
+      "closed": false,
+      "url": "https://github.com/elevenlabs/ui/issues/65",
+      "score": 0.5
+    },
+    {
+      "number": 30,
+      "title": "Can not install, i have npx, but you say \"npx is not available. Please install Node.js/npm.\"",
+      "state": "closed",
+      "closed": true,
+      "url": "https://github.com/elevenlabs/ui/issues/30",
+      "score": 0.5
+    }
+  ],
+  "signals": [
+    "duplicate"
+  ],
+  "checked": [
+    "fetched target issue elevenlabs/ui#32",
+    "searched GitHub issues by distinctive title tokens",
+    "scored open issues by lexical overlap"
+  ],
+  "not_checked": [
+    "lexical similarity only; semantic duplicates with different vocabulary will be missed."
+  ],
+  "cached": false,
+  "fetched_at": "2026-07-08T20:37:53.441Z"
+}
