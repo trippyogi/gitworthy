@@ -1,15 +1,34 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GitworthyError } from '../../src/core/envelope.js';
 import { githubJson } from '../../src/lib/github.js';
 
+let originalGithubToken: string | undefined;
+let originalGhToken: string | undefined;
+
 describe('github client', () => {
-  afterEach(() => {
-    delete process.env.GITHUB_TOKEN;
-    vi.restoreAllMocks();
+  beforeEach(() => {
+    originalGithubToken = process.env.GITHUB_TOKEN;
+    originalGhToken = process.env.GH_TOKEN;
   });
 
-  it('returns a structured missing token error', async () => {
+  afterEach(() => {
+    if (originalGithubToken === undefined) delete process.env.GITHUB_TOKEN;
+    else process.env.GITHUB_TOKEN = originalGithubToken;
+    if (originalGhToken === undefined) delete process.env.GH_TOKEN;
+    else process.env.GH_TOKEN = originalGhToken;
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it('returns a structured missing token error without touching the network', async () => {
+    delete process.env.GITHUB_TOKEN;
+    delete process.env.GH_TOKEN;
+    const fetchMock = vi.fn(async () => {
+      throw new Error('fetch should not be called without a token');
+    });
+    vi.stubGlobal('fetch', fetchMock);
     await expect(githubJson('/repos/a/b')).rejects.toMatchObject({ code: 'missing_github_token' });
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('returns a structured rate limit error', async () => {

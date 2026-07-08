@@ -18,7 +18,7 @@
     "policy extraction is keyword and heading based; ambiguous sections are reported rather than inferred."
   ],
   "cached": false,
-  "fetched_at": "2026-07-08T20:40:10.940Z",
+  "fetched_at": "2026-07-08T20:49:22.134Z",
   "verdict": "SKIP",
   "reasons": [
     "branch_scan: in_flight"
@@ -170,7 +170,7 @@
           "directory or string existence does not prove the issue's intent is satisfied; read both before making any public claim."
         ],
         "cached": false,
-        "fetched_at": "2026-07-08T20:40:07.991Z"
+        "fetched_at": "2026-07-08T20:49:19.145Z"
       }
     },
     {
@@ -645,7 +645,7 @@
           "lexical similarity only; semantic duplicates with different vocabulary will be missed."
         ],
         "cached": false,
-        "fetched_at": "2026-07-08T20:40:10.939Z"
+        "fetched_at": "2026-07-08T20:49:22.133Z"
       }
     },
     {
