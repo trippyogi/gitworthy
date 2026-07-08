@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import path from 'node:path';
@@ -9,8 +10,14 @@ export function cacheRoot(): string {
   return process.env.GITWORTHY_CACHE_DIR || path.join(homedir(), '.gitworthy', 'cache');
 }
 
+export function cacheVersion(): string {
+  if (process.env.GITWORTHY_CACHE_VERSION) return process.env.GITWORTHY_CACHE_VERSION;
+  const packageJson = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8')) as { version?: string };
+  return packageJson.version ?? 'unknown';
+}
+
 export function cacheKey(scope: string, args: unknown): string {
-  const hash = createHash('sha256').update(JSON.stringify(args)).digest('hex');
+  const hash = createHash('sha256').update(JSON.stringify({ version: cacheVersion(), args })).digest('hex');
   return path.join(cacheRoot(), scope, `${hash}.json`);
 }
 

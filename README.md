@@ -104,3 +104,7 @@ Two receipts should be added before publishing:
 ## License
 
 MIT
+
+## v0.1.1 follow-up
+
+Improve evidence signal-to-noise by filtering generic issue terms such as example, add, task, and support, or by ranking tree and grep matches by term specificity before truncation.
