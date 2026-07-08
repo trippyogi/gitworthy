@@ -1,5 +1,3 @@
-
-
 is it worth your commit?
 
 <img width="1082" height="689" alt="image" src="https://github.com/user-attachments/assets/eaaf2d91-5939-4b53-a9e6-727d6002be7c" />
