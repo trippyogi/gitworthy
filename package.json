@@ -38,5 +38,26 @@
     "README.md",
     "LICENSE",
     "SKILL.md"
+  ],
+  "author": "Jeremy McKeehen",
+  "homepage": "https://github.com/trippyogi/gitworthy#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/trippyogi/gitworthy.git"
+  },
+  "bugs": {
+    "url": "https://github.com/trippyogi/gitworthy/issues"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "github",
+    "oss",
+    "open-source",
+    "contribution",
+    "triage",
+    "issues",
+    "cli",
+    "duplicate-detection"
   ]
 }

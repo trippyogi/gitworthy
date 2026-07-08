@@ -2,3 +2,6 @@ node_modules/
 dist/
 coverage/
 .gitworthy-cache-test/
+.cursor/
+.env
+*.log
