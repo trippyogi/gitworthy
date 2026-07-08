@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const EvidenceSchema = z.record(z.string(), z.unknown()).and(z.object({ url: z.string().optional(), ref: z.string().optional() }));
-export const SignalSchema = z.enum(['in_flight', 'shipped', 'released_fix', 'duplicate']);
+export const SignalSchema = z.enum(['in_flight', 'shipped', 'released_fix', 'duplicate', 'prs_not_accepted']);
 
 export const EnvelopeSchema = z.object({
   verdict_summary: z.string().min(1),

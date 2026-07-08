@@ -37,13 +37,15 @@ export async function worth_check(input: Input): Promise<WorthEnvelope> {
   const reasons: string[] = [];
   const errors = sub_results.filter((result) => !result.ok);
   const signals = [...new Set(sub_results.flatMap((result) => result.ok ? (result.result.signals ?? []) : []))] as Signal[];
+  const skipSignals = signals.filter((signal) => signal !== 'prs_not_accepted');
   for (const result of sub_results) {
     if (!result.ok) reasons.push(`${result.name} errored: ${result.error.message}`);
     if (result.ok && (result.result.signals ?? []).length > 0) reasons.push(`${result.name}: ${(result.result.signals ?? []).join(', ')}`);
   }
   let verdict: 'ACT' | 'VERIFY' | 'SKIP' = 'ACT';
   if (errors.length > 0) verdict = 'VERIFY';
-  else if (signals.length > 0) verdict = 'SKIP';
+  else if (skipSignals.length > 0) verdict = 'SKIP';
+  else if (signals.includes('prs_not_accepted')) verdict = 'VERIFY';
   const base = createEnvelope({
     verdict_summary: verdict === 'ACT' ? 'no blocking evidence found by completed checks.' : verdict === 'SKIP' ? 'blocking evidence was found by completed checks.' : 'mixed signals or sub-check errors require human review.',
     evidence: [],

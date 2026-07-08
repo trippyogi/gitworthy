@@ -5,6 +5,7 @@ import { createEnvelope, Envelope } from './envelope.js';
 const TTL = 24 * 60 * 60 * 1000;
 const FILES = ['CONTRIBUTING.md', 'AGENTS.md', 'AI_POLICY.md', 'CODE_OF_CONDUCT.md', '.github/PULL_REQUEST_TEMPLATE.md', 'SECURITY.md'];
 const CATEGORIES: Record<string, string[]> = {
+  prs_not_accepted: ['mirror repo', 'mirror repository', 'pull requests are not accepted here', 'prs are not accepted here', 'do not open pull requests', 'do not submit pull requests'],
   evidence_requirements: ['test', 'tests', 'proof', 'evidence', 'screenshot', 'screenshots', 'logs'],
   ai_assistance_policy: ['ai', 'agent', 'llm', 'generated'],
   pr_caps_or_rate_limits: ['limit', 'cap', 'one pr', 'pull request'],
@@ -15,6 +16,7 @@ const CATEGORIES: Record<string, string[]> = {
   contacts_or_channels: ['discord', 'contact', 'maintainer', 'channel']
 };
 const CATEGORY_PRIORITY: Record<string, number> = {
+  prs_not_accepted: 6,
   forbidden_pr_types: 5,
   cla_requirement: 4,
   evidence_requirements: 3,
@@ -96,7 +98,8 @@ export async function contrib_policy(input: Input): Promise<Envelope> {
   }
   if (evidence.length === 0) not_checked.push('no contribution policy excerpts were found in the checked files.');
   const signalLabel = evidence.length === 1 ? 'signal' : 'signals';
-  const envelope = createEnvelope({ verdict_summary: evidence.length > 0 ? `found ${evidence.length} contribution policy ${signalLabel}.` : 'no contribution policy signals found.', evidence, checked, not_checked, cached: false, fetched_at });
+  const signals = evidence.some((item) => item.category === 'prs_not_accepted') ? ['prs_not_accepted' as const] : [];
+  const envelope = createEnvelope({ verdict_summary: evidence.length > 0 ? `found ${evidence.length} contribution policy ${signalLabel}.` : 'no contribution policy signals found.', evidence, signals, checked, not_checked, cached: false, fetched_at });
   await writeCache('contrib_policy', input, envelope, fetched_at);
   return envelope;
 }
