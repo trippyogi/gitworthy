@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { parseArgs } from 'node:util';
 import { pathToFileURL } from 'node:url';
-import { branch_scan, contrib_policy, dupe_cluster, issue_vs_main, release_gap, worth_check } from '../core/index.js';
+import { branch_scan, contrib_policy, dupe_cluster, issue_vs_main, release_gap, scan, worth_check } from '../core/index.js';
 import { startMcpServer } from '../mcp/server.js';
 
 const help = `gitworthy
@@ -14,6 +14,7 @@ Usage:
   gitworthy release owner/repo package-name [--probe-glob glob] [--probe-contains text] [--json]
   gitworthy dupes owner/repo 123 [--json]
   gitworthy policy owner/repo [--json]
+  gitworthy scan owner/repo [--label "good first issue"] [--keywords term,term] [--since 90d] [--limit 25] [--json]
   gitworthy mcp
 `;
 
@@ -67,7 +68,7 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
     print(output, argv.includes('--json'), stdout);
     return 0;
   }
-  const parsed = parseArgs({ args: argv, allowPositionals: true, strict: false, options: { help: { type: 'boolean', short: 'h' }, json: { type: 'boolean' }, 'npm-package': { type: 'string' }, 'probe-glob': { type: 'string' }, 'probe-contains': { type: 'string' }, 'force-refresh': { type: 'boolean' } } });
+  const parsed = parseArgs({ args: argv, allowPositionals: true, strict: false, options: { help: { type: 'boolean', short: 'h' }, json: { type: 'boolean' }, 'npm-package': { type: 'string' }, 'probe-glob': { type: 'string' }, 'probe-contains': { type: 'string' }, 'force-refresh': { type: 'boolean' }, label: { type: 'string' }, keywords: { type: 'string' }, since: { type: 'string' }, limit: { type: 'string' } } });
   const [command, first, second] = parsed.positionals;
   if (parsed.values.help || !command) {
     stdout(help);
@@ -99,6 +100,9 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
     } else if (command === 'policy') {
       if (!first) throw new Error('policy requires owner/repo.');
       output = await contrib_policy({ repo: first, force_refresh: parsed.values['force-refresh'] === true });
+    } else if (command === 'scan') {
+      if (!first) throw new Error('scan requires owner/repo.');
+      output = await scan({ repo: first, label: stringValue(parsed.values.label), keywords: stringValue(parsed.values.keywords)?.split(',').filter(Boolean), since: stringValue(parsed.values.since), limit: stringValue(parsed.values.limit) ? Number(stringValue(parsed.values.limit)) : undefined });
     } else {
       throw new Error(`Unknown subcommand ${command}.`);
     }

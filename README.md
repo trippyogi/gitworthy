@@ -18,7 +18,8 @@ No telemetry is active by default. Optional PostHog telemetry requires both `GIT
 ```sh
 npx gitworthy check owner/repo#123
 npx gitworthy check owner/repo#123 --npm-package package-name --json
-npx gitworthy mcp
+npx gitworthy scan Shopify/cli --label "good first issue" --json
+gitworthy mcp
 ```
 
 ## CLI
@@ -30,6 +31,7 @@ gitworthy issue owner/repo 123 [--json]
 gitworthy release owner/repo package-name [--probe-glob glob] [--probe-contains text] [--json]
 gitworthy dupes owner/repo 123 [--json]
 gitworthy policy owner/repo [--json]
+gitworthy scan Shopify/cli --label "good first issue" --json
 gitworthy mcp
 ```
 
@@ -88,6 +90,17 @@ Fetches the target issue, searches GitHub issues for distinctive title tokens, l
 ### contrib_policy
 
 Reads common contribution policy files from main or master and extracts deterministic policy signals with raw excerpts.
+
+### scan
+
+Lists open issue tracker candidates for triage. Scan does not vet issues and does not produce ACT, VERIFY, or SKIP verdicts. Use it to find candidate issue numbers, then run `gitworthy check owner/repo#123` on specific targets.
+
+Example composition:
+
+```sh
+gitworthy scan Shopify/cli --label "good first issue" --json
+# then pass selected issue numbers to gitworthy check
+```
 
 ### worth_check
 

@@ -18,7 +18,7 @@
     "policy extraction is keyword and heading based; ambiguous sections are reported rather than inferred."
   ],
   "cached": false,
-  "fetched_at": "2026-07-08T22:05:51.411Z",
+  "fetched_at": "2026-07-08T22:20:18.860Z",
   "verdict": "SKIP",
   "reasons": [
     "branch_scan: in_flight"
@@ -170,7 +170,7 @@
           "directory or string existence does not prove the issue's intent is satisfied; read both before making any public claim."
         ],
         "cached": false,
-        "fetched_at": "2026-07-08T22:05:48.601Z"
+        "fetched_at": "2026-07-08T22:20:13.646Z"
       }
     },
     {
@@ -198,8 +198,8 @@
           "fork branches are invisible to this remote branch scan.",
           "branch name matching is lexical and can miss renamed or differently named work."
         ],
-        "cached": true,
-        "fetched_at": "2026-07-08T22:04:57.881Z"
+        "cached": false,
+        "fetched_at": "2026-07-08T22:20:13.678Z"
       }
     },
     {
@@ -218,7 +218,7 @@
           "lexical similarity only; semantic duplicates with different vocabulary will be missed."
         ],
         "cached": false,
-        "fetched_at": "2026-07-08T22:05:51.410Z"
+        "fetched_at": "2026-07-08T22:20:17.176Z"
       }
     },
     {
@@ -310,8 +310,8 @@
         "not_checked": [
           "policy extraction is keyword and heading based; ambiguous sections are reported rather than inferred."
         ],
-        "cached": true,
-        "fetched_at": "2026-07-08T22:05:01.566Z"
+        "cached": false,
+        "fetched_at": "2026-07-08T22:20:17.177Z"
       }
     }
   ]

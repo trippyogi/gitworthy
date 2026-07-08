@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.0
+
+- Add `scan` core, CLI, and MCP tool for listing open issue tracker candidates before running `worth_check`.
+- Keep scan explicitly non-verdict-bearing: it returns tracker candidates only and says tracker state can lag reality in `not_checked`.
+
 ## 0.1.1
 
 - Reduce evidence noise by filtering generic issue terms before tree, grep, and branch keyword matching, while preserving calibrated `checked` and `not_checked` output.
