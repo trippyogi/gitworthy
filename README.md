@@ -2,7 +2,7 @@
 
 is it worth your commit?
 
-<img width="719" height="483" alt="image" src="https://github.com/user-attachments/assets/e3e9f0f0-42fd-42de-b54c-c735feb006c4" />
+<img width="1082" height="689" alt="image" src="https://github.com/user-attachments/assets/eaaf2d91-5939-4b53-a9e6-727d6002be7c" />
 
 gitworthy is an open-source pre-flight tool for OSS contribution targets. Before a human or agent invests time in someone else's issue or feature request, it checks whether the work is already done, already in flight, already fixed but unreleased, duplicated, or genuinely open.
 
@@ -42,6 +42,17 @@ Exit codes for `check`:
 - 20 means SKIP.
 - 1 means error.
 
+## Use from an MCP client
+{
+  "mcpServers": {
+    "gitworthy": {
+      "command": "npx",
+      "args": ["gitworthy", "mcp"],
+      "env": { "GITHUB_TOKEN": "github_pat_..." }
+    }
+  }
+}
+
 ## Configuration
 
 - `GITHUB_TOKEN` enables authenticated GitHub REST checks.
@@ -49,6 +60,9 @@ Exit codes for `check`:
 - `GITWORTHY_TELEMETRY=on` plus `GITWORTHY_POSTHOG_KEY` enables optional telemetry.
 
 When `GITHUB_TOKEN` is absent, checks that require GitHub REST return structured errors or explicit `not_checked` entries. Checks that can use public git or npm endpoints still run.
+
+## Requirements 
+Node 22 or newer required.
 
 ## Core checks
 
