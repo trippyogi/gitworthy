@@ -59,7 +59,8 @@ export async function githubJson<T>(path: string, init: RequestInit = {}): Promi
 
 export async function fetchRaw(repo: string, branch: string, filePath: string): Promise<string | null> {
   const url = `https://raw.githubusercontent.com/${repo}/${branch}/${filePath}`;
-  const response = await fetch(url, { headers: { 'user-agent': 'gitworthy' } });
+  const token = githubToken();
+  const response = await fetch(url, { headers: { 'user-agent': 'gitworthy', ...(token ? { authorization: `Bearer ${token}` } : {}) } });
   if (response.status === 404) return null;
   if (!response.ok) {
     throw new GitworthyError({

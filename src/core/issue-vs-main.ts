@@ -19,27 +19,50 @@ async function walk(dir: string): Promise<string[]> {
 }
 
 function terms(issue: GithubIssue): string[] {
+  return Array.from(new Set([...explicitPathTerms(issue), ...contentTerms(issue)]));
+}
+
+function explicitPathTerms(issue: GithubIssue): string[] {
   const text = `${issue.title}\n${issue.body ?? ''}`;
-  const pathLike = Array.from(text.matchAll(/[\w.-]+\/[\w./-]+/g)).map((match) => match[0]);
-  return Array.from(new Set([...pathLike, ...distinctiveTerms(text, 20)]));
+  return Array.from(text.matchAll(/[\w.-]+\/[\w./-]+/g)).map((match) => match[0]);
+}
+
+function pathLiteralTokens(issue: GithubIssue): Set<string> {
+  return new Set(explicitPathTerms(issue).flatMap((term) => term.toLowerCase().split(/[^a-z0-9_-]+/)).filter(Boolean));
+}
+
+function contentTerms(issue: GithubIssue): string[] {
+  const literalTokens = pathLiteralTokens(issue);
+  const text = `${issue.title}\n${issue.body ?? ''}`;
+  return distinctiveTerms(text, 20).filter((term) => !literalTokens.has(term));
 }
 
 function pathTerms(issue: GithubIssue): string[] {
-  const text = `${issue.title}\n${issue.body ?? ''}`;
-  const explicit = Array.from(text.matchAll(/[\w.-]+\/[\w./-]+/g)).map((match) => match[0]);
+  const explicit = explicitPathTerms(issue);
+  return [...explicit, ...inferredExampleTerms(issue)];
+}
+
+function inferredExampleTerms(issue: GithubIssue): string[] {
   const titleWords = distinctiveTerms(issue.title, 10);
-  const inferredExamples = issue.title.toLowerCase().includes('example') ? titleWords.filter((word) => !isGenericTerm(word) && word !== 'python').map((word) => `example-apps/${word}`) : [];
-  return [...explicit, ...inferredExamples];
+  return issue.title.toLowerCase().includes('example') ? titleWords.filter((word) => !isGenericTerm(word) && word !== 'python').map((word) => `example-apps/${word}`) : [];
 }
 
 function normalizePath(value: string): string {
   return value.replace(/\\/g, '/');
 }
 
+function pathMatchesIntent(filePath: string, intentPath: string): boolean {
+  const normalizedFile = normalizePath(filePath).toLowerCase();
+  const normalizedIntent = normalizePath(intentPath).toLowerCase();
+  return normalizedFile === normalizedIntent || normalizedFile.startsWith(`${normalizedIntent}/`);
+}
+
 export async function issue_vs_main(input: Input): Promise<Envelope> {
   const issue = await githubJson<GithubIssue>(`/repos/${input.repo}/issues/${input.issue_number}`);
   const candidates = terms(issue);
+  const grepCandidates = contentTerms(issue);
   const exactPathTerms = pathTerms(issue);
+  const inferredIntentTerms = inferredExampleTerms(issue);
   const clone = await shallowClone(input.repo);
   try {
     const files = await walk(clone.dir);
@@ -51,18 +74,24 @@ export async function issue_vs_main(input: Input): Promise<Envelope> {
       const text = await readFile(file, 'utf8').catch(() => '');
       const lines = text.split('\n');
       for (let index = 0; index < lines.length; index += 1) {
-        const term = candidates.find((candidate) => lines[index].toLowerCase().includes(candidate.toLowerCase()));
+        const term = grepCandidates.find((candidate) => lines[index].toLowerCase().includes(candidate.toLowerCase()));
         if (term) grepMatches.push({ path: relative, line: index + 1, term, sample: lines[index].slice(0, 200) });
         if (grepMatches.length >= 10) break;
       }
       if (grepMatches.length >= 10) break;
     }
     const pathIntentMatched = exactPathTerms.length > 0 && treeMatches.some((relative) => exactPathTerms.some((term) => relative.toLowerCase().includes(term.toLowerCase())));
-    const verdict_summary = pathIntentMatched && grepMatches.length > 0 ? 'ask appears shipped on main, verify intent.' : treeMatches.length > 0 || grepMatches.length > 0 ? 'partial overlap found.' : 'no evidence on main.';
+    const inferredIntentMatched = inferredIntentTerms.length > 0 && treeMatches.some((relative) => inferredIntentTerms.some((term) => relative.toLowerCase().includes(term.toLowerCase())));
+    const contentIntentMatched = grepMatches.some((match) => {
+      const matchPath = match.path;
+      return typeof matchPath === 'string' && exactPathTerms.some((term) => pathMatchesIntent(matchPath, term));
+    });
+    const shippedSignal = inferredIntentMatched || (pathIntentMatched && contentIntentMatched);
+    const verdict_summary = shippedSignal ? 'ask appears shipped on main, verify intent.' : treeMatches.length > 0 || grepMatches.length > 0 ? 'partial overlap found.' : 'no evidence on main.';
     return createEnvelope({
       verdict_summary,
       evidence: [{ issue: issue.number, title: issue.title, state: issue.state, labels: issue.labels.map((label) => label.name), comments: issue.comments, url: issue.html_url }, { tree_matches: treeMatches }, { grep_matches: grepMatches }],
-      signals: pathIntentMatched && grepMatches.length > 0 ? ['shipped'] : [],
+      signals: shippedSignal ? ['shipped'] : [],
       checked: [`fetched issue ${input.repo}#${input.issue_number}`, `shallow cloned ${input.repo}`, `searched candidate terms in tree and file contents`],
       not_checked: [INTENT_LIMIT],
       cached: false
