@@ -34,8 +34,9 @@ export async function dupe_cluster(input: Input): Promise<Envelope> {
     score: Number(jaccard(targetTokens, tokens(`${issue.title} ${issue.body ?? ''}`.slice(0, 600))).toFixed(3))
   })).filter((candidate) => candidate.score >= 0.35).sort((a, b) => b.score - a.score);
   return createEnvelope({
-    verdict_summary: candidates.length > 0 ? `${candidates.length} lexical duplicate candidate found.` : 'no lexical duplicate candidates found.',
+    verdict_summary: candidates.length > 0 ? `${candidates.length} lexical duplicate ${candidates.length === 1 ? 'candidate' : 'candidates'} found.` : 'no lexical duplicate candidates found.',
     evidence: candidates,
+    signals: candidates.length > 0 ? ['duplicate'] : [],
     checked: [`fetched target issue ${input.repo}#${input.issue_number}`, 'searched GitHub issues by distinctive title tokens', 'scored open issues by lexical overlap'],
     not_checked: [DUPE_LIMIT],
     cached: false

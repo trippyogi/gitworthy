@@ -36,8 +36,9 @@ export async function branch_scan(input: Input): Promise<Envelope> {
   const maxAge = input.max_age_days ?? 45;
   const now = Date.now();
   const recent = evidence.some((item) => typeof item.date === 'string' && now - Date.parse(item.date) <= maxAge * 24 * 60 * 60 * 1000);
-  const verdict_summary = matches.length === 0 ? 'no matching remote branches found.' : recent ? `recent in-flight work found in ${matches.length} matching branch. ` : `${matches.length} matching branch found, but no recent token-verified activity was established.`;
-  const envelope = createEnvelope({ verdict_summary: verdict_summary.trim(), evidence, checked: [`listed remote heads for ${input.repo}`, `matched branch names against keywords: ${input.keywords.join(', ')}`], not_checked, cached: false, fetched_at });
+  const branchLabel = matches.length === 1 ? 'branch' : 'branches';
+  const verdict_summary = matches.length === 0 ? 'no matching remote branches found.' : recent ? `recent in-flight work found in ${matches.length} matching ${branchLabel}.` : `${matches.length} matching ${branchLabel} found, but no recent token-verified activity was established.`;
+  const envelope = createEnvelope({ verdict_summary: verdict_summary.trim(), evidence, signals: recent ? ['in_flight'] : [], checked: [`listed remote heads for ${input.repo}`, `matched branch names against keywords: ${input.keywords.join(', ')}`], not_checked, cached: false, fetched_at });
   await writeCache('branch_scan', input, envelope, fetched_at);
   return envelope;
 }

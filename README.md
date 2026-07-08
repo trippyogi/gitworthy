@@ -9,7 +9,7 @@ It ships as one package with a shared TypeScript core and two thin adapters:
 - CLI for humans, scripts, and CI.
 - MCP server over stdio for agent harnesses.
 
-No telemetry is active by default. Optional PostHog telemetry requires both `GITWORTHY_TELEMETRY=on` and `GITWORTHY_POSTHOG_KEY`.
+No telemetry is active by default. Optional PostHog telemetry requires both `GITWORTHY_TELEMETRY=on` and `GITWORTHY_POSTHOG_KEY`. The MCP server path emits no telemetry at all.
 
 ## Quickstart
 
@@ -22,10 +22,10 @@ npx gitworthy mcp
 ## CLI
 
 ```sh
-gitworthy check owner/repo#123 [--npm-package name] [--json]
+gitworthy check owner/repo#123 [--npm-package name] [--probe-glob glob] [--probe-contains text] [--json]
 gitworthy branches owner/repo keyword[,keyword] [--json]
 gitworthy issue owner/repo 123 [--json]
-gitworthy release owner/repo package-name [--json]
+gitworthy release owner/repo package-name [--probe-glob glob] [--probe-contains text] [--json]
 gitworthy dupes owner/repo 123 [--json]
 gitworthy policy owner/repo [--json]
 gitworthy mcp
@@ -80,6 +80,7 @@ Every core result includes:
 {
   "verdict_summary": "one sentence",
   "evidence": [],
+  "signals": [],
   "checked": [],
   "not_checked": [],
   "cached": false,
@@ -88,6 +89,8 @@ Every core result includes:
 ```
 
 `checked` and `not_checked` are load-bearing. Empty `not_checked` on a real result is a bug.
+
+`signals` is the only load-bearing verdict input for `worth_check`. Human-readable prose is never parsed to decide ACT, VERIFY, or SKIP.
 
 ## Why
 

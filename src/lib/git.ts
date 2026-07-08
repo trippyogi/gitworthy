@@ -14,7 +14,7 @@ export async function lsRemoteHeads(repo: string): Promise<RemoteHead[]> {
       const [sha, ref] = line.split(/\s+/);
       return { sha, name: ref.replace('refs/heads/', '') };
     });
-  } catch (error) {
+  } catch {
     throw new GitworthyError({ code: 'git_ls_remote_failed', message: `git ls-remote failed for ${repo}.`, not_checked: [`Remote heads were not checked for ${repo}.`] });
   }
 }

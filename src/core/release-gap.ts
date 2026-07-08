@@ -67,8 +67,10 @@ export async function release_gap(input: Input): Promise<Envelope> {
       not_checked.push('tarball probe was not checked because no probe was provided.');
     }
     const latestPublished = metadata.time[latest] ? `, published ${metadata.time[latest].slice(0, 10)}` : '';
+    const probeEvidence = evidence.find((item) => 'probe' in item) as { matches?: unknown[] } | undefined;
+    const releasedFix = mainPackage.version === latest && (!input.probe?.contains || (probeEvidence?.matches?.length ?? 0) > 0);
     const verdict_summary = mainPackage.version === latest ? `main and npm are equal at ${latest}${latestPublished}.` : `main package version ${mainPackage.version ?? 'unknown'} differs from npm latest ${latest}${latestPublished}.`;
-    const envelope = createEnvelope({ verdict_summary, evidence, checked: [`fetched npm metadata for ${input.npm_package}`, `read package.json from ${input.repo}`], not_checked, cached: false, fetched_at });
+    const envelope = createEnvelope({ verdict_summary, evidence, signals: releasedFix ? ['released_fix'] : [], checked: [`fetched npm metadata for ${input.npm_package}`, `read package.json from ${input.repo}`], not_checked, cached: false, fetched_at });
     await writeCache('release_gap', input, envelope, fetched_at);
     return envelope;
   } finally {

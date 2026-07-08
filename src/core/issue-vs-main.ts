@@ -49,6 +49,7 @@ export async function issue_vs_main(input: Input): Promise<Envelope> {
     return createEnvelope({
       verdict_summary,
       evidence: [{ issue: issue.number, title: issue.title, state: issue.state, labels: issue.labels.map((label) => label.name), comments: issue.comments, url: issue.html_url }, { tree_matches: treeMatches }, { grep_matches: grepMatches }],
+      signals: treeMatches.length > 0 && grepMatches.length > 0 ? ['shipped'] : [],
       checked: [`fetched issue ${input.repo}#${input.issue_number}`, `shallow cloned ${input.repo}`, `searched candidate terms in tree and file contents`],
       not_checked: [INTENT_LIMIT],
       cached: false

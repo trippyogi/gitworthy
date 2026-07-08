@@ -1,10 +1,12 @@
 import { z } from 'zod';
 
 export const EvidenceSchema = z.record(z.string(), z.unknown()).and(z.object({ url: z.string().optional(), ref: z.string().optional() }));
+export const SignalSchema = z.enum(['in_flight', 'shipped', 'released_fix', 'duplicate']);
 
 export const EnvelopeSchema = z.object({
   verdict_summary: z.string().min(1),
   evidence: z.array(EvidenceSchema),
+  signals: z.array(SignalSchema),
   checked: z.array(z.string()).min(1),
   not_checked: z.array(z.string()).min(1),
   cached: z.boolean(),
@@ -12,15 +14,17 @@ export const EnvelopeSchema = z.object({
 });
 
 export type Evidence = z.infer<typeof EvidenceSchema>;
+export type Signal = z.infer<typeof SignalSchema>;
 export type Envelope = z.infer<typeof EnvelopeSchema>;
 
 export function nowIso(): string {
   return new Date().toISOString();
 }
 
-export function createEnvelope(input: Omit<Envelope, 'cached' | 'fetched_at'> & Partial<Pick<Envelope, 'cached' | 'fetched_at'>>): Envelope {
+export function createEnvelope(input: Omit<Envelope, 'cached' | 'fetched_at' | 'signals'> & Partial<Pick<Envelope, 'cached' | 'fetched_at' | 'signals'>>): Envelope {
   return EnvelopeSchema.parse({
     ...input,
+    signals: input.signals ?? [],
     cached: input.cached ?? false,
     fetched_at: input.fetched_at ?? nowIso()
   });

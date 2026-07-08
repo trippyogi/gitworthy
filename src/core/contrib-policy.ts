@@ -50,7 +50,8 @@ export async function contrib_policy(input: Input): Promise<Envelope> {
     }
   }
   if (evidence.length === 0) not_checked.push('no contribution policy excerpts were found in the checked files.');
-  const envelope = createEnvelope({ verdict_summary: evidence.length > 0 ? `found ${evidence.length} contribution policy signal. ` .trim() : 'no contribution policy signals found.', evidence, checked, not_checked, cached: false, fetched_at });
+  const signalLabel = evidence.length === 1 ? 'signal' : 'signals';
+  const envelope = createEnvelope({ verdict_summary: evidence.length > 0 ? `found ${evidence.length} contribution policy ${signalLabel}.` : 'no contribution policy signals found.', evidence, checked, not_checked, cached: false, fetched_at });
   await writeCache('contrib_policy', input, envelope, fetched_at);
   return envelope;
 }

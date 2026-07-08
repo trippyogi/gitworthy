@@ -1,1 +1,42 @@
-{"name":"gitworthy","version":"0.1.0","description":"is it worth your commit?","type":"module","license":"MIT","bin":{"gitworthy":"dist/cli/index.js"},"scripts":{"build":"tsc -p tsconfig.json","typecheck":"tsc -p tsconfig.json --noEmit","test":"vitest run","dev":"tsx src/cli/index.ts"},"dependencies":{"@modelcontextprotocol/sdk":"latest","execa":"latest","posthog-node":"latest","tar":"latest","zod":"latest"},"devDependencies":{"@types/node":"latest","tsx":"latest","typescript":"latest","vitest":"latest"},"engines":{"node":">=22"},"files":["dist","README.md","LICENSE","SKILL.md"]}
+{
+  "name": "gitworthy",
+  "version": "0.1.0",
+  "description": "is it worth your commit?",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "gitworthy": "dist/cli/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "dev": "tsx src/cli/index.ts",
+    "lint": "eslint .",
+    "eval": "tsx eval/run-eval.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "execa": "9.6.1",
+    "posthog-node": "5.40.0",
+    "tar": "7.5.19",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "26.1.0",
+    "eslint": "10.6.0",
+    "tsx": "4.23.0",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.63.0",
+    "vitest": "4.1.10"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "SKILL.md"
+  ]
+}

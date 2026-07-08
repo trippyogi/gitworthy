@@ -1,0 +1,62 @@
+[
+  {
+    "id": 1,
+    "name": "PostHog code sleep resume branch scan",
+    "function": "branch_scan",
+    "input": { "repo": "PostHog/code", "keywords": ["sleep", "resume"], "force_refresh": true },
+    "expect": { "signal": "in_flight", "evidence_contains": "recover-sleep-interrupted-turns" },
+    "time_sensitive": true
+  },
+  {
+    "id": 2,
+    "name": "PostHog code close tab branch scan",
+    "function": "branch_scan",
+    "input": { "repo": "PostHog/code", "keywords": ["cmd", "close-tab", "window"], "force_refresh": true },
+    "expect": { "no_signal": "in_flight" },
+    "time_sensitive": true
+  },
+  {
+    "id": 3,
+    "name": "PostHog context-mill issue 49 shipped example",
+    "function": "issue_vs_main",
+    "input": { "repo": "PostHog/context-mill", "issue_number": 49 },
+    "expect": { "signal": "shipped", "evidence_contains": "example-apps/fastapi" }
+  },
+  {
+    "id": 4,
+    "name": "PostHog context-mill issue 24 partial overlap",
+    "function": "issue_vs_main",
+    "input": { "repo": "PostHog/context-mill", "issue_number": 24 },
+    "expect": { "summary_contains": "partial overlap" }
+  },
+  {
+    "id": 5,
+    "name": "ElevenLabs CLI release gap add shell true",
+    "function": "release_gap",
+    "input": { "repo": "elevenlabs/cli", "npm_package": "@elevenlabs/cli", "probe": { "file_glob": "dist/**/add.js", "contains": "shell: true" }, "force_refresh": true },
+    "expect": { "signal": "released_fix", "evidence_contains": "shell: true" },
+    "time_sensitive": true
+  },
+  {
+    "id": 6,
+    "name": "ElevenLabs UI duplicate cluster",
+    "function": "dupe_cluster",
+    "input": { "repo": "elevenlabs/ui", "issue_number": 32 },
+    "expect": { "signal": "duplicate", "evidence_contains": "65" }
+  },
+  {
+    "id": 7,
+    "name": "OpenClaw contribution policy extraction",
+    "function": "contrib_policy",
+    "input": { "repo": "openclaw/openclaw", "force_refresh": true },
+    "expect": { "evidence_contains_all": ["evidence_requirements", "pr_caps_or_rate_limits", "forbidden_pr_types"] }
+  },
+  {
+    "id": 8,
+    "name": "PostHog code worth check issue 2886",
+    "function": "worth_check",
+    "input": { "repo": "PostHog/code", "issue_number": 2886 },
+    "expect": { "verdict": "SKIP", "signal": "in_flight", "evidence_contains": "recover-sleep-interrupted-turns" },
+    "time_sensitive": true
+  }
+]
