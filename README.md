@@ -89,11 +89,11 @@ Fetches the target issue, searches GitHub issues for distinctive title tokens, l
 
 ### contrib_policy
 
-Reads common contribution policy files from main or master and extracts deterministic policy signals with raw excerpts.
+Reads common contribution policy files from main or master and extracts deterministic policy signals with raw excerpts. If docs state that pull requests are not accepted or will be auto-closed, it emits `no_pr_path` and extracts the stated alternate feedback channel when present.
 
 ### scan
 
-Lists open issue tracker candidates for triage. Scan does not vet issues and does not produce ACT, VERIFY, or SKIP verdicts. Use it to find candidate issue numbers, then run `gitworthy check owner/repo#123` on specific targets.
+Lists open issue tracker candidates for triage. Scan does not vet issues and does not produce ACT, VERIFY, or SKIP verdicts. It appends a one-line cached contribution-policy hint when available, or reminds you to run policy before investing. Use it to find candidate issue numbers, then run `gitworthy check owner/repo#123` on specific targets.
 
 Example composition:
 
@@ -104,7 +104,7 @@ gitworthy scan Shopify/cli --label "good first issue" --json
 
 ### worth_check
 
-Composes the checks into ACT, VERIFY, or SKIP. Any sub-check error forces VERIFY. Sub-results remain visible in full.
+Composes the checks into ACT, VERIFY, or SKIP. Any sub-check error forces VERIFY. The `no_pr_path` signal caps ACT at VERIFY with the alternate feedback channel, because a repo with no PR path has no direct contribution path. Sub-results remain visible in full.
 
 ## Output envelope
 

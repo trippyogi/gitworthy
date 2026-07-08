@@ -2,7 +2,9 @@
 
 Use gitworthy before spending time on an external repository issue or feature request.
 
-Run the composite check first:
+Ordering rule: run contribution policy before investing in any unfamiliar repo. Use `npx gitworthy policy owner/repo --json`, or `npx gitworthy scan owner/repo --json` only as tracker triage and follow its policy reminder when no cached policy exists.
+
+Run the composite check after policy:
 
 ```sh
 npx gitworthy check owner/repo#123 --json
@@ -17,7 +19,7 @@ npx gitworthy check owner/repo#123 --npm-package package-name --json
 Interpretation:
 
 - ACT means the completed deterministic checks did not find a blocking signal.
-- VERIFY means a human must perform the named checks before investing or making any public claim.
+- VERIFY means a human must perform the named checks before investing or making any public claim. If `no_pr_path` is present, do not plan a PR unless the stated feedback channel says otherwise.
 - SKIP means the tool found a strong signal that the work is already handled, in flight, released, or duplicated.
 
 Mandatory rule: never make a public claim from a VERIFY verdict without performing the named human checks.

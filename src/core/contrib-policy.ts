@@ -2,10 +2,10 @@ import { readCache, writeCache } from '../lib/cache.js';
 import { fetchRaw } from '../lib/github.js';
 import { createEnvelope, Envelope } from './envelope.js';
 
-const TTL = 24 * 60 * 60 * 1000;
-const FILES = ['CONTRIBUTING.md', 'AGENTS.md', 'AI_POLICY.md', 'CODE_OF_CONDUCT.md', '.github/PULL_REQUEST_TEMPLATE.md', 'SECURITY.md'];
+export const CONTRIB_POLICY_TTL = 24 * 60 * 60 * 1000;
+const FILES = ['CONTRIBUTING.md', '.github/CONTRIBUTING.md', 'AGENTS.md', 'AI_POLICY.md', 'CODE_OF_CONDUCT.md', '.github/PULL_REQUEST_TEMPLATE.md', 'SECURITY.md'];
 const CATEGORIES: Record<string, string[]> = {
-  prs_not_accepted: ['mirror repo', 'mirror repository', 'pull requests are not accepted here', 'prs are not accepted here', 'do not open pull requests', 'do not submit pull requests'],
+  no_pr_path: ['mirror repo', 'mirror repository', 'pull requests are not accepted here', 'prs are not accepted here', "don't accept pull requests", 'do not accept pull requests', 'pull requests will be closed', 'pull requests will be automatically closed', 'prs will be closed', 'pull requests are automatically closed', 'pull requests are auto-closed', 'auto-close pull requests', 'do not open pull requests', 'do not submit pull requests'],
   evidence_requirements: ['test', 'tests', 'proof', 'evidence', 'screenshot', 'screenshots', 'logs'],
   ai_assistance_policy: ['ai', 'agent', 'llm', 'generated'],
   pr_caps_or_rate_limits: ['limit', 'cap', 'one pr', 'pull request'],
@@ -16,7 +16,7 @@ const CATEGORIES: Record<string, string[]> = {
   contacts_or_channels: ['discord', 'contact', 'maintainer', 'channel']
 };
 const CATEGORY_PRIORITY: Record<string, number> = {
-  prs_not_accepted: 6,
+  no_pr_path: 6,
   forbidden_pr_types: 5,
   cla_requirement: 4,
   evidence_requirements: 3,
@@ -68,8 +68,16 @@ function bestCategory(section: string): CategoryMatch | null {
   return matches[0];
 }
 
+function feedbackChannel(section: string): string | undefined {
+  const shopifyCommunity = section.match(/Shopify\s+Developer\s+Community/i)?.[0];
+  if (shopifyCommunity) return shopifyCommunity;
+  const channel = section.match(/(?:feedback|questions|discussion|discussions|requests|issues|bugs)[^.\n]*(?:through|via|in|on|at)\s+(?:the\s+)?([^\n.]+)/i)?.[1]?.trim();
+  return channel ? channel.replace(/[),;:]+$/g, '') : undefined;
+}
+
 export async function contrib_policy(input: Input): Promise<Envelope> {
-  const cached = await readCache<Envelope>('contrib_policy', input, TTL, input.force_refresh);
+  const cacheInput = { repo: input.repo };
+  const cached = await readCache<Envelope>('contrib_policy', cacheInput, CONTRIB_POLICY_TTL, input.force_refresh);
   if (cached.hit) return { ...cached.value, cached: true, fetched_at: cached.fetched_at };
   const fetched_at = new Date().toISOString();
   const evidence: Array<Record<string, unknown>> = [];
@@ -86,6 +94,7 @@ export async function contrib_policy(input: Input): Promise<Envelope> {
     }
     checked.push(`looked for ${file} on main and master`);
     if (!text) continue;
+    const fileFeedbackChannel = feedbackChannel(text);
     for (const section of splitSections(text)) {
       const match = bestCategory(section);
       if (!match) continue;
@@ -93,13 +102,13 @@ export async function contrib_policy(input: Input): Promise<Envelope> {
       const key = `${file}:${rawExcerpt}`;
       if (seen.has(key)) continue;
       seen.add(key);
-      evidence.push({ category: match.category, file, url: `https://github.com/${input.repo}/blob/${branch}/${file}`, excerpt: rawExcerpt, ambiguous: match.category === 'ambiguous' });
+      evidence.push({ category: match.category, file, url: `https://github.com/${input.repo}/blob/${branch}/${file}`, excerpt: rawExcerpt, feedback_channel: match.category === 'no_pr_path' ? feedbackChannel(section) ?? fileFeedbackChannel : undefined, ambiguous: match.category === 'ambiguous' });
     }
   }
   if (evidence.length === 0) not_checked.push('no contribution policy excerpts were found in the checked files.');
   const signalLabel = evidence.length === 1 ? 'signal' : 'signals';
-  const signals = evidence.some((item) => item.category === 'prs_not_accepted') ? ['prs_not_accepted' as const] : [];
+  const signals = evidence.some((item) => item.category === 'no_pr_path') ? ['no_pr_path' as const] : [];
   const envelope = createEnvelope({ verdict_summary: evidence.length > 0 ? `found ${evidence.length} contribution policy ${signalLabel}.` : 'no contribution policy signals found.', evidence, signals, checked, not_checked, cached: false, fetched_at });
-  await writeCache('contrib_policy', input, envelope, fetched_at);
+  await writeCache('contrib_policy', cacheInput, envelope, fetched_at);
   return envelope;
 }

@@ -11,6 +11,13 @@ type SubResult = { name: string; ok: true; result: Envelope } | { name: string; 
 
 type WorthEnvelope = Envelope & { verdict: 'ACT' | 'VERIFY' | 'SKIP'; reasons: string[]; sub_results: SubResult[] };
 
+function noPrFeedbackChannel(subResults: SubResult[]): string {
+  const policy = subResults.find((result) => result.ok && result.name === 'contrib_policy');
+  if (!policy?.ok) return 'not stated';
+  const evidence = policy.result.evidence.find((item) => item.category === 'no_pr_path' && typeof item.feedback_channel === 'string');
+  return typeof evidence?.feedback_channel === 'string' ? evidence.feedback_channel : 'not stated';
+}
+
 function err(name: string, error: unknown): SubResult {
   if (error instanceof GitworthyError) return { name, ok: false, error: { code: error.code, message: error.message, not_checked: error.not_checked } };
   return { name, ok: false, error: { code: 'unknown_error', message: error instanceof Error ? error.message : String(error), not_checked: ['sub-check failed with an unknown error.'] } };
@@ -37,7 +44,7 @@ export async function worth_check(input: Input): Promise<WorthEnvelope> {
   const reasons: string[] = [];
   const errors = sub_results.filter((result) => !result.ok);
   const signals = [...new Set(sub_results.flatMap((result) => result.ok ? (result.result.signals ?? []) : []))] as Signal[];
-  const skipSignals = signals.filter((signal) => signal !== 'prs_not_accepted');
+  const skipSignals = signals.filter((signal) => signal !== 'no_pr_path');
   for (const result of sub_results) {
     if (!result.ok) reasons.push(`${result.name} errored: ${result.error.message}`);
     if (result.ok && (result.result.signals ?? []).length > 0) reasons.push(`${result.name}: ${(result.result.signals ?? []).join(', ')}`);
@@ -45,7 +52,8 @@ export async function worth_check(input: Input): Promise<WorthEnvelope> {
   let verdict: 'ACT' | 'VERIFY' | 'SKIP' = 'ACT';
   if (errors.length > 0) verdict = 'VERIFY';
   else if (skipSignals.length > 0) verdict = 'SKIP';
-  else if (signals.includes('prs_not_accepted')) verdict = 'VERIFY';
+  else if (signals.includes('no_pr_path')) verdict = 'VERIFY';
+  if (signals.includes('no_pr_path')) reasons.push(`repo accepts no pull requests; feedback channel: ${noPrFeedbackChannel(sub_results)}`);
   const base = createEnvelope({
     verdict_summary: verdict === 'ACT' ? 'no blocking evidence found by completed checks.' : verdict === 'SKIP' ? 'blocking evidence was found by completed checks.' : 'mixed signals or sub-check errors require human review.',
     evidence: [],
