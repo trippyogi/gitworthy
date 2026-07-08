@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createTelemetryClient } from '../src/cli/telemetry.js';
 import { worth_check } from '../src/core/worth-check.js';
 
@@ -13,9 +13,14 @@ vi.mock('../src/lib/github.js', () => ({
 }));
 
 describe('telemetry', () => {
-  it('does not call non-allowlisted network destinations when flags are unset', async () => {
+  afterEach(() => {
     delete process.env.GITWORTHY_TELEMETRY;
     delete process.env.GITWORTHY_POSTHOG_KEY;
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it('does not call non-allowlisted network destinations when flags are unset', async () => {
     const fetchMock = vi.fn(async () => new Response('{}'));
     vi.stubGlobal('fetch', fetchMock);
     const client = await createTelemetryClient();
@@ -25,5 +30,15 @@ describe('telemetry', () => {
     const urls = fetchMock.mock.calls.map((call) => String(call[0]));
     expect(urls.every((url) => url.startsWith('https://api.github.com') || url.startsWith('https://raw.githubusercontent.com') || url.startsWith('https://registry.npmjs.org'))).toBe(true);
     expect(urls.some((url) => url.includes('posthog'))).toBe(false);
+  });
+
+  it('warns and remains no-op when telemetry is enabled but posthog-node is absent', async () => {
+    process.env.GITWORTHY_TELEMETRY = 'on';
+    process.env.GITWORTHY_POSTHOG_KEY = 'test-key';
+    const stderr = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    const client = await createTelemetryClient();
+    client.capture({ event: 'test' });
+    await client.shutdown();
+    expect(stderr).toHaveBeenCalledWith(expect.stringContaining('posthog-node is not installed'));
   });
 });

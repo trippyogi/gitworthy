@@ -3,10 +3,9 @@ import path from 'node:path';
 import { githubJson, GithubIssue } from '../lib/github.js';
 import { shallowClone } from '../lib/git.js';
 import { createEnvelope, Envelope } from './envelope.js';
+import { distinctiveTerms, isGenericTerm } from './terms.js';
 
 const INTENT_LIMIT = "directory or string existence does not prove the issue's intent is satisfied; read both before making any public claim.";
-const STOP = new Set(['the', 'and', 'for', 'with', 'from', 'that', 'this', 'should', 'would', 'could', 'please', 'issue', 'when', 'where', 'into']);
-
 type Input = { repo: string; issue_number: number };
 
 async function walk(dir: string): Promise<string[]> {
@@ -22,15 +21,14 @@ async function walk(dir: string): Promise<string[]> {
 function terms(issue: GithubIssue): string[] {
   const text = `${issue.title}\n${issue.body ?? ''}`;
   const pathLike = Array.from(text.matchAll(/[\w.-]+\/[\w./-]+/g)).map((match) => match[0]);
-  const words = text.toLowerCase().match(/[a-z][a-z0-9_-]{3,}/g) ?? [];
-  return Array.from(new Set([...pathLike, ...words.filter((word) => !STOP.has(word)).slice(0, 20)]));
+  return Array.from(new Set([...pathLike, ...distinctiveTerms(text, 20)]));
 }
 
 function pathTerms(issue: GithubIssue): string[] {
   const text = `${issue.title}\n${issue.body ?? ''}`;
   const explicit = Array.from(text.matchAll(/[\w.-]+\/[\w./-]+/g)).map((match) => match[0]);
-  const titleWords = issue.title.toLowerCase().match(/[a-z][a-z0-9_-]{3,}/g) ?? [];
-  const inferredExamples = issue.title.toLowerCase().includes('example') ? titleWords.filter((word) => !STOP.has(word) && word !== 'example' && word !== 'python').map((word) => `example-apps/${word}`) : [];
+  const titleWords = distinctiveTerms(issue.title, 10);
+  const inferredExamples = issue.title.toLowerCase().includes('example') ? titleWords.filter((word) => !isGenericTerm(word) && word !== 'python').map((word) => `example-apps/${word}`) : [];
   return [...explicit, ...inferredExamples];
 }
 

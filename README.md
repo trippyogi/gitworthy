@@ -11,7 +11,7 @@ It ships as one package with a shared TypeScript core and two thin adapters:
 - CLI for humans, scripts, and CI.
 - MCP server over stdio for agent harnesses.
 
-No telemetry is active by default. Optional PostHog telemetry requires both `GITWORTHY_TELEMETRY=on` and `GITWORTHY_POSTHOG_KEY`. The MCP server path emits no telemetry at all.
+No telemetry is active by default. Optional PostHog telemetry requires both `GITWORTHY_TELEMETRY=on` and `GITWORTHY_POSTHOG_KEY`, plus a user-installed `posthog-node` package. If telemetry is requested but `posthog-node` is missing, gitworthy prints one warning and continues with telemetry disabled. The MCP server path emits no telemetry at all.
 
 ## Quickstart
 
@@ -60,7 +60,7 @@ The token needs only fine-grained, read-only access to public repositories.
 
 - `GITHUB_TOKEN` enables authenticated GitHub REST checks.
 - `GITWORTHY_CACHE_DIR` overrides the default cache at `~/.gitworthy/cache`.
-- `GITWORTHY_TELEMETRY=on` plus `GITWORTHY_POSTHOG_KEY` enables optional telemetry.
+- `GITWORTHY_TELEMETRY=on` plus `GITWORTHY_POSTHOG_KEY` requests optional telemetry. Install `posthog-node` yourself if you want this path active. It is not part of the default install.
 
 When `GITHUB_TOKEN` is absent, checks that require GitHub REST return structured errors or explicit `not_checked` entries. Checks that can use public git or npm endpoints still run.
 
@@ -120,7 +120,3 @@ gitworthy exists because "this issue looks open" is usually wrong in active repo
 ## License
 
 MIT
-
-## v0.1.1 follow-up
-
-Improve evidence signal-to-noise by filtering generic issue terms such as example, add, task, and support, or by ranking tree and grep matches by term specificity before truncation.

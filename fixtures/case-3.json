@@ -34,96 +34,74 @@
         "example-apps/fastapi/app/templates/signup.html",
         "example-apps/fastapi/requirements.txt",
         "example-apps/fastapi/run.py",
-        "example-apps/android/.gitignore",
-        "example-apps/android/README.md",
-        "example-apps/android/app/.gitignore",
-        "example-apps/android/app/build.gradle.kts",
-        "example-apps/android/app/proguard-rules.pro",
-        "example-apps/android/app/src/androidTest/java/com/example/posthog/ExampleInstrumentedTest.kt",
-        "example-apps/android/app/src/main/AndroidManifest.xml",
-        "example-apps/android/app/src/main/java/com/example/posthog/BurritoApp.kt",
-        "example-apps/android/app/src/main/java/com/example/posthog/MainActivity.kt",
-        "example-apps/android/app/src/main/java/com/example/posthog/data/User.kt",
-        "example-apps/android/app/src/main/java/com/example/posthog/data/UserRepository.kt",
-        "example-apps/android/app/src/main/java/com/example/posthog/navigation/NavGraph.kt",
-        "example-apps/android/app/src/main/java/com/example/posthog/ui/components/AppHeader.kt",
-        "example-apps/android/app/src/main/java/com/example/posthog/ui/components/BottomNavBar.kt",
-        "example-apps/android/app/src/main/java/com/example/posthog/ui/components/StatsCard.kt",
-        "example-apps/android/app/src/main/java/com/example/posthog/ui/screens/BurritoScreen.kt",
-        "example-apps/android/app/src/main/java/com/example/posthog/ui/screens/HomeScreen.kt",
-        "example-apps/android/app/src/main/java/com/example/posthog/ui/screens/ProfileScreen.kt",
-        "example-apps/android/app/src/main/java/com/example/posthog/ui/theme/Color.kt",
-        "example-apps/android/app/src/main/java/com/example/posthog/ui/theme/Theme.kt",
-        "example-apps/android/app/src/main/java/com/example/posthog/ui/theme/Type.kt",
-        "example-apps/android/app/src/main/java/com/example/posthog/viewmodel/AuthViewModel.kt",
-        "example-apps/android/app/src/main/res/drawable/ic_launcher_background.xml",
-        "example-apps/android/app/src/main/res/drawable/ic_launcher_foreground.xml",
-        "example-apps/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml",
-        "example-apps/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml",
-        "example-apps/android/app/src/main/res/mipmap-hdpi/ic_launcher.webp"
+        "example-apps/python/.env.example",
+        "example-apps/python/.gitignore",
+        "example-apps/python/README.md",
+        "example-apps/python/requirements.txt",
+        "example-apps/python/todo.py"
       ]
     },
     {
       "grep_matches": [
         {
-          "path": ".claude/skills/author-stepwise-skill/SKILL.md",
-          "line": 20,
-          "term": "example",
-          "sample": "- The skill is **docs-only**. There is no example project to bundle."
+          "path": ".gitignore",
+          "line": 30,
+          "term": "python",
+          "sample": "# Python"
         },
         {
-          "path": ".claude/skills/author-stepwise-skill/SKILL.md",
-          "line": 121,
-          "term": "example",
-          "sample": "- **`[STATUS] <message>`** updates the live \"Working on…\" banner. Use these often. They are cheap. Each step file should list the exact `[STATUS]` strings to emit at each sub-step (for example, `[STAT"
+          "path": "context/commandments.yaml",
+          "line": 63,
+          "term": "python",
+          "sample": "  python:"
         },
         {
-          "path": ".claude/skills/author-stepwise-skill/SKILL.md",
-          "line": 146,
-          "term": "example",
-          "sample": "## Example: a 2-step skill"
+          "path": "context/commandments.yaml",
+          "line": 65,
+          "term": "python",
+          "sample": "    - posthog is the Python SDK package name"
         },
         {
-          "path": ".claude/skills/author-stepwise-skill/SKILL.md",
-          "line": 153,
-          "term": "example",
-          "sample": "context/skills/example-stepwise/"
+          "path": "context/commandments.yaml",
+          "line": 73,
+          "term": "python",
+          "sample": "    - The Python SDK has NO identify() method - use posthog_client.set(distinct_id=user_id, properties={...}) to set person properties, or use identify_context(user_id) within a context"
         },
         {
-          "path": ".claude/skills/author-stepwise-skill/SKILL.md",
-          "line": 166,
-          "term": "example",
-          "sample": "description: Two-step example skill. Discover, then emit."
+          "path": "context/commandments.yaml",
+          "line": 126,
+          "term": "fastapi",
+          "sample": "  fastapi:"
         },
         {
-          "path": ".claude/skills/author-stepwise-skill/SKILL.md",
-          "line": 167,
-          "term": "example",
-          "sample": "tags: [example]"
+          "path": "context/commandments.yaml",
+          "line": 130,
+          "term": "fastapi",
+          "sample": "    - Use FastAPI dependency injection (Depends) for accessing current_user and settings in route handlers"
         },
         {
-          "path": ".claude/skills/author-stepwise-skill/SKILL.md",
-          "line": 173,
-          "term": "example",
-          "sample": "    display_name: Example stepwise skill"
+          "path": "context/skills/audit/references/1-version.md",
+          "line": 25,
+          "term": "fastapi",
+          "sample": "- `requirements.txt`, `pyproject.toml`, `Pipfile`, `setup.py` - Python (Django, Flask, FastAPI, etc.)"
         },
         {
-          "path": ".claude/skills/author-stepwise-skill/SKILL.md",
-          "line": 174,
-          "term": "example",
-          "sample": "    tags: [example]"
+          "path": "context/skills/audit/references/1-version.md",
+          "line": 53,
+          "term": "python",
+          "sample": "- **PyPI** (Python): `pip index versions <pkg>` (or `pip show <pkg>` if `index` is unavailable)"
         },
         {
-          "path": ".claude/skills/author-stepwise-skill/SKILL.md",
-          "line": 181,
-          "term": "example",
-          "sample": "# Example stepwise skill"
+          "path": "context/skills/audit-attribution/references/engagement-provenance.md",
+          "line": 24,
+          "term": "python",
+          "sample": "- **posthog-python `$os` auto-attach** corrupting person properties (24% of profiles with `$os = \"Linux\"` on a macOS-heavy product)."
         },
         {
-          "path": ".github/workflows/build.yml",
-          "line": 16,
-          "term": "example",
-          "sample": "      examples: ${{ steps.set-examples.outputs.examples }}"
+          "path": "context/skills/audit-events/references/3-events-optimize.md",
+          "line": 176,
+          "term": "python",
+          "sample": "   - `$lib` values that mismatch the project's known runtime mix (e.g. a Python lib appearing in a JS-only project - possibly a misrouted server-side capture)."
         }
       ]
     }
@@ -140,5 +118,5 @@
     "directory or string existence does not prove the issue's intent is satisfied; read both before making any public claim."
   ],
   "cached": false,
-  "fetched_at": "2026-07-08T21:15:18.312Z"
+  "fetched_at": "2026-07-08T22:05:40.808Z"
 }

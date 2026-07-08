@@ -68,8 +68,14 @@
         {
           "path": ".claude/skills/author-stepwise-skill/SKILL.md",
           "line": 20,
-          "term": "example",
+          "term": "project",
           "sample": "- The skill is **docs-only**. There is no example project to bundle."
+        },
+        {
+          "path": ".claude/skills/author-stepwise-skill/SKILL.md",
+          "line": 31,
+          "term": "test",
+          "sample": "- **One verifiable output.** Every step ends with a specific, verifiable artifact. A single tool call. A written file. A returned value. \"Investigate X\" is not an output. \"Write the result of investig"
         },
         {
           "path": ".claude/skills/author-stepwise-skill/SKILL.md",
@@ -80,13 +86,19 @@
         {
           "path": ".claude/skills/author-stepwise-skill/SKILL.md",
           "line": 121,
-          "term": "example",
+          "term": "repo",
           "sample": "- **`[STATUS] <message>`** updates the live \"Working on…\" banner. Use these often. They are cheap. Each step file should list the exact `[STATUS]` strings to emit at each sub-step (for example, `[STAT"
         },
         {
           "path": ".claude/skills/author-stepwise-skill/SKILL.md",
+          "line": 135,
+          "term": "test",
+          "sample": "npm test"
+        },
+        {
+          "path": ".claude/skills/author-stepwise-skill/SKILL.md",
           "line": 138,
-          "term": "tests",
+          "term": "test",
           "sample": "Should stay green. The reference-folder test (`scripts/lib/tests/skill-generator-references-folder.test.js`) covers the copy path."
         },
         {
@@ -98,32 +110,20 @@
         {
           "path": ".claude/skills/author-stepwise-skill/SKILL.md",
           "line": 146,
-          "term": "example",
+          "term": "exampl",
           "sample": "## Example: a 2-step skill"
         },
         {
           "path": ".claude/skills/author-stepwise-skill/SKILL.md",
           "line": 153,
-          "term": "example",
+          "term": "exampl",
           "sample": "context/skills/example-stepwise/"
         },
         {
           "path": ".claude/skills/author-stepwise-skill/SKILL.md",
           "line": 166,
-          "term": "example",
+          "term": "exampl",
           "sample": "description: Two-step example skill. Discover, then emit."
-        },
-        {
-          "path": ".claude/skills/author-stepwise-skill/SKILL.md",
-          "line": 167,
-          "term": "example",
-          "sample": "tags: [example]"
-        },
-        {
-          "path": ".claude/skills/author-stepwise-skill/SKILL.md",
-          "line": 173,
-          "term": "example",
-          "sample": "    display_name: Example stepwise skill"
         }
       ]
     }
@@ -138,5 +138,5 @@
     "directory or string existence does not prove the issue's intent is satisfied; read both before making any public claim."
   ],
   "cached": false,
-  "fetched_at": "2026-07-08T21:15:19.749Z"
+  "fetched_at": "2026-07-08T22:05:42.171Z"
 }

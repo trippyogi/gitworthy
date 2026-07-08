@@ -4,6 +4,7 @@ import { issue_vs_main } from './issue-vs-main.js';
 import { release_gap } from './release-gap.js';
 import { contrib_policy } from './contrib-policy.js';
 import { createEnvelope, Envelope, GitworthyError, Signal } from './envelope.js';
+import { distinctiveTerms } from './terms.js';
 
 type Input = { repo: string; issue_number: number; npm_package?: string; probe?: { file_glob?: string; contains?: string } };
 type SubResult = { name: string; ok: true; result: Envelope } | { name: string; ok: false; error: { code: string; message: string; not_checked: string[] } };
@@ -22,8 +23,7 @@ export async function worth_check(input: Input): Promise<WorthEnvelope> {
     const issue = await issue_vs_main(input);
     sub_results.push({ name: 'issue_vs_main', ok: true, result: issue });
     const issueEvidence = issue.evidence[0] as { title?: string };
-    const titleTerms = (issueEvidence.title?.toLowerCase().match(/[a-z][a-z0-9_-]{3,}/g) ?? issueKeywords).slice(0, 12);
-    issueKeywords = [...new Set(titleTerms.flatMap((term) => term.endsWith('s') ? [term, term.slice(0, -1)] : [term]))];
+    issueKeywords = distinctiveTerms(issueEvidence.title ?? issueKeywords.join(' '), 8);
   } catch (error) {
     sub_results.push(err('issue_vs_main', error));
   }

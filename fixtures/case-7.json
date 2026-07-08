@@ -1,39 +1,39 @@
 {
-  "verdict_summary": "found 18 contribution policy signals.",
+  "verdict_summary": "found 60 contribution policy signals.",
   "evidence": [
     {
-      "category": "evidence_requirements",
+      "category": "contacts_or_channels",
       "file": "CONTRIBUTING.md",
       "url": "https://github.com/openclaw/openclaw/blob/main/CONTRIBUTING.md",
-      "excerpt": "maintainer explicitly asks for them as part of a concrete fix. 4. **Test/CI-only PRs for known `main` failures** → Don't open a PR. The Maintainer team is already tracking those failures, and PRs that only tweak tests or CI to",
+      "excerpt": "- **GitHub:** https://github.com/openclaw/openclaw - **Vision:** [`VISION.md`](VISION.md) - **Discord:** https://discord.gg/clawd - **X/Twitter:** [@steipete](https://x.com/steipete) / [@openclaw](https://x.com/openclaw)",
+      "ambiguous": false
+    },
+    {
+      "category": "contacts_or_channels",
+      "file": "CONTRIBUTING.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/CONTRIBUTING.md",
+      "excerpt": "- **Shadow** - Discord subsystem, Discord admin, Clawhub, all community moderation - GitHub: [@thewilloftheshadow](https://github.com/thewilloftheshadow) · X: [@4shadowed](https://x.com/4shadowed)",
       "ambiguous": false
     },
     {
       "category": "ai_assistance_policy",
       "file": "CONTRIBUTING.md",
       "url": "https://github.com/openclaw/openclaw/blob/main/CONTRIBUTING.md",
-      "excerpt": "- **Vision:** [`VISION.md`](VISION.md) - **Discord:** https://discord.gg/clawd - **X/Twitter:** [@steipete](https://x.com/steipete) / [@openclaw](https://x.com/openclaw) ## Maintainers - **Peter Steinberger** - Benevolent Dictator - GitHub: [@steipete](https://github.com/steipete) · X: [@steipete](https://x.com/steipete) - **Frank Yang** - PR triage, Agents, Gateway, Channels - GitHub: [@frankekn](https://github.com/frankekn) · X: [@frankekn](https://x.com/frankekn)",
+      "excerpt": "- **Val Alexander** - UI/UX, Docs, SDK, and Agent DevX - GitHub: [@BunsDev](https://github.com/BunsDev) · X: [@BunsDev](https://x.com/BunsDev)",
       "ambiguous": false
     },
     {
-      "category": "pr_caps_or_rate_limits",
+      "category": "ai_assistance_policy",
       "file": "CONTRIBUTING.md",
       "url": "https://github.com/openclaw/openclaw/blob/main/CONTRIBUTING.md",
-      "excerpt": "coordinated change sets, ask in **#clawtributors** before opening more than the PR limit. ## PR Limits We cap at **20 open PRs per author**. If you exceed this, the `r: too-many-prs` label is added and your PR is auto-closed. This",
+      "excerpt": "- **Seb Slight** - Docs, Agent Reliability, Runtime Hardening - GitHub: [@sebslight](https://github.com/sebslight) · X: [@sebslig](https://x.com/sebslig)",
       "ambiguous": false
     },
     {
-      "category": "issue_first_or_alignment",
+      "category": "contacts_or_channels",
       "file": "CONTRIBUTING.md",
       "url": "https://github.com/openclaw/openclaw/blob/main/CONTRIBUTING.md",
-      "excerpt": "Open a PR! 2. **New features / architecture** → Start a [GitHub Issue](https://github.com/openclaw/openclaw/issues/new/choose) or ask in Discord first. Most features are not accepted and should be third party plugins instead using our plugin SDK. 3. **Refactor-only PRs** → Don't open",
-      "ambiguous": false
-    },
-    {
-      "category": "cla_requirement",
-      "file": "CONTRIBUTING.md",
-      "url": "https://github.com/openclaw/openclaw/blob/main/CONTRIBUTING.md",
-      "excerpt": "# Contributing to OpenClaw Welcome to the lobster tank! 🦞 ## Quick Links - **GitHub:** https://github.com/openclaw/openclaw - **Vision:** [`VISION.md`](VISION.md) - **Discord:** https://discord.gg/clawd - **X/Twitter:** [@steipete](https://x.com/steipete) / [@openclaw](https://x.com/openclaw) ## Maintainers - **Peter",
+      "excerpt": "- **Sliverp** - Chinese Channel: QQ, WeChat, Wecom, Yuanbao, Dingtalk, Feishu - GitHub: [@sliverp](https://github.com/sliverp) · X: [@sliver01234](https://x.com/sliver01234)",
       "ambiguous": false
     },
     {
@@ -47,7 +47,126 @@
       "category": "contacts_or_channels",
       "file": "CONTRIBUTING.md",
       "url": "https://github.com/openclaw/openclaw/blob/main/CONTRIBUTING.md",
-      "excerpt": "tank! 🦞 ## Quick Links - **GitHub:** https://github.com/openclaw/openclaw - **Vision:** [`VISION.md`](VISION.md) - **Discord:** https://discord.gg/clawd - **X/Twitter:** [@steipete](https://x.com/steipete) / [@openclaw](https://x.com/openclaw) ## Maintainers - **Peter Steinberger** - Benevolent Dictator - GitHub: [@steipete](https://github.com/steipete) · X: [@steipete](https://x.com/steipete) - **Frank Yang** - PR triage, Agents,",
+      "excerpt": "## Issue, PR, and Contact Routing",
+      "ambiguous": false
+    },
+    {
+      "category": "evidence_requirements",
+      "file": "CONTRIBUTING.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/CONTRIBUTING.md",
+      "excerpt": "| Situation | Use | Required evidence | | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- | | Product bug, regression, crash, or behavior defect | [Bug report](https://github.com/openclaw/openclaw/issues/new?template=bug_report.yml) | Repro steps, expected vs actual behavior, version,",
+      "ambiguous": false
+    },
+    {
+      "category": "issue_first_or_alignment",
+      "file": "CONTRIBUTING.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/CONTRIBUTING.md",
+      "excerpt": "For agent-authored or otherwise non-trivial work, create or reuse the issue first, then open the PR against it. Bugs and very small fixes may go straight to PR, but still link existing context when it exists and fill",
+      "ambiguous": false
+    },
+    {
+      "category": "pr_caps_or_rate_limits",
+      "file": "CONTRIBUTING.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/CONTRIBUTING.md",
+      "excerpt": "coordinated change sets, ask in **#clawtributors** before opening more than the PR limit.",
+      "ambiguous": false
+    },
+    {
+      "category": "pr_caps_or_rate_limits",
+      "file": "CONTRIBUTING.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/CONTRIBUTING.md",
+      "excerpt": "label is added and your PR is auto-closed. This is a hard limit.",
+      "ambiguous": false
+    },
+    {
+      "category": "contacts_or_channels",
+      "file": "CONTRIBUTING.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/CONTRIBUTING.md",
+      "excerpt": "that genuinely need more than 20 PRs, join the **#clawtributors** channel in Discord and talk to maintainers first.",
+      "ambiguous": false
+    },
+    {
+      "category": "evidence_requirements",
+      "file": "CONTRIBUTING.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/CONTRIBUTING.md",
+      "excerpt": "See [Node install guidance](docs/install/node.md) if your local version is too old. - Test locally with your OpenClaw instance - External PRs must describe the user, product, or operational problem in **What Problem This Solves** and include useful validation in **Evidence**.",
+      "ambiguous": false
+    },
+    {
+      "category": "contacts_or_channels",
+      "file": "CONTRIBUTING.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/CONTRIBUTING.md",
+      "excerpt": "bot's concern - Reply and leave it open only when you need maintainer or reviewer judgment - Do not leave \"fixed\" bot review conversations for maintainers to clean up for you - If Codex leaves comments, address every relevant one",
+      "ambiguous": false
+    },
+    {
+      "category": "ai_assistance_policy",
+      "file": "CONTRIBUTING.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/CONTRIBUTING.md",
+      "excerpt": "This applies to both human-authored and AI-assisted PRs.",
+      "ambiguous": false
+    },
+    {
+      "category": "ai_assistance_policy",
+      "file": "CONTRIBUTING.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/CONTRIBUTING.md",
+      "excerpt": "## AI/Vibe-Coded PRs Welcome! 🤖",
+      "ambiguous": false
+    },
+    {
+      "category": "ai_assistance_policy",
+      "file": "CONTRIBUTING.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/CONTRIBUTING.md",
+      "excerpt": "Built with Codex, Claude, or other AI tools? **Awesome - just mark it!**",
+      "ambiguous": false
+    },
+    {
+      "category": "evidence_requirements",
+      "file": "CONTRIBUTING.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/CONTRIBUTING.md",
+      "excerpt": "**Evidence** section with the most useful validation. Reviewers will inspect the code, tests, and CI rather than relying on the PR body alone. - [ ] Include prompts or session logs if possible (super helpful!) - [ ] Confirm you",
+      "ambiguous": false
+    },
+    {
+      "category": "ai_assistance_policy",
+      "file": "CONTRIBUTING.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/CONTRIBUTING.md",
+      "excerpt": "AI PRs are first-class citizens here. We just want transparency so reviewers know what to look for. If you are using an LLM coding agent, instruct it to",
+      "ambiguous": false
+    },
+    {
+      "category": "contacts_or_channels",
+      "file": "CONTRIBUTING.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/CONTRIBUTING.md",
+      "excerpt": "- **Stability**: Fixing edge cases in channel connections (WhatsApp/Telegram). - **UX**: Improving the onboarding wizard and error messages. - **Skills**: For skill contributions, head to [ClawHub](https://clawhub.ai/) - the community hub for OpenClaw skills. -",
+      "ambiguous": false
+    },
+    {
+      "category": "contacts_or_channels",
+      "file": "CONTRIBUTING.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/CONTRIBUTING.md",
+      "excerpt": "We're selectively expanding the maintainer team. If you're an experienced contributor who wants to help shape OpenClaw's direction - whether through code, docs, or community - we'd like to hear from you.",
+      "ambiguous": false
+    },
+    {
+      "category": "contacts_or_channels",
+      "file": "CONTRIBUTING.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/CONTRIBUTING.md",
+      "excerpt": "Being a maintainer is a responsibility, not an honorary title. We expect active, consistent involvement - triaging issues, reviewing PRs, and helping move the project forward.",
+      "ambiguous": false
+    },
+    {
+      "category": "contacts_or_channels",
+      "file": "CONTRIBUTING.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/CONTRIBUTING.md",
+      "excerpt": "open source projects you maintain or actively contribute to - Your GitHub, Discord, and X/Twitter handles - A brief intro: background, experience, and areas of interest - Languages you speak and where you're based - How much time you can",
+      "ambiguous": false
+    },
+    {
+      "category": "ai_assistance_policy",
+      "file": "CONTRIBUTING.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/CONTRIBUTING.md",
+      "excerpt": "demonstrated impact, and remediation advice will be deprioritized. Given the volume of AI-generated scanner findings, we must ensure we're receiving vetted reports from researchers who understand the issues.",
       "ambiguous": false
     },
     {
@@ -58,73 +177,248 @@
       "ambiguous": false
     },
     {
+      "category": "evidence_requirements",
+      "file": "AGENTS.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/AGENTS.md",
+      "excerpt": "judgment backed by enough code reading to compare owner boundaries, callers, siblings, tests, docs, current `main`, shipped behavior when relevant, and dependency/Codex contracts when involved. - Before a PR verdict, build a small evidence map: changed surface, entry point, owner",
+      "ambiguous": false
+    },
+    {
+      "category": "evidence_requirements",
+      "file": "AGENTS.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/AGENTS.md",
+      "excerpt": "`docs/`, `apps/`. - Installers: sibling `../openclaw.ai`. - Scoped guides: `extensions/`, `src/{plugin-sdk,channels,plugins,gateway,agents}/`, `packages/`, `test/helpers*/`, `docs/`, `ui/`, `scripts/`.",
+      "ambiguous": false
+    },
+    {
       "category": "ai_assistance_policy",
       "file": "AGENTS.md",
       "url": "https://github.com/openclaw/openclaw/blob/main/AGENTS.md",
-      "excerpt": "workflow, tool, integration, or automation, do a lightweight check for open-source projects, maintained libraries, existing OpenClaw plugins, or free platforms that already solve it well enough. Prefer those when adequate. Build custom only when existing options are unsuitable, too expensive,",
+      "excerpt": "- Source docs: `docs/**`; publish repo: `openclaw/docs`; host: `https://docs.openclaw.ai`. - Flow: source -> `docs-sync-publish.yml` -> mirror build -> R2 -> Worker router. - Docs AI: `openclaw/ask-molty`; see its `AGENTS.md`.",
       "ambiguous": false
     },
     {
-      "category": "pr_caps_or_rate_limits",
+      "category": "evidence_requirements",
       "file": "AGENTS.md",
       "url": "https://github.com/openclaw/openclaw/blob/main/AGENTS.md",
-      "excerpt": "loop. - Message/channel plugins stay transport-only. They render portable presentation/actions, enforce transport limits, and map native callback envelopes. They do not own product command trees, plugin/provider policy, or feature-specific menus. - Portable command UI must use typed presentation actions, not",
+      "excerpt": "no core `src/**`, `src/plugin-sdk-internal/**`, other plugin `src/**`, or relative outside package. - Core/tests: no deep plugin internals (`extensions/*/src/**`, `onboard.js`). Use public barrels, SDK facade, generic contracts. - Owner boundary: owner-specific repair/detection/onboarding/auth/defaults/provider behavior lives in owner plugin. Shared/core gets generic seams",
       "ambiguous": false
     },
     {
-      "category": "issue_first_or_alignment",
+      "category": "evidence_requirements",
       "file": "AGENTS.md",
       "url": "https://github.com/openclaw/openclaw/blob/main/AGENTS.md",
-      "excerpt": "findings for concrete behavior regressions, missing changed-surface proof, owner-boundary violations, security/API contract issues, or docs/config mismatches. - Do not file findings for repo policy preference when changed code follows the relevant scoped guide and no user-visible, runtime, security, or maintainer-risk",
+      "excerpt": "`pnpm install` (keep Bun lock/patches aligned if touched). Agent dependency installation for tests/builds defaults to the selected remote box; do not reconcile a local Codex worktree just to run validation. - CLI: `pnpm openclaw ...` or `pnpm dev`; build: `pnpm",
       "ambiguous": false
     },
     {
-      "category": "cla_requirement",
+      "category": "evidence_requirements",
       "file": "AGENTS.md",
       "url": "https://github.com/openclaw/openclaw/blob/main/AGENTS.md",
-      "excerpt": "own workflows; root owns hard policy and routing. ## Start - Repo: `https://github.com/openclaw/openclaw` - Replies: repo-root refs only: `extensions/telegram/src/index.ts:80`. No absolute paths, no `~/`. - Docs/user-visible work: `pnpm docs:list`, then read relevant docs only. - Existing-solutions preflight: before proposing or",
+      "excerpt": "- Use `$openclaw-testing` for test/CI choice and `$crabbox` for remote/full/E2E proof. - At task start, if code changes, tests, builds, typechecks, lint fan-out, Docker, packaging, E2E, or live proof are",
+      "ambiguous": false
+    },
+    {
+      "category": "evidence_requirements",
+      "file": "AGENTS.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/AGENTS.md",
+      "excerpt": "commit/PR + focused proof, then close. Bar high: inspect PR diff, current code/tests, linked issue, caller/sibling path. If unsure, leave open. - Issue/PR numbers need a short summary every time; assume the reader has not opened or read them. -",
+      "ambiguous": false
+    },
+    {
+      "category": "evidence_requirements",
+      "file": "AGENTS.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/AGENTS.md",
+      "excerpt": "new ownership/API needs to clearly pay for it. - Refactors should reduce non-test LOC unless they remove a larger architectural cost. Treat positive prod LOC as a smell. Before closeout, run `git diff --numstat`; if non-test LOC grew, trim or",
+      "ambiguous": false
+    },
+    {
+      "category": "evidence_requirements",
+      "file": "AGENTS.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/AGENTS.md",
+      "excerpt": "## Tests",
+      "ambiguous": false
+    },
+    {
+      "category": "evidence_requirements",
+      "file": "AGENTS.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/AGENTS.md",
+      "excerpt": "- Vitest. Colocated `*.test.ts`; e2e `*.e2e.test.ts`; example models `sonnet-4.6`, `gpt-5.5`; test GPT with 5.5 preferred, 5.4 ok; no GPT-4.x agent-smoke defaults. - Prefer behavior tests over workflow/docs string greps.",
       "ambiguous": false
     },
     {
       "category": "contacts_or_channels",
       "file": "AGENTS.md",
       "url": "https://github.com/openclaw/openclaw/blob/main/AGENTS.md",
-      "excerpt": "template, link context, and keep durable problem/impact/evidence sections. - Route support to Discord and security through `SECURITY.md`. Use listed maintainer areas/`CODEOWNERS`; never guess mentions. - Use `$openclaw-pr-maintainer` immediately for maintainer-side OpenClaw issue/PR review, triage, duplicates, labels, comments, close, land, or",
+      "excerpt": "(`@thewilloftheshadow`, verified by `gh`) asks. - Releases/publish/version bumps need explicit approval. Use `$release-openclaw-maintainer`. - Release versions use `YYYY.M.PATCH`, where `PATCH` is a sequential monthly release-train number, never the calendar day. Stable and beta tags determine the current train; alpha-only tags",
+      "ambiguous": false
+    },
+    {
+      "category": "ambiguous",
+      "file": "AGENTS.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/AGENTS.md",
+      "excerpt": "remote browser unless video/capture-style output. - Before sharing WebVNC links, use Crabbox screenshot first; verify real app/path works and target UI is not broken. - ClawSweeper ops: `$clawsweeper`. Deployed hook sessions may post one concise `#clawsweeper` note only when surprising/actionable/risky;",
+      "ambiguous": true
+    },
+    {
+      "category": "ai_assistance_policy",
+      "file": "SECURITY.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/SECURITY.md",
+      "excerpt": "out the trust model maintainers use when triaging reports. OpenClaw is local-first agent infrastructure for trusted operators; it is not designed as a shared multi-tenant boundary between adversarial users on one gateway.",
+      "ambiguous": false
+    },
+    {
+      "category": "contacts_or_channels",
+      "file": "SECURITY.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/SECURITY.md",
+      "excerpt": "Security work is shared across a number of OpenClaw maintainers, including engineers and security researchers from organizations such as NVIDIA and Tencent. See the [maintainer list](CONTRIBUTING.md#maintainers).",
       "ambiguous": false
     },
     {
       "category": "evidence_requirements",
       "file": "SECURITY.md",
       "url": "https://github.com/openclaw/openclaw/blob/main/SECURITY.md",
-      "excerpt": "as a shared multi-tenant boundary between adversarial users on one gateway. The fastest useful reports show a current, reproducible boundary bypass with demonstrated impact. Scanner output, prompt-injection-only chains, or reports that rely on hostile users sharing one trusted gateway are",
-      "ambiguous": false
-    },
-    {
-      "category": "ai_assistance_policy",
-      "file": "SECURITY.md",
-      "url": "https://github.com/openclaw/openclaw/blob/main/SECURITY.md",
-      "excerpt": "researchers a clear disclosure path, and it spells out the trust model maintainers use when triaging reports. OpenClaw is local-first agent infrastructure for trusted operators; it is not designed as a shared multi-tenant boundary between adversarial users on one gateway.",
-      "ambiguous": false
-    },
-    {
-      "category": "pr_caps_or_rate_limits",
-      "file": "SECURITY.md",
-      "url": "https://github.com/openclaw/openclaw/blob/main/SECURITY.md",
-      "excerpt": "enforcement, sandboxing, or another documented trust boundary. ACP silent approval is intentionally limited to narrow readonly classes; parity-only indirect-command findings are hardening, not vulnerabilities. - Reports that only show untrusted media bytes reaching a maintained native decoder dependency (for example",
-      "ambiguous": false
-    },
-    {
-      "category": "cla_requirement",
-      "file": "SECURITY.md",
-      "url": "https://github.com/openclaw/openclaw/blob/main/SECURITY.md",
-      "excerpt": "# Security Policy If you believe you've found a security issue in OpenClaw, report it privately first. This policy does two things: it gives researchers a clear disclosure path, and it spells out the trust model maintainers use when triaging",
+      "excerpt": "or PR that discloses an unpatched vulnerability, exploit path, secret, or security-sensitive proof of concept.",
       "ambiguous": false
     },
     {
       "category": "contacts_or_channels",
       "file": "SECURITY.md",
       "url": "https://github.com/openclaw/openclaw/blob/main/SECURITY.md",
-      "excerpt": "Slack webhook signature findings when HTTP mode already uses signing-secret verification. - Discord inbound webhook signature findings for paths not used by this repo's Discord integration. - Claims that Microsoft Teams `fileConsent/invoke` `uploadInfo.uploadUrl` is attacker-controlled without demonstrating one of: auth",
+      "excerpt": "For full reporting instructions see our [Trust page](https://trust.openclaw.ai). For maintainer response workflow, see the [incident response plan](docs/security/incident-response.md).",
+      "ambiguous": false
+    },
+    {
+      "category": "evidence_requirements",
+      "file": "SECURITY.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/SECURITY.md",
+      "excerpt": "component, version, and commit SHA when possible. - Reproduction steps or a proof of concept against latest `main` or the latest released version. - The actual impact, including which OpenClaw trust boundary is crossed. - Any remediation advice or focused",
+      "ambiguous": false
+    },
+    {
+      "category": "ai_assistance_policy",
+      "file": "SECURITY.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/SECURITY.md",
+      "excerpt": "impact, and remediation advice are deprioritized. We receive a high volume of AI-generated scanner findings, so we prioritize vetted reports from researchers who can show how the issue crosses an OpenClaw security boundary.",
+      "ambiguous": false
+    },
+    {
+      "category": "evidence_requirements",
+      "file": "SECURITY.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/SECURITY.md",
+      "excerpt": "Demonstrated impact tied to OpenClaw's documented trust boundaries. - For exposed-secret reports: proof the credential is OpenClaw-owned (or grants access to OpenClaw-operated infrastructure/services). - Explicit statement that the report does not rely on adversarial operators sharing one gateway host/config. -",
+      "ambiguous": false
+    },
+    {
+      "category": "evidence_requirements",
+      "file": "SECURITY.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/SECURITY.md",
+      "excerpt": "state. - Missing HSTS findings on default local/loopback deployments. - Reports against test-only harnesses, QA Lab, QE Lab, E2E fixtures, benchmark rigs, or maintainer-only debugging tools when the vulnerable code is not shipped as a supported production surface. - Slack",
+      "ambiguous": false
+    },
+    {
+      "category": "contacts_or_channels",
+      "file": "SECURITY.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/SECURITY.md",
+      "excerpt": "### Maintainer GHSA Updates via CLI",
+      "ambiguous": false
+    },
+    {
+      "category": "ambiguous",
+      "file": "SECURITY.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/SECURITY.md",
+      "excerpt": "- Using OpenClaw in ways that the docs recommend not to - Test-only code and maintainer harnesses, including QA Lab, QE Lab, E2E fixtures, benchmark rigs, smoke-test containers, and local debugging proxies, unless the report demonstrates that the same vulnerable",
+      "ambiguous": true
+    },
+    {
+      "category": "ai_assistance_policy",
+      "file": "SECURITY.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/SECURITY.md",
+      "excerpt": "- If multiple people can message the same tool-enabled agent (for example a shared Slack workspace), they can all steer that agent within its granted permissions. - Non-owner sender status only affects owner-only tools/commands. If a non-owner",
+      "ambiguous": false
+    },
+    {
+      "category": "ai_assistance_policy",
+      "file": "SECURITY.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/SECURITY.md",
+      "excerpt": "- **Trigger authorization**: who can trigger the agent (`dmPolicy`, `groupPolicy`, allowlists, mention gates) - **Context visibility**: what supplemental context is provided to the model (reply body, quoted text, thread history, forwarded metadata)",
+      "ambiguous": false
+    },
+    {
+      "category": "contacts_or_channels",
+      "file": "SECURITY.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/SECURITY.md",
+      "excerpt": "owner-style command access. They do not guarantee universal supplemental-context redaction across every channel/surface.",
+      "ambiguous": false
+    },
+    {
+      "category": "contacts_or_channels",
+      "file": "SECURITY.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/SECURITY.md",
+      "excerpt": "Current channel behavior is not fully uniform:",
+      "ambiguous": false
+    },
+    {
+      "category": "ai_assistance_policy",
+      "file": "SECURITY.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/SECURITY.md",
+      "excerpt": "### Agent and Model Assumptions",
+      "ambiguous": false
+    },
+    {
+      "category": "ai_assistance_policy",
+      "file": "SECURITY.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/SECURITY.md",
+      "excerpt": "- The model/agent is **not** a trusted principal. Assume prompt/content injection can manipulate behavior. - Security boundaries come from host/config trust, auth, tool policy, sandboxing, and exec approvals. - Prompt",
+      "ambiguous": false
+    },
+    {
+      "category": "contacts_or_channels",
+      "file": "SECURITY.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/SECURITY.md",
+      "excerpt": "points: - temp root resolver: `src/infra/tmp-openclaw-dir.ts` - SDK temp helpers: `src/plugin-sdk/temp-path.ts` - messaging/channel tmp guardrail: `scripts/check-no-random-messaging-tmp.mjs`",
+      "ambiguous": false
+    },
+    {
+      "category": "ai_assistance_policy",
+      "file": "SECURITY.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/SECURITY.md",
+      "excerpt": "#### Sub-Agent Delegation Hardening",
+      "ambiguous": false
+    },
+    {
+      "category": "pr_caps_or_rate_limits",
+      "file": "SECURITY.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/SECURITY.md",
+      "excerpt": "surface 2. Use `--read-only` flag when possible for additional filesystem protection 3. Limit container capabilities with `--cap-drop=ALL`",
+      "ambiguous": false
+    },
+    {
+      "category": "pr_caps_or_rate_limits",
+      "file": "SECURITY.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/SECURITY.md",
+      "excerpt": "```bash docker run --read-only --cap-drop=ALL \\ -v openclaw-data:/app/data \\ openclaw/openclaw:latest ```",
+      "ambiguous": false
+    },
+    {
+      "category": "evidence_requirements",
+      "file": "SECURITY.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/SECURITY.md",
+      "excerpt": "hook in CI and keeps secret-resolution behavior covered by the dedicated secrets test surface.",
+      "ambiguous": false
+    },
+    {
+      "category": "evidence_requirements",
+      "file": "SECURITY.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/SECURITY.md",
+      "excerpt": "- `pnpm test:e2e` for repo E2E coverage. - `pnpm test:live` for live provider/runtime coverage. - `pnpm test:docker:all` for Docker-packaged runtime scenarios. - Package acceptance and scheduled live/E2E workflows for release-path",
+      "ambiguous": false
+    },
+    {
+      "category": "evidence_requirements",
+      "file": "SECURITY.md",
+      "url": "https://github.com/openclaw/openclaw/blob/main/SECURITY.md",
+      "excerpt": "packaged installs, gateway/runtime behavior, live model/provider paths, Docker scenarios, and platform smoke tests. They complement scanners by proving the security-sensitive flows still behave correctly in real runtime environments.",
       "ambiguous": false
     }
   ],
@@ -141,5 +435,5 @@
     "policy extraction is keyword and heading based; ambiguous sections are reported rather than inferred."
   ],
   "cached": false,
-  "fetched_at": "2026-07-08T21:15:23.281Z"
+  "fetched_at": "2026-07-08T22:05:45.367Z"
 }

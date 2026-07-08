@@ -18,7 +18,7 @@
     "policy extraction is keyword and heading based; ambiguous sections are reported rather than inferred."
   ],
   "cached": false,
-  "fetched_at": "2026-07-08T21:15:52.683Z",
+  "fetched_at": "2026-07-08T22:05:51.411Z",
   "verdict": "SKIP",
   "reasons": [
     "branch_scan: in_flight"
@@ -43,77 +43,77 @@
           },
           {
             "tree_matches": [
-              ".vscode/tasks.json",
               "apps/code/public/hedgehog-mode/sprites.json",
               "apps/code/public/hedgehog-mode/sprites.png",
               "apps/code/src/renderer/features/dev-toolbar/devModeBoot.ts",
-              "apps/code/src/renderer/features/task-detail/components/TaskInput.css",
               "apps/code/src/renderer/platform-adapters/hedgehog-mode-host.ts",
-              "apps/code/src/renderer/platform-adapters/task-deletion.ts",
-              "apps/mobile/src/app/(tabs)/tasks.tsx",
-              "apps/mobile/src/app/task/[id].tsx",
-              "apps/mobile/src/app/task/index.tsx",
-              "apps/mobile/src/features/inbox/components/ArtefactTaskRun.tsx",
-              "apps/mobile/src/features/tasks/api.automations.test.ts",
-              "apps/mobile/src/features/tasks/api.test.ts",
-              "apps/mobile/src/features/tasks/api.ts",
-              "apps/mobile/src/features/tasks/api.warm.test.ts",
-              "apps/mobile/src/features/tasks/components/AutomationDetail.tsx",
-              "apps/mobile/src/features/tasks/components/AutomationForm.test.tsx",
-              "apps/mobile/src/features/tasks/components/AutomationForm.tsx",
-              "apps/mobile/src/features/tasks/components/AutomationItem.tsx",
-              "apps/mobile/src/features/tasks/components/AutomationList.tsx",
-              "apps/mobile/src/features/tasks/components/AutomationSkillCard.test.tsx",
-              "apps/mobile/src/features/tasks/components/AutomationSkillCard.tsx",
-              "apps/mobile/src/features/tasks/components/AutomationSkillChooser.test.tsx",
-              "apps/mobile/src/features/tasks/components/AutomationSkillChooser.tsx",
-              "apps/mobile/src/features/tasks/components/AutomationStatusBadge.test.tsx",
-              "apps/mobile/src/features/tasks/components/AutomationStatusBadge.tsx",
-              "apps/mobile/src/features/tasks/components/CreateAutomationScreen.test.tsx",
-              "apps/mobile/src/features/tasks/components/FileDiff.tsx",
-              "apps/mobile/src/features/tasks/components/FloatingAutomationsHeader.tsx",
-              "apps/mobile/src/features/tasks/components/FloatingNewAutomationButton.tsx",
-              "apps/mobile/src/features/tasks/components/FloatingNewTaskButton.tsx",
-              "apps/mobile/src/features/tasks/components/FloatingTaskHeader.tsx",
-              "apps/mobile/src/features/tasks/components/FloatingTasksHeader.tsx",
-              "apps/mobile/src/features/tasks/components/GitHubConnectionPrompt.tsx",
-              "apps/mobile/src/features/tasks/components/GitHubLoadNotice.tsx",
-              "apps/mobile/src/features/tasks/components/PendingPromptRecovery.test.tsx",
-              "apps/mobile/src/features/tasks/components/PendingPromptRecovery.tsx",
-              "apps/mobile/src/features/tasks/components/PlanApprovalCard.test.tsx",
-              "apps/mobile/src/features/tasks/components/PlanApprovalCard.tsx",
-              "apps/mobile/src/features/tasks/components/PlanStatusBar.tsx",
-              "apps/mobile/src/features/tasks/components/PrDiffStatsBadge.tsx",
-              "apps/mobile/src/features/tasks/components/PrStatusBadge.test.tsx",
-              "apps/mobile/src/features/tasks/components/PrStatusBadge.tsx",
-              "apps/mobile/src/features/tasks/components/QuestionCard.tsx",
-              "apps/mobile/src/features/tasks/components/ScheduleEditor.tsx",
-              "apps/mobile/src/features/tasks/components/SwipeableTaskItem.tsx",
-              "apps/mobile/src/features/tasks/components/TaskFilterMenu.tsx",
-              "apps/mobile/src/features/tasks/components/TaskItem.test.tsx",
-              "apps/mobile/src/features/tasks/components/TaskItem.tsx",
-              "apps/mobile/src/features/tasks/components/TaskList.tsx"
+              "apps/mobile/src/features/tasks/hooks/useMessagingMode.ts",
+              "apps/mobile/src/features/tasks/stores/messagingModeStore.test.ts",
+              "apps/mobile/src/features/tasks/stores/messagingModeStore.ts",
+              "packages/agent/src/adapters/claude/claude-agent.resume-model.test.ts",
+              "packages/agent/src/adapters/claude/session/model-config.test.ts",
+              "packages/agent/src/adapters/claude/session/model-config.ts",
+              "packages/agent/src/adapters/claude/session/models.test.ts",
+              "packages/agent/src/adapters/claude/session/models.ts",
+              "packages/agent/src/adapters/codex-app-server/models.test.ts",
+              "packages/agent/src/adapters/codex-app-server/models.ts",
+              "packages/agent/src/execution-mode.test.ts",
+              "packages/agent/src/execution-mode.ts",
+              "packages/agent/src/gateway-models.test.ts",
+              "packages/agent/src/gateway-models.ts",
+              "packages/core/src/billing/spendSuggestions.ts",
+              "packages/core/src/sessions/executionModes.ts",
+              "packages/core/src/sidebar/filterByWorkspaceMode.test.ts",
+              "packages/core/src/sleep/identifiers.ts",
+              "packages/core/src/sleep/sleep.test.ts",
+              "packages/core/src/sleep/sleep.ts",
+              "packages/harness/src/extensions/posthog-provider/models.test.ts",
+              "packages/harness/src/extensions/posthog-provider/models.ts",
+              "packages/host-router/src/routers/sleep.router.ts",
+              "packages/shared/src/execution-modes.ts",
+              "packages/ui/src/features/agent-applications/components/AgentModelConfig.tsx",
+              "packages/ui/src/features/agent-applications/hooks/useModelCatalog.ts",
+              "packages/ui/src/features/autoresearch/stageModels.tsx",
+              "packages/ui/src/features/inbox/hooks/resolveDefaultModel.ts",
+              "packages/ui/src/features/mcp-servers/components/parts/McpInstalledRail.tsx",
+              "packages/ui/src/features/message-editor/components/ModeSelector.tsx",
+              "packages/ui/src/features/permissions/SwitchModePermission.tsx",
+              "packages/ui/src/features/sessions/components/ModelSelector.tsx",
+              "packages/ui/src/features/sessions/components/UnifiedModelSelector.test.tsx",
+              "packages/ui/src/features/sessions/components/UnifiedModelSelector.tsx",
+              "packages/ui/src/features/sessions/hooks/useMessagingMode.ts",
+              "packages/ui/src/features/sessions/hooks/useToggleMessagingMode.ts",
+              "packages/ui/src/features/sessions/messagingModeStore.test.ts",
+              "packages/ui/src/features/sessions/messagingModeStore.ts",
+              "packages/ui/src/features/sessions/modeStyles.tsx",
+              "packages/ui/src/features/sessions/modelOptionFilters.ts",
+              "packages/ui/src/features/settings/devModeClient.ts",
+              "packages/ui/src/features/task-detail/components/WorkspaceModeBadge.tsx",
+              "packages/ui/src/features/task-detail/components/WorkspaceModeSelect.tsx",
+              "packages/ui/src/features/usage/components/ModelBreakdownCards.tsx",
+              "packages/ui/src/shell/HedgehogMode.test.tsx",
+              "packages/ui/src/shell/HedgehogMode.tsx"
             ]
           },
           {
             "grep_matches": [
               {
                 "path": ".claude/skills/canvas-templates/SKILL.md",
-                "line": 18,
-                "term": "state",
-                "sample": "| **json-render** | `\"json-render\"` | JSONL patches against a component catalog | `ViewRenderer` (Quill component tree) | `state.queries` HogQL, re-run by `dashboardsService` on refresh |"
-              },
-              {
-                "path": ".claude/skills/canvas-templates/SKILL.md",
-                "line": 24,
-                "term": "keep",
-                "sample": "Legacy canvases created before a template moved tiers keep their stored `kind` -"
+                "line": 8,
+                "term": "there",
+                "sample": "PostHog \"canvases\" are agent-built dashboards/apps. There are **two rendering"
               },
               {
                 "path": ".claude/skills/canvas-templates/SKILL.md",
                 "line": 25,
-                "term": "keep",
+                "term": "working",
                 "sample": "**there is no migration**, so both renderers must keep working."
+              },
+              {
+                "path": ".claude/skills/canvas-templates/SKILL.md",
+                "line": 29,
+                "term": "behavior",
+                "sample": "  per-template rules. This is where you steer agent behavior. Two prompt families:"
               },
               {
                 "path": ".claude/skills/canvas-templates/SKILL.md",
@@ -123,21 +123,9 @@
               },
               {
                 "path": ".claude/skills/canvas-templates/SKILL.md",
-                "line": 53,
-                "term": "break",
-                "sample": "  UI exactly** (sessionization, unique users, breakdowns, math, bounce rate) and"
-              },
-              {
-                "path": ".claude/skills/canvas-templates/SKILL.md",
                 "line": 65,
                 "term": "ends",
                 "sample": "> - Typed node (TrendsQuery/etc.) → `results` is an array of **series objects**"
-              },
-              {
-                "path": ".claude/skills/canvas-templates/SKILL.md",
-                "line": 72,
-                "term": "running",
-                "sample": "> and rendered all-zeros despite the query running fine."
               },
               {
                 "path": ".claude/skills/canvas-templates/SKILL.md",
@@ -147,15 +135,27 @@
               },
               {
                 "path": ".claude/skills/canvas-templates/SKILL.md",
-                "line": 109,
-                "term": "state",
-                "sample": "it drove json-render `state.queries`, see `WebsiteLayout.tsx`). The agent renders"
+                "line": 104,
+                "term": "there",
+                "sample": "> an allowlist and the canvas references them by id. Implement it there, not in edit."
               },
               {
                 "path": ".claude/skills/canvas-templates/SKILL.md",
-                "line": 148,
-                "term": "running",
-                "sample": "Then **verify in the running app** - most of this tier (sandbox styling, the data"
+                "line": 128,
+                "term": "there",
+                "sample": "the Quill version is `QUILL_VERSION` there (must match the CSS `<link>` URLs)."
+              },
+              {
+                "path": ".claude/skills/merging-prs/SKILL.md",
+                "line": 3,
+                "term": "failed",
+                "sample": "description: Merge a PR into main through the Trunk merge queue and babysit it until it lands. Enqueue with a \"/trunk merge\" comment, then poll the \"Trunk Merge Queue\" check run and the PR state until"
+              },
+              {
+                "path": ".claude/skills/merging-prs/SKILL.md",
+                "line": 4,
+                "term": "sleep",
+                "sample": "allowed-tools: Bash(gh pr view:*), Bash(gh pr checks:*), Bash(gh pr comment:*), Bash(gh pr ready:*), Bash(gh api:*), Bash(sleep:*)"
               }
             ]
           }
@@ -170,448 +170,21 @@
           "directory or string existence does not prove the issue's intent is satisfied; read both before making any public claim."
         ],
         "cached": false,
-        "fetched_at": "2026-07-08T21:15:27.459Z"
+        "fetched_at": "2026-07-08T22:05:48.601Z"
       }
     },
     {
       "name": "branch_scan",
       "ok": true,
       "result": {
-        "verdict_summary": "recent in-flight work found in 62 matching branches.",
+        "verdict_summary": "recent in-flight work found in 1 matching branch.",
         "evidence": [
-          {
-            "branch": "01-12-set-mode-to-acceptedits-when-always-allow-is-selec",
-            "sha": "e66fdc7b8fa0577384d0d070ba160bee1bb24344",
-            "url": "https://github.com/PostHog/code/commit/e66fdc7b8fa0577384d0d070ba160bee1bb24344",
-            "date": "2026-01-12T09:27:50Z",
-            "subject": "Update apps/array/src/renderer/features/sessions/components/SessionView.tsx"
-          },
-          {
-            "branch": "03-04-auto-regenerate_task_titles_during_conversation",
-            "sha": "0aa04cf3b7846fdfc4ff384001cf40b41e780e7b",
-            "url": "https://github.com/PostHog/code/commit/0aa04cf3b7846fdfc4ff384001cf40b41e780e7b",
-            "date": "2026-03-04T23:20:21Z",
-            "subject": "Auto-regenerate task titles during conversation"
-          },
-          {
-            "branch": "03-16-fix_code_fix_input_bleeding_between_command_center_tasks",
-            "sha": "ca43354263236f49f929936d17fd41f91060ce21",
-            "url": "https://github.com/PostHog/code/commit/ca43354263236f49f929936d17fd41f91060ce21",
-            "date": "2026-03-16T17:55:38Z",
-            "subject": "fix(code): fix input bleeding between command center tasks"
-          },
-          {
-            "branch": "03-26-feat_code_add_1_1_task_branch_mapping",
-            "sha": "3e816e87973f28e1482823bd40b3a500169df373",
-            "url": "https://github.com/PostHog/code/commit/3e816e87973f28e1482823bd40b3a500169df373",
-            "date": "2026-03-26T22:05:34Z",
-            "subject": "feat(code): add 1:1 task:branch mapping"
-          },
-          {
-            "branch": "05-20-feat_code_remove_suggested_tasks_from_inbox",
-            "sha": "a2d1f3a0189875ba4e5157f23b7bd99c7fa0f1cc",
-            "url": "https://github.com/PostHog/code/commit/a2d1f3a0189875ba4e5157f23b7bd99c7fa0f1cc",
-            "date": "2026-05-20T17:05:16Z",
-            "subject": "feat(code): remove suggested tasks from inbox"
-          },
-          {
-            "branch": "06-09-feat_code_suggest_pr_work_items_on_new_task_page",
-            "sha": "d8f6a9dd88f8a2db3c187684812be79c130b50cd",
-            "url": "https://github.com/PostHog/code/commit/d8f6a9dd88f8a2db3c187684812be79c130b50cd",
-            "date": "2026-06-09T17:40:25Z",
-            "subject": "feat(code): suggest PR work items on new task page"
-          },
-          {
-            "branch": "07-02-feat_code_multi-repo_support_for_cloud_tasks",
-            "sha": "e2f3713e4cb89e875986ad4ac65396f7f1b10d88",
-            "url": "https://github.com/PostHog/code/commit/e2f3713e4cb89e875986ad4ac65396f7f1b10d88",
-            "date": "2026-07-02T17:06:56Z",
-            "subject": "feat(code): multi-repo support for cloud tasks"
-          },
-          {
-            "branch": "bluebird/fix-canvas-tasks-loading",
-            "sha": "a747ca06c687db4d562edd8f92b6886bbc9d6ff9",
-            "url": "https://github.com/PostHog/code/commit/a747ca06c687db4d562edd8f92b6886bbc9d6ff9",
-            "date": "2026-06-22T13:48:47Z",
-            "subject": "fix(canvas): stop perpetual loading when cloud run status lags"
-          },
-          {
-            "branch": "cat/deeplink-prefill-task",
-            "sha": "2122ce3b9968e2b8076e1fcc262e9f6c5114c74f",
-            "url": "https://github.com/PostHog/code/commit/2122ce3b9968e2b8076e1fcc262e9f6c5114c74f",
-            "date": "2026-05-21T15:51:33Z",
-            "subject": "feat: prefill new task from deep link"
-          },
-          {
-            "branch": "chore/config-housekeeping",
-            "sha": "df24d51276a72ef0123ae83bf55066da382f0972",
-            "url": "https://github.com/PostHog/code/commit/df24d51276a72ef0123ae83bf55066da382f0972",
-            "date": "2025-09-30T12:09:13Z",
-            "subject": "chore: config housekeeping"
-          },
-          {
-            "branch": "christian/branching-tasks",
-            "sha": "0507b729a8dcd8b67c86f2ebd149e2dfef81e6cb",
-            "url": "https://github.com/PostHog/code/commit/0507b729a8dcd8b67c86f2ebd149e2dfef81e6cb",
-            "date": "2026-05-22T14:59:15Z",
-            "subject": "bot suggestions"
-          },
-          {
-            "branch": "codex/hackathon-mobile-task-automations",
-            "sha": "7e51607ae5ede32e5c1b0d55b8db185cce81db4f",
-            "url": "https://github.com/PostHog/code/commit/7e51607ae5ede32e5c1b0d55b8db185cce81db4f",
-            "date": "2026-05-13T22:22:31Z",
-            "subject": "Merge remote-tracking branch 'origin/main' into codex/hackathon-mobile-task-automations"
-          },
-          {
-            "branch": "dmarticus/mobile-task-presence",
-            "sha": "6bf7cb1f5dab03da73370be2e0d36af79f3172ea",
-            "url": "https://github.com/PostHog/code/commit/6bf7cb1f5dab03da73370be2e0d36af79f3172ea",
-            "date": "2026-05-24T19:33:34Z",
-            "subject": "feat(mobile): beacon task presence to suppress cross-device push fanout"
-          },
-          {
-            "branch": "feat/cloud-agent/local-skill-to-sandbox",
-            "sha": "9a1a7aaa420df52ea55ef28e019f06d42dfe7a1f",
-            "url": "https://github.com/PostHog/code/commit/9a1a7aaa420df52ea55ef28e019f06d42dfe7a1f",
-            "date": "2026-06-24T16:46:29Z",
-            "subject": "fix(tasks): share skill tag parsing"
-          },
-          {
-            "branch": "feat/notetaker-task-extraction",
-            "sha": "b6ce79da8107f3da82476cb7b2708763206919a2",
-            "url": "https://github.com/PostHog/code/commit/b6ce79da8107f3da82476cb7b2708763206919a2",
-            "date": "2025-10-27T16:52:07Z",
-            "subject": "fix: store extracted tasks per-recording in backend"
-          },
-          {
-            "branch": "feat/twig/local-runs-task-progress",
-            "sha": "ae8aa9d08c41e7d898c09e31a46433951119de5e",
-            "url": "https://github.com/PostHog/code/commit/ae8aa9d08c41e7d898c09e31a46433951119de5e",
-            "date": "2026-02-17T15:53:20Z",
-            "subject": "Merge branch 'main' into feat/twig/local-runs-task-progress"
-          },
-          {
-            "branch": "fix/cloud-task-session-log-page-size",
-            "sha": "175a91bea14ca55273fe2de9b3c87819f1c3d6cd",
-            "url": "https://github.com/PostHog/code/commit/175a91bea14ca55273fe2de9b3c87819f1c3d6cd",
-            "date": "2026-06-30T15:16:38Z",
-            "subject": "fix(cloud-task): lower session-log history page request size"
-          },
-          {
-            "branch": "fix/interrupted-task-creation",
-            "sha": "5fa4864d0ee4d608a55645614f0535041cd5a6c8",
-            "url": "https://github.com/PostHog/code/commit/5fa4864d0ee4d608a55645614f0535041cd5a6c8",
-            "date": "2026-07-02T21:07:17Z",
-            "subject": "share session service test harness"
-          },
-          {
-            "branch": "fix/task-pr-status-ipc-storm",
-            "sha": "08d05111d8bcd11102f36ce7bd1fb0b60379e6e5",
-            "url": "https://github.com/PostHog/code/commit/08d05111d8bcd11102f36ce7bd1fb0b60379e6e5",
-            "date": "2026-05-20T21:39:04Z",
-            "subject": "fix(code): reduce window minWidth from 1200 to 800 (#2261)"
-          },
-          {
-            "branch": "perf/faster-task-open",
-            "sha": "58e5936ce22b9b92ac3fe26eb2a1d638acac010f",
-            "url": "https://github.com/PostHog/code/commit/58e5936ce22b9b92ac3fe26eb2a1d638acac010f",
-            "date": "2026-07-01T23:18:15Z",
-            "subject": "perf(sessions): seek real content in the fast tail paint on open"
-          },
-          {
-            "branch": "perf/memoize-task-list-rows",
-            "sha": "832f4c25aadad22ee02bdbac6ff2ee82d8e26f79",
-            "url": "https://github.com/PostHog/code/commit/832f4c25aadad22ee02bdbac6ff2ee82d8e26f79",
-            "date": "2026-06-20T20:19:15Z",
-            "subject": "test(sidebar): pin \"only 2 of N rows re-render on active-task change\""
-          },
-          {
-            "branch": "posthog-code/adaptive-task-list-polling",
-            "sha": "c47f2c26ed6ea9c6a7c60bd5220869e5d1bcfb10",
-            "url": "https://github.com/PostHog/code/commit/c47f2c26ed6ea9c6a7c60bd5220869e5d1bcfb10",
-            "date": "2026-05-24T13:16:57Z",
-            "subject": "fix(tasks): adaptive visibility-aware polling for cloud task list"
-          },
-          {
-            "branch": "posthog-code/channel-rename-delete-task-sync",
-            "sha": "a7483f17c6012b46092cc428f340e647ebef5f2e",
-            "url": "https://github.com/PostHog/code/commit/a7483f17c6012b46092cc428f340e647ebef5f2e",
-            "date": "2026-07-08T12:45:29Z",
-            "subject": "test(channels): lift taskChannel factory, note getTasks 500 cap"
-          },
-          {
-            "branch": "posthog-code/channels-recent-tasks",
-            "sha": "8b44290ba2fea7e37e13ea84ce97e20b630ef286",
-            "url": "https://github.com/PostHog/code/commit/8b44290ba2fea7e37e13ea84ce97e20b630ef286",
-            "date": "2026-06-30T12:38:29Z",
-            "subject": "Add \"Recent tasks\" nav item to Channels space"
-          },
-          {
-            "branch": "posthog-code/ci-test-break",
-            "sha": "95eda5437104125bde2d9d8faf340a3c998ded71",
-            "url": "https://github.com/PostHog/code/commit/95eda5437104125bde2d9d8faf340a3c998ded71",
-            "date": "2026-06-24T18:31:41Z",
-            "subject": "test: add README comment and deliberate type error to exercise CI"
-          },
-          {
-            "branch": "posthog-code/ci-test-break-fix",
-            "sha": "cb46fb3ccdd8be7b362b01de2304416ef11aeb61",
-            "url": "https://github.com/PostHog/code/commit/cb46fb3ccdd8be7b362b01de2304416ef11aeb61",
-            "date": "2026-06-25T07:21:41Z",
-            "subject": "fix: remove deliberate type error and superfluous README comment"
-          },
-          {
-            "branch": "posthog-code/cli-for-new-tasks",
-            "sha": "5204be6ebbca6365e31e0358900e7568c28d14f1",
-            "url": "https://github.com/PostHog/code/commit/5204be6ebbca6365e31e0358900e7568c28d14f1",
-            "date": "2026-05-06T12:53:48Z",
-            "subject": "feat(code): add posthog-code CLI to start tasks from terminal"
-          },
-          {
-            "branch": "posthog-code/context-breakdown-data",
-            "sha": "80a75e824de3495a6a6c63c3f98b1179d4f91036",
-            "url": "https://github.com/PostHog/code/commit/80a75e824de3495a6a6c63c3f98b1179d4f91036",
-            "date": "2026-05-25T11:26:25Z",
-            "subject": "feat(agent): emit per-category context token breakdown"
-          },
-          {
-            "branch": "posthog-code/context-breakdown-fill-categories",
-            "sha": "b7de4cf4662d7ce3a0f80e38761962ec7ca97126",
-            "url": "https://github.com/PostHog/code/commit/b7de4cf4662d7ce3a0f80e38761962ec7ca97126",
-            "date": "2026-05-25T16:19:05Z",
-            "subject": "feat(agent): fill Skills/MCP/Rules categories in context breakdown"
-          },
-          {
-            "branch": "posthog-code/context-breakdown-popover",
-            "sha": "da7e14b603b9d85da22f55e6b1c57b58c96c2ca9",
-            "url": "https://github.com/PostHog/code/commit/da7e14b603b9d85da22f55e6b1c57b58c96c2ca9",
-            "date": "2026-05-25T11:33:46Z",
-            "subject": "feat(sessions): context breakdown popover"
-          },
-          {
-            "branch": "posthog-code/deep-link-new-task-prompt",
-            "sha": "ab6fcf98598ce9b22c2025f7c07300523592f750",
-            "url": "https://github.com/PostHog/code/commit/ab6fcf98598ce9b22c2025f7c07300523592f750",
-            "date": "2026-05-05T00:33:35Z",
-            "subject": "feat(deep-link): add posthog-code://new?prompt=… for prefilled task input"
-          },
-          {
-            "branch": "posthog-code/default-file-tasks-to-me",
-            "sha": "5547818eb85b5be8b0dfa9b987717e539114234d",
-            "url": "https://github.com/PostHog/code/commit/5547818eb85b5be8b0dfa9b987717e539114234d",
-            "date": "2026-07-08T14:30:14Z",
-            "subject": "feat(channels): default-file channel-less tasks into #me"
-          },
-          {
-            "branch": "posthog-code/fix-new-task-cloud-repo-preselect",
-            "sha": "7aa57858c1afd3f21d706f37d57738862f32211c",
-            "url": "https://github.com/PostHog/code/commit/7aa57858c1afd3f21d706f37d57738862f32211c",
-            "date": "2026-05-22T10:13:45Z",
-            "subject": "refactor(sidebar): apply Greptile review feedback"
-          },
-          {
-            "branch": "posthog-code/fix-new-task-prefill-project-repo",
-            "sha": "1c9ae132ba2b242777c33ac755799c593807e6de",
-            "url": "https://github.com/PostHog/code/commit/1c9ae132ba2b242777c33ac755799c593807e6de",
-            "date": "2026-05-18T11:41:26Z",
-            "subject": "fix(task-input): also prefill cloud repo from clicked project's folder"
-          },
-          {
-            "branch": "posthog-code/fix-stale-cloud-task-status-on-watcher-fail",
-            "sha": "7f16621ef53f1b12fddae0055de41014e1707b2f",
-            "url": "https://github.com/PostHog/code/commit/7f16621ef53f1b12fddae0055de41014e1707b2f",
-            "date": "2026-05-18T19:11:11Z",
-            "subject": "fix(cloud-task): refresh run status before emitting watcher error"
-          },
-          {
-            "branch": "posthog-code/fix-untitled-task-on-paste",
-            "sha": "efcf493f716727ffdfa1d3882f6f1bd74e99423e",
-            "url": "https://github.com/PostHog/code/commit/efcf493f716727ffdfa1d3882f6f1bd74e99423e",
-            "date": "2026-05-04T21:16:06Z",
-            "subject": "chore(code): merge main into PR branch"
-          },
-          {
-            "branch": "posthog-code/local-first-refactor",
-            "sha": "ff93cae567cfb6638127ac943119b1062602d199",
-            "url": "https://github.com/PostHog/code/commit/ff93cae567cfb6638127ac943119b1062602d199",
-            "date": "2026-07-06T14:03:00Z",
-            "subject": "feat(local-first): cutover - channels pools, offline banner, sync inspector, gate, integration suite"
-          },
-          {
-            "branch": "posthog-code/local-mcp-classification",
-            "sha": "4a58aa5ec8241fc27e8b94bdbd3369a4bc5a3c85",
-            "url": "https://github.com/PostHog/code/commit/4a58aa5ec8241fc27e8b94bdbd3369a4bc5a3c85",
-            "date": "2026-07-07T14:33:14Z",
-            "subject": "test(local-mcp): cover the bare .home private-host suffix"
-          },
-          {
-            "branch": "posthog-code/long-running-task",
-            "sha": "fa85fa1b4d6bb5698ccfb3c13ce3772c24d49b95",
-            "url": "https://github.com/PostHog/code/commit/fa85fa1b4d6bb5698ccfb3c13ce3772c24d49b95",
-            "date": "2026-05-20T21:35:00Z",
-            "subject": "feat(agent): mirror long-running task loop in codex adapter"
-          },
-          {
-            "branch": "posthog-code/mobile-no-false-task-failed-notifications",
-            "sha": "4e743f3e17df3dc4494169d5a61d36efdbfb9e4d",
-            "url": "https://github.com/PostHog/code/commit/4e743f3e17df3dc4494169d5a61d36efdbfb9e4d",
-            "date": "2026-06-02T11:33:04Z",
-            "subject": "fix(mobile): stop false \"task failed\" notifications for stale/cancelled runs"
-          },
-          {
-            "branch": "posthog-code/mobile-task-origin-icons",
-            "sha": "66def44301aad44a7149f30b6deff21b6c7baafd",
-            "url": "https://github.com/PostHog/code/commit/66def44301aad44a7149f30b6deff21b6c7baafd",
-            "date": "2026-07-06T10:55:23Z",
-            "subject": "feat(mobile): brand task list rows by origin (port #3090)"
-          },
-          {
-            "branch": "posthog-code/move-new-task-to-tab-bar",
-            "sha": "7dd9fb8d90521ef006191ece4c0bb7a790d8f2e5",
-            "url": "https://github.com/PostHog/code/commit/7dd9fb8d90521ef006191ece4c0bb7a790d8f2e5",
-            "date": "2026-05-13T19:03:04Z",
-            "subject": "fix(mobile): address CI + review feedback on tab-bar new-task button"
-          },
-          {
-            "branch": "posthog-code/polish-task-loading-state",
-            "sha": "bee640b12052482d4407457f9a939bca35f3106a",
-            "url": "https://github.com/PostHog/code/commit/bee640b12052482d4407457f9a939bca35f3106a",
-            "date": "2026-05-22T20:56:55Z",
-            "subject": "render skeleton inside conversation slot so input/footer stay mounted"
-          },
-          {
-            "branch": "posthog-code/poll-tasks-while-visible",
-            "sha": "2846cea0743fa982e16d23e1817c299096e67404",
-            "url": "https://github.com/PostHog/code/commit/2846cea0743fa982e16d23e1817c299096e67404",
-            "date": "2026-05-26T10:57:34Z",
-            "subject": "Merge branch 'main' into posthog-code/poll-tasks-while-visible"
-          },
-          {
-            "branch": "posthog-code/prefill-newtask-repo-from-sidebar-plus",
-            "sha": "c78c485b51a4fa3876426eaaa513cd6121ee7a43",
-            "url": "https://github.com/PostHog/code/commit/c78c485b51a4fa3876426eaaa513cd6121ee7a43",
-            "date": "2026-06-16T13:19:44Z",
-            "subject": "fix(task-input): prefill repo from sidebar \"+\" in both local and cloud modes"
-          },
-          {
-            "branch": "posthog-code/preselect-cloud-repo-new-task",
-            "sha": "85e3cc2ca6c3adec2063a4e73afd61f5b1280749",
-            "url": "https://github.com/PostHog/code/commit/85e3cc2ca6c3adec2063a4e73afd61f5b1280749",
-            "date": "2026-06-22T20:57:10Z",
-            "subject": "fix(sidebar): preselect cloud repository when creating task from repo group"
-          },
-          {
-            "branch": "posthog-code/recent-tasks-nav",
-            "sha": "eff121093ad3051ad9ff0cfed7b7846a765d487f",
-            "url": "https://github.com/PostHog/code/commit/eff121093ad3051ad9ff0cfed7b7846a765d487f",
-            "date": "2026-06-30T16:04:16Z",
-            "subject": "fix(channels): biome-format the 0017 migration snapshot"
-          },
           {
             "branch": "posthog-code/recover-sleep-interrupted-turns",
             "sha": "8ba042a454cc45908087044f943506b76710634a",
             "url": "https://github.com/PostHog/code/commit/8ba042a454cc45908087044f943506b76710634a",
             "date": "2026-07-05T19:19:29Z",
             "subject": "fix(sessions): address review feedback on sleep-recovery logging and test"
-          },
-          {
-            "branch": "posthog-code/scope-task-suggestions-by-repo",
-            "sha": "0c77b6ca3e1909a88f761609cbde998d6fb3b595",
-            "url": "https://github.com/PostHog/code/commit/0c77b6ca3e1909a88f761609cbde998d6fb3b595",
-            "date": "2026-05-20T15:57:36Z",
-            "subject": "chore(code): fix biome formatting on enricher suggestion call"
-          },
-          {
-            "branch": "posthog-code/show-cloud-tasks-without-workspace",
-            "sha": "eba68ba33e45e8651f7e10a68f4292a893b071df",
-            "url": "https://github.com/PostHog/code/commit/eba68ba33e45e8651f7e10a68f4292a893b071df",
-            "date": "2026-05-10T10:36:34Z",
-            "subject": "fix(code): show user's cloud-only tasks in desktop sidebar"
-          },
-          {
-            "branch": "posthog-code/tray-running-agent-badge",
-            "sha": "4056b7375323fd9616aeca51f5d74d3981747d1d",
-            "url": "https://github.com/PostHog/code/commit/4056b7375323fd9616aeca51f5d74d3981747d1d",
-            "date": "2026-05-26T23:27:37Z",
-            "subject": "fix(code): invert tray template silhouette"
-          },
-          {
-            "branch": "posthog-code/web-host-cloud-tasks-auth",
-            "sha": "45ac440e5fb96a0ae1d9411f8255c016b6535af2",
-            "url": "https://github.com/PostHog/code/commit/45ac440e5fb96a0ae1d9411f8255c016b6535af2",
-            "date": "2026-07-08T20:31:02Z",
-            "subject": "feat(web): bind the post-login task + shell services for the web host"
-          },
-          {
-            "branch": "posthog/task-2348a2cd-5fd7-4637-91d9-1b7f6957cbfc-implementation",
-            "sha": "a2eefd4fdc6aa62a391ae48ab2323a6c2e12e1e6",
-            "url": "https://github.com/PostHog/code/commit/a2eefd4fdc6aa62a391ae48ab2323a6c2e12e1e6",
-            "date": "2025-10-10T05:42:21Z",
-            "subject": "✨ Implement task: Repo selection failed with no intergrations"
-          },
-          {
-            "branch": "posthog/task-883244c9-ffec-4a24-ba25-e4c71960fde2-implementation",
-            "sha": "9a7e58f658517a24d752153dac699f1b1663eeb6",
-            "url": "https://github.com/PostHog/code/commit/9a7e58f658517a24d752153dac699f1b1663eeb6",
-            "date": "2025-10-10T15:38:50Z",
-            "subject": "✨ Implement task: add ice cream to readme"
-          },
-          {
-            "branch": "posthog/task-DEF-1",
-            "sha": "b1d43b2974e86806b726814ff333722dbc5f9e23",
-            "url": "https://github.com/PostHog/code/commit/b1d43b2974e86806b726814ff333722dbc5f9e23",
-            "date": "2025-11-18T11:29:33Z",
-            "subject": "Implementation for Implement number key selection for question answers"
-          },
-          {
-            "branch": "posthog/task-HED-26",
-            "sha": "29a61ad7c0faf0ada7355c59557c17e8ec12792b",
-            "url": "https://github.com/PostHog/code/commit/29a61ad7c0faf0ada7355c59557c17e8ec12792b",
-            "date": "2025-10-23T23:42:40Z",
-            "subject": "Research phase for Implement auto updates for Electron app"
-          },
-          {
-            "branch": "posthog/task-cabe8ff5-bedc-4ea4-8769-0ef1a96f94ae-implementation-9",
-            "sha": "e3f2d6b87e852bb0825836d624ba4ab3f05eb3e1",
-            "url": "https://github.com/PostHog/code/commit/e3f2d6b87e852bb0825836d624ba4ab3f05eb3e1",
-            "date": "2025-10-14T15:51:40Z",
-            "subject": "feat: rich text editor with file tagging (#21)"
-          },
-          {
-            "branch": "posthog/task-dcd5fe8e-47c3-480a-b60a-459a836756df-implementation",
-            "sha": "cd4d69933a1b9edfaa74aff1f15a01f60fd7d82a",
-            "url": "https://github.com/PostHog/code/commit/cd4d69933a1b9edfaa74aff1f15a01f60fd7d82a",
-            "date": "2025-10-13T14:02:12Z",
-            "subject": "✨ Implement task: add ice cream to readme"
-          },
-          {
-            "branch": "refactor/report-task-logs-collapse",
-            "sha": "d17c72e9ee45e943fadc29c217135eca522048fb",
-            "url": "https://github.com/PostHog/code/commit/d17c72e9ee45e943fadc29c217135eca522048fb",
-            "date": "2026-04-28T18:10:20Z",
-            "subject": "fix: ensure bars sit above any TaskLogsPanel content via relative + z-index"
-          },
-          {
-            "branch": "task-2348a2cd-5fd7-4637-91d9-1b7f6957cbfc-repo-selection-faile",
-            "sha": "3db6aa37e148a83ea93d7af9e65e04658ea00559",
-            "url": "https://github.com/PostHog/code/commit/3db6aa37e148a83ea93d7af9e65e04658ea00559",
-            "date": "2025-10-10T05:39:19Z",
-            "subject": "Initial commit for task: Repo selection failed with no intergrations"
-          },
-          {
-            "branch": "tom/symlink-claude-local-md",
-            "sha": "efaf55b00eb6c77c10c8ad92e8d4f1951b6fc2f3",
-            "url": "https://github.com/PostHog/code/commit/efaf55b00eb6c77c10c8ad92e8d4f1951b6fc2f3",
-            "date": "2026-02-03T12:38:11Z",
-            "subject": "feat: Symlink CLAUDE.local.md to workspaces"
-          },
-          {
-            "branch": "vojtab/cloud-refresh-preserves-local-tools",
-            "sha": "01580bf50239bdf65cfbdf79eb824cb795335c60",
-            "url": "https://github.com/PostHog/code/commit/01580bf50239bdf65cfbdf79eb824cb795335c60",
-            "date": "2026-05-22T21:55:35Z",
-            "subject": "fix(cloud): preserve posthog-local MCP server across session refresh"
           }
         ],
         "signals": [
@@ -619,14 +192,14 @@
         ],
         "checked": [
           "listed remote heads for PostHog/code",
-          "matched branch names against keywords: local, tasks, task, break, appear, keep, running, when, laptop, sleeps, sleep"
+          "matched branch names against keywords: laptop, sleep"
         ],
         "not_checked": [
           "fork branches are invisible to this remote branch scan.",
           "branch name matching is lexical and can miss renamed or differently named work."
         ],
-        "cached": false,
-        "fetched_at": "2026-07-08T21:15:27.479Z"
+        "cached": true,
+        "fetched_at": "2026-07-08T22:04:57.881Z"
       }
     },
     {
@@ -645,69 +218,83 @@
           "lexical similarity only; semantic duplicates with different vocabulary will be missed."
         ],
         "cached": false,
-        "fetched_at": "2026-07-08T21:15:50.252Z"
+        "fetched_at": "2026-07-08T22:05:51.410Z"
       }
     },
     {
       "name": "contrib_policy",
       "ok": true,
       "result": {
-        "verdict_summary": "found 8 contribution policy signals.",
+        "verdict_summary": "found 10 contribution policy signals.",
         "evidence": [
-          {
-            "category": "evidence_requirements",
-            "file": "CONTRIBUTING.md",
-            "url": "https://github.com/PostHog/code/blob/main/CONTRIBUTING.md",
-            "excerpt": "instance. ## Before submitting - Run `pnpm typecheck`, `pnpm lint` and `pnpm test` locally - Resolve merge conflicts before requesting review - Keep changes focused -- one logical change per PR - Add tests where they meaningfully improve confidence -",
-            "ambiguous": false
-          },
-          {
-            "category": "ai_assistance_policy",
-            "file": "CONTRIBUTING.md",
-            "url": "https://github.com/PostHog/code/blob/main/CONTRIBUTING.md",
-            "excerpt": "Make your changes and open a pull request Issues labeled [`good first issue`](https://github.com/PostHog/code/issues?q=sort%3Aupdated-desc%20is%3Aissue%20is%3Aopen%20label%3A%22good%20first%20issue%22) are a great place to start! If an issue does not yet exist for your change, please create one first so we can align on the approach",
-            "ambiguous": false
-          },
           {
             "category": "pr_caps_or_rate_limits",
             "file": "CONTRIBUTING.md",
             "url": "https://github.com/PostHog/code/blob/main/CONTRIBUTING.md",
-            "excerpt": "Create a branch (`feat/my-change`, `fix/that-bug`) 4. Make your changes and open a pull request Issues labeled [`good first issue`](https://github.com/PostHog/code/issues?q=sort%3Aupdated-desc%20is%3Aissue%20is%3Aopen%20label%3A%22good%20first%20issue%22) are a great place to start! If an issue does not yet exist for your change, please create one first so",
+            "excerpt": "Create a branch (`feat/my-change`, `fix/that-bug`) 4. Make your changes and open a pull request",
+            "ambiguous": false
+          },
+          {
+            "category": "evidence_requirements",
+            "file": "CONTRIBUTING.md",
+            "url": "https://github.com/PostHog/code/blob/main/CONTRIBUTING.md",
+            "excerpt": "- Run `pnpm typecheck`, `pnpm lint` and `pnpm test` locally - Resolve merge conflicts before requesting review - Keep changes focused -- one logical change per PR - Add tests where they meaningfully improve confidence -",
             "ambiguous": false
           },
           {
             "category": "issue_first_or_alignment",
             "file": "CONTRIBUTING.md",
             "url": "https://github.com/PostHog/code/blob/main/CONTRIBUTING.md",
-            "excerpt": "branch (`feat/my-change`, `fix/that-bug`) 4. Make your changes and open a pull request Issues labeled [`good first issue`](https://github.com/PostHog/code/issues?q=sort%3Aupdated-desc%20is%3Aissue%20is%3Aopen%20label%3A%22good%20first%20issue%22) are a great place to start! If an issue does not yet exist for your change, please create one first so we can",
-            "ambiguous": false
-          },
-          {
-            "category": "evidence_requirements",
-            "file": "AGENTS.md",
-            "url": "https://github.com/PostHog/code/blob/main/AGENTS.md",
-            "excerpt": "- `apps/code`: Electron desktop host. - `apps/web`: web host and portability smoke test. - `apps/mobile`: React Native host. - `apps/cli`: thin shell over `@posthog/cli`. ## Rules 1. Business logic lives in `@posthog/core` services. Use `@injectable()` classes, constructor injection, and host-neutral",
+            "excerpt": "If you're unsure whether something fits, open an issue first and we'll get back to you quickly.",
             "ambiguous": false
           },
           {
             "category": "ai_assistance_policy",
             "file": "AGENTS.md",
             "url": "https://github.com/PostHog/code/blob/main/AGENTS.md",
-            "excerpt": "| | `packages/core` | Host-agnostic business logic: orchestration, retries, dedupe, sagas, parsing, domain events, domain state. Inversify services only. No React, Node, Electron, or `trpcClient`. | | `packages/workspace-server` | Node-only capabilities behind tRPC: git, fs, process spawn, pty, watchers. |",
+            "excerpt": "| `@posthog/electron-trpc` | tRPC-over-Electron-IPC transport. | Feature code | | `@posthog/git`, `@posthog/enricher`, `@posthog/agent` | Reusable domain implementation packages. | Host-specific code |",
             "ambiguous": false
           },
           {
-            "category": "pr_caps_or_rate_limits",
+            "category": "evidence_requirements",
             "file": "AGENTS.md",
             "url": "https://github.com/PostHog/code/blob/main/AGENTS.md",
-            "excerpt": "only. No React, Node, Electron, or `trpcClient`. | | `packages/workspace-server` | Node-only capabilities behind tRPC: git, fs, process spawn, pty, watchers. | | `packages/ui` | React UI shell: views, components, hooks, view-state stores, route and command contributions. No business logic,",
+            "excerpt": "- `apps/code`: Electron desktop host. - `apps/web`: web host and portability smoke test. - `apps/mobile`: React Native host. - `apps/cli`: thin shell over `@posthog/cli`.",
             "ambiguous": false
           },
           {
-            "category": "cla_requirement",
+            "category": "evidence_requirements",
             "file": "AGENTS.md",
             "url": "https://github.com/PostHog/code/blob/main/AGENTS.md",
-            "excerpt": "Guide `AGENTS.md` is the source of truth for architecture and development rules. `CLAUDE.md` is a symlink to this file. Edit this file only. ## Architecture PostHog Code uses a layered architecture. Business logic and UI live in shared `packages/*`. Each",
+            "excerpt": "packages/core/src/<feature>/ |-- <feature>.ts |-- <feature>.module.ts |-- <feature>Store.ts |-- identifiers.ts |-- schemas.ts `-- <feature>.test.ts",
+            "ambiguous": false
+          },
+          {
+            "category": "evidence_requirements",
+            "file": "AGENTS.md",
+            "url": "https://github.com/PostHog/code/blob/main/AGENTS.md",
+            "excerpt": "Biome lint and autofix. - `pnpm format`: run Biome format. - `pnpm test`: run unit tests. - `pnpm test:e2e`: run Playwright tests. - `pnpm --filter <pkg> typecheck|test|build`: run a scoped task. - `pnpm --filter code package|make`: package the Electron app.",
+            "ambiguous": false
+          },
+          {
+            "category": "ai_assistance_policy",
+            "file": "AGENTS.md",
+            "url": "https://github.com/PostHog/code/blob/main/AGENTS.md",
+            "excerpt": "## Agent Integration",
+            "ambiguous": false
+          },
+          {
+            "category": "ai_assistance_policy",
+            "file": "AGENTS.md",
+            "url": "https://github.com/PostHog/code/blob/main/AGENTS.md",
+            "excerpt": "- Use SDK types from `@anthropic-ai/claude-agent-sdk` and `@agentclientprotocol/sdk`. - Do not use Claude Code SDK `rawInput`. Use Zod-validated metadata. - User approvals are tool calls with permissions. Do not model approvals as custom",
+            "ambiguous": false
+          },
+          {
+            "category": "evidence_requirements",
+            "file": "AGENTS.md",
+            "url": "https://github.com/PostHog/code/blob/main/AGENTS.md",
+            "excerpt": "- Unit tests: Vitest. - E2E tests: Playwright. - Test core/UI services and stores with faked injected dependencies and explicit props. - Prefer a parameterised test shape (`it.each`/`test.each`) when several",
             "ambiguous": false
           }
         ],
@@ -723,8 +310,8 @@
         "not_checked": [
           "policy extraction is keyword and heading based; ambiguous sections are reported rather than inferred."
         ],
-        "cached": false,
-        "fetched_at": "2026-07-08T21:15:50.253Z"
+        "cached": true,
+        "fetched_at": "2026-07-08T22:05:01.566Z"
       }
     }
   ]
