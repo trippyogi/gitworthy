@@ -1,8 +1,12 @@
-# gitworthy
+
 
 is it worth your commit?
 
+<img width="719" height="483" alt="image" src="https://github.com/user-attachments/assets/e3e9f0f0-42fd-42de-b54c-c735feb006c4" />
+
 gitworthy is an open-source pre-flight tool for OSS contribution targets. Before a human or agent invests time in someone else's issue or feature request, it checks whether the work is already done, already in flight, already fixed but unreleased, duplicated, or genuinely open.
+
+
 
 It ships as one package with a shared TypeScript core and two thin adapters:
 
@@ -94,12 +98,7 @@ Every core result includes:
 
 ## Why
 
-The first acceptance suite comes from a real contribution session across PostHog, ElevenLabs, and Temporal repositories where six of eight apparent targets were already handled internally. Manual checks caught remote branches, shipped code, release gaps, duplicates, and contribution policy constraints.
-
-Two receipts should be added before publishing:
-
-1. A maintainer's published test of LLM-driven issue triage that found confidence unjustified on stale and duplicate detection.
-2. A GitHub community discussion showing demand for visibility into fixes that are merged but not yet released.
+gitworthy exists because "this issue looks open" is usually wrong in active repos. Its acceptance suite is frozen from a real contribution session across PostHog, ElevenLabs, and Temporal repositories in July 2026, where six of eight apparent targets were already handled: fixed on an unlinked internal branch, shipped on main with the issue left open, or fixed but not yet released to npm. Every check in this tool is one of the manual verifications that caught those six before any work was wasted. The tool reports what it checked and what it could not check on every result, because unjustified confidence is the failure mode it was built against.
 
 ## License
 
