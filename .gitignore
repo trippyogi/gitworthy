@@ -5,3 +5,6 @@ coverage/
 .cursor/
 .env
 *.log
+gw-*.json
+response.json
+scan-*.json
