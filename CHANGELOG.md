@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.0
+
+- Added `no_pr_path` detection: `contrib_policy` flags repos that reject PRs (mirror/auto-close language) and extracts the alternate feedback channel; `worth_check` caps such repos at VERIFY.
+- Added `linked_work` check: detects linked/referenced PRs (open and merged) and assignees from issue timeline and comments; `worth_check` now cites the blocking PR or assignee by number. ACT requires zero open linked PRs and zero assignees.
+- `scan` now surfaces assignees per candidate and a cached no-PR policy hint.
+- Eval expanded to 12 frozen cases, including four real ACT-precision failures from 2026-07-09.
+
 ## 0.2.0
 
 - Add `scan` core, CLI, and MCP tool for listing open issue tracker candidates before running `worth_check`.
