@@ -75,5 +75,21 @@
     "input": { "repo": "temporalio/sdk-typescript", "issue_number": 2151 },
     "expect": { "verdict": "VERIFY", "signal": "assigned", "evidence_contains": "cconstable" },
     "time_sensitive": true
+  },
+  {
+    "id": 11,
+    "name": "Shopify app JS issue 3110 in-thread PR reference",
+    "function": "worth_check",
+    "input": { "repo": "Shopify/shopify-app-js", "issue_number": 3110 },
+    "expect": { "verdict": "VERIFY", "signal": "linked_pr_merged", "evidence_contains": "3111" },
+    "time_sensitive": true
+  },
+  {
+    "id": 12,
+    "name": "LiveKit agents issue 6291 linked open PR over shipped",
+    "function": "worth_check",
+    "input": { "repo": "livekit/agents", "issue_number": 6291 },
+    "expect": { "verdict": "SKIP", "signal": "linked_pr_open", "evidence_contains": "6298" },
+    "time_sensitive": true
   }
 ]

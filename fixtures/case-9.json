@@ -20,7 +20,7 @@
     "policy extraction is keyword and heading based; ambiguous sections are reported rather than inferred."
   ],
   "cached": false,
-  "fetched_at": "2026-07-09T00:12:31.704Z",
+  "fetched_at": "2026-07-09T00:20:21.244Z",
   "verdict": "SKIP",
   "reasons": [
     "linked_work: linked_pr_open",
@@ -166,7 +166,7 @@
           "directory or string existence does not prove the issue's intent is satisfied; read both before making any public claim."
         ],
         "cached": false,
-        "fetched_at": "2026-07-09T00:12:26.731Z"
+        "fetched_at": "2026-07-09T00:20:15.881Z"
       }
     },
     {
@@ -263,13 +263,14 @@
         "checked": [
           "fetched issue modelcontextprotocol/servers#4487",
           "fetched issue timeline cross-reference and assignment events",
+          "fetched issue comments for pull request references",
           "searched pull requests for explicit issue-number mentions"
         ],
         "not_checked": [
           "PR linkage depends on GitHub cross-reference events or explicit issue-number mentions; a PR that never mentions the issue number remains invisible."
         ],
         "cached": false,
-        "fetched_at": "2026-07-09T00:12:28.562Z"
+        "fetched_at": "2026-07-09T00:20:17.927Z"
       }
     },
     {
@@ -288,7 +289,7 @@
           "lexical similarity only; semantic duplicates with different vocabulary will be missed."
         ],
         "cached": false,
-        "fetched_at": "2026-07-09T00:12:31.703Z"
+        "fetched_at": "2026-07-09T00:20:21.244Z"
       }
     },
     {

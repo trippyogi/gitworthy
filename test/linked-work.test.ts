@@ -5,12 +5,18 @@ const mocks = vi.hoisted(() => ({
     if (path.includes('/issues/101/timeline')) return [
       { event: 'cross-referenced', created_at: '2026-07-09T00:00:00Z', source: { type: 'issue', issue: { number: 202, pull_request: { url: 'https://api.github.com/repos/o/r/pulls/202' } } } }
     ];
+    if (path.includes('/issues/101/comments')) return [];
     if (path.includes('/pulls/202')) return { number: 202, state: 'open', draft: false, merged: false, title: 'Fix linked issue', html_url: 'https://github.com/o/r/pull/202', user: { login: 'dev1' }, created_at: '2026-07-08T00:00:00Z', updated_at: '2026-07-09T00:00:00Z', closed_at: null, merged_at: null };
     if (path.includes('/issues/303/timeline')) return [{ event: 'assigned', created_at: '2026-07-07T00:00:00Z', actor: { login: 'maintainer' }, assignee: { login: 'owner1' } }];
+    if (path.includes('/issues/303/comments')) return [];
     if (path.includes('/issues/303')) return { number: 303, title: 'Assigned issue', body: null, state: 'open', labels: [], assignees: [{ login: 'owner1' }], comments: 0, html_url: 'https://github.com/o/r/issues/303', created_at: '2026-07-01T00:00:00Z', updated_at: '2026-07-07T00:00:00Z', closed_at: null };
     if (path.includes('/issues/404/timeline')) return [];
+    if (path.includes('/issues/404/comments')) return [];
     if (path.includes('/search/issues')) return { items: [{ number: 505, title: 'Fallback PR', body: 'Fixes #404', state: 'open', labels: [], comments: 0, html_url: 'https://github.com/o/r/pull/505', created_at: '2026-07-08T00:00:00Z', updated_at: '2026-07-08T00:00:00Z', closed_at: null, pull_request: { url: 'https://api.github.com/repos/o/r/pulls/505' } }] };
     if (path.includes('/pulls/505')) return { number: 505, state: 'open', draft: true, merged: false, title: 'Fallback PR', html_url: 'https://github.com/o/r/pull/505', user: { login: 'dev2' }, created_at: '2026-07-08T00:00:00Z', updated_at: '2026-07-08T00:00:00Z', closed_at: null, merged_at: null };
+    if (path.includes('/issues/606/timeline')) return [];
+    if (path.includes('/issues/606/comments')) return [{ body: 'I opened a PR at https://github.com/o/r/pull/707', created_at: '2026-07-09T00:00:00Z', user: { login: 'dev3' }, html_url: 'https://github.com/o/r/issues/606#issuecomment-1' }];
+    if (path.includes('/pulls/707')) return { number: 707, state: 'closed', draft: false, merged: true, title: 'Comment linked PR', html_url: 'https://github.com/o/r/pull/707', user: { login: 'dev3' }, created_at: '2026-07-08T00:00:00Z', updated_at: '2026-07-09T00:00:00Z', closed_at: '2026-07-09T00:00:00Z', merged_at: '2026-07-09T00:00:00Z' };
     if (path.includes('/issues/')) return { number: 101, title: 'Linked issue', body: null, state: 'open', labels: [], assignees: [], comments: 0, html_url: 'https://github.com/o/r/issues/101', created_at: '2026-07-01T00:00:00Z', updated_at: '2026-07-09T00:00:00Z', closed_at: null };
     return { items: [] };
   })
@@ -38,5 +44,11 @@ describe('linked_work', () => {
     const result = await linked_work({ repo: 'o/r', issue_number: 404 });
     expect(result.signals).toContain('linked_pr_open');
     expect(result.evidence).toContainEqual(expect.objectContaining({ kind: 'linked_pr', number: 505, draft: true, source: 'search' }));
+  });
+
+  it('detects pull request URLs referenced in issue comments', async () => {
+    const result = await linked_work({ repo: 'o/r', issue_number: 606 });
+    expect(result.signals).toContain('linked_pr_merged');
+    expect(result.evidence).toContainEqual(expect.objectContaining({ kind: 'linked_pr', number: 707, merged: true, source: 'comment', referrer: 'https://github.com/o/r/issues/606#issuecomment-1' }));
   });
 });

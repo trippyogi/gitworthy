@@ -1,4 +1,5 @@
 import { githubJson, GithubIssue } from '../lib/github.js';
+import { GitworthyError } from './envelope.js';
 import { createEnvelope, Envelope } from './envelope.js';
 
 type Input = { repo: string; issue_number: number };
@@ -10,8 +11,9 @@ type TimelineEvent = {
   source?: { type?: string; issue?: GithubIssue & { pull_request?: { url?: string; html_url?: string; merged_at?: string | null } } };
 };
 type GithubPr = { number: number; state: string; draft?: boolean; merged?: boolean; title: string; html_url: string; user?: { login: string } | null; created_at: string; updated_at: string; closed_at: string | null; merged_at: string | null };
+type IssueComment = { body: string | null; created_at: string; user?: { login: string } | null; html_url: string };
 type SearchResult = { items: Array<GithubIssue & { pull_request?: { url?: string; html_url?: string } }> };
-type LinkedPrEvidence = { kind: 'linked_pr'; number: number; state: string; draft: boolean; merged: boolean; date: string; author: string | null; title: string; url: string; source: 'timeline' | 'search' };
+type LinkedPrEvidence = { kind: 'linked_pr'; number: number; state: string; draft: boolean; merged: boolean; date: string; author: string | null; title: string; url: string; source: 'timeline' | 'search' | 'comment'; referrer?: string };
 type AssignmentEvidence = { kind: 'assignment'; assignee: string; assigned_at: string | null; assigned_by: string | null };
 
 const LINKAGE_LIMIT = 'PR linkage depends on GitHub cross-reference events or explicit issue-number mentions; a PR that never mentions the issue number remains invisible.';
@@ -30,12 +32,21 @@ async function prDetails(repo: string, issueNumber: number): Promise<GithubPr> {
   return githubJson<GithubPr>(`/repos/${repo}/pulls/${issueNumber}`);
 }
 
+async function maybePrDetails(repo: string, issueNumber: number): Promise<GithubPr | null> {
+  try {
+    return await prDetails(repo, issueNumber);
+  } catch (error) {
+    if (error instanceof GitworthyError && error.status === 404) return null;
+    throw error;
+  }
+}
+
 function isPullRequestIssue(issue: unknown): issue is GithubIssue & { pull_request: { url?: string; html_url?: string; merged_at?: string | null } } {
   return typeof issue === 'object' && issue !== null && 'pull_request' in issue;
 }
 
-function linkedPrEvidence(pr: GithubPr, date: string, source: 'timeline' | 'search'): LinkedPrEvidence {
-  return { kind: 'linked_pr', number: pr.number, state: pr.state, draft: pr.draft === true, merged: pr.merged === true || pr.merged_at !== null, date, author: pr.user?.login ?? null, title: pr.title, url: pr.html_url, source };
+function linkedPrEvidence(pr: GithubPr, date: string, source: 'timeline' | 'search' | 'comment', referrer?: string): LinkedPrEvidence {
+  return { kind: 'linked_pr', number: pr.number, state: pr.state, draft: pr.draft === true, merged: pr.merged === true || pr.merged_at !== null, date, author: pr.user?.login ?? null, title: pr.title, url: pr.html_url, source, referrer };
 }
 
 async function timelineLinkedPrs(repo: string, events: TimelineEvent[]): Promise<LinkedPrEvidence[]> {
@@ -62,6 +73,29 @@ async function searchLinkedPrs(repo: string, issueNumber: number, existing: Set<
   return prs.sort((left, right) => left.number - right.number);
 }
 
+function commentPrNumbers(repo: string, body: string): number[] {
+  const numbers = new Set<number>();
+  const escapedRepo = repo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  for (const match of body.matchAll(new RegExp(`github\\.com/${escapedRepo}/pull/(\\d+)`, 'gi'))) numbers.add(Number(match[1]));
+  for (const match of body.matchAll(/(?:pull request|pull|pr)\s*#(\d+)/gi)) numbers.add(Number(match[1]));
+  return [...numbers].filter((number) => Number.isInteger(number));
+}
+
+async function commentLinkedPrs(repo: string, issueNumber: number, existing: Set<number>): Promise<LinkedPrEvidence[]> {
+  const comments = await githubJson<IssueComment[]>(`/repos/${repo}/issues/${issueNumber}/comments?per_page=100`);
+  const prs = [] as LinkedPrEvidence[];
+  for (const comment of comments) {
+    for (const number of commentPrNumbers(repo, comment.body ?? '')) {
+      if (existing.has(number)) continue;
+      const pr = await maybePrDetails(repo, number);
+      if (!pr) continue;
+      existing.add(number);
+      prs.push(linkedPrEvidence(pr, comment.created_at, 'comment', comment.html_url));
+    }
+  }
+  return prs.sort((left, right) => left.number - right.number);
+}
+
 function assignmentEvidence(issue: GithubIssue, events: TimelineEvent[]): AssignmentEvidence[] {
   const assignmentDates = new Map<string, { assigned_at: string; assigned_by: string | null }>();
   for (const event of events) {
@@ -78,8 +112,10 @@ export async function linked_work(input: Input): Promise<Envelope> {
   const issue = await githubJson<GithubIssue>(`/repos/${input.repo}/issues/${input.issue_number}`);
   const events = await timeline(input.repo, input.issue_number);
   const timelinePrs = await timelineLinkedPrs(input.repo, events);
-  const searchPrs = await searchLinkedPrs(input.repo, input.issue_number, new Set(timelinePrs.map((pr) => pr.number)));
-  const linkedPrs = [...timelinePrs, ...searchPrs].sort((left, right) => left.number - right.number);
+  const knownPrs = new Set(timelinePrs.map((pr) => pr.number));
+  const commentPrs = await commentLinkedPrs(input.repo, input.issue_number, knownPrs);
+  const searchPrs = await searchLinkedPrs(input.repo, input.issue_number, knownPrs);
+  const linkedPrs = [...timelinePrs, ...commentPrs, ...searchPrs].sort((left, right) => left.number - right.number);
   const assignments = assignmentEvidence(issue, events);
   const signals = [
     ...(linkedPrs.some((pr) => pr.state === 'open') ? ['linked_pr_open' as const] : []),
@@ -92,7 +128,7 @@ export async function linked_work(input: Input): Promise<Envelope> {
     verdict_summary: linkedPrs.length > 0 || assignments.length > 0 ? `found ${linkedPrs.length} ${linkedLabel} and ${assignments.length} ${assignedLabel}.` : 'no linked pull requests or current assignees found.',
     evidence: [...linkedPrs, ...assignments],
     signals,
-    checked: [`fetched issue ${input.repo}#${input.issue_number}`, 'fetched issue timeline cross-reference and assignment events', 'searched pull requests for explicit issue-number mentions'],
+    checked: [`fetched issue ${input.repo}#${input.issue_number}`, 'fetched issue timeline cross-reference and assignment events', 'fetched issue comments for pull request references', 'searched pull requests for explicit issue-number mentions'],
     not_checked: [LINKAGE_LIMIT],
     cached: false
   });

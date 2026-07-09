@@ -20,7 +20,7 @@
     "policy extraction is keyword and heading based; ambiguous sections are reported rather than inferred."
   ],
   "cached": false,
-  "fetched_at": "2026-07-09T00:12:37.486Z",
+  "fetched_at": "2026-07-09T00:20:27.244Z",
   "verdict": "VERIFY",
   "reasons": [
     "linked_work: assigned",
@@ -172,7 +172,7 @@
           "directory or string existence does not prove the issue's intent is satisfied; read both before making any public claim."
         ],
         "cached": false,
-        "fetched_at": "2026-07-09T00:12:33.130Z"
+        "fetched_at": "2026-07-09T00:20:22.616Z"
       }
     },
     {
@@ -225,13 +225,14 @@
         "checked": [
           "fetched issue temporalio/sdk-typescript#2151",
           "fetched issue timeline cross-reference and assignment events",
+          "fetched issue comments for pull request references",
           "searched pull requests for explicit issue-number mentions"
         ],
         "not_checked": [
           "PR linkage depends on GitHub cross-reference events or explicit issue-number mentions; a PR that never mentions the issue number remains invisible."
         ],
         "cached": false,
-        "fetched_at": "2026-07-09T00:12:34.552Z"
+        "fetched_at": "2026-07-09T00:20:24.352Z"
       }
     },
     {
@@ -250,7 +251,7 @@
           "lexical similarity only; semantic duplicates with different vocabulary will be missed."
         ],
         "cached": false,
-        "fetched_at": "2026-07-09T00:12:37.485Z"
+        "fetched_at": "2026-07-09T00:20:27.244Z"
       }
     },
     {

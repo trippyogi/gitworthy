@@ -1,0 +1,344 @@
+{
+  "verdict_summary": "mixed signals or sub-check errors require human review.",
+  "evidence": [],
+  "signals": [
+    "linked_pr_merged"
+  ],
+  "checked": [
+    "issue_vs_main",
+    "branch_scan",
+    "linked_work",
+    "dupe_cluster",
+    "contrib_policy"
+  ],
+  "not_checked": [
+    "directory or string existence does not prove the issue's intent is satisfied; read both before making any public claim.",
+    "fork branches are invisible to this remote branch scan.",
+    "branch name matching is lexical and can miss renamed or differently named work.",
+    "PR linkage depends on GitHub cross-reference events or explicit issue-number mentions; a PR that never mentions the issue number remains invisible.",
+    "lexical similarity only; semantic duplicates with different vocabulary will be missed.",
+    "policy extraction is keyword and heading based; ambiguous sections are reported rather than inferred."
+  ],
+  "cached": false,
+  "fetched_at": "2026-07-09T00:20:34.892Z",
+  "verdict": "VERIFY",
+  "reasons": [
+    "linked_work: linked_pr_merged",
+    "linked PR was merged: #3111 https://github.com/Shopify/shopify-app-js/pull/3111"
+  ],
+  "sub_results": [
+    {
+      "name": "issue_vs_main",
+      "ok": true,
+      "result": {
+        "verdict_summary": "partial overlap found.",
+        "evidence": [
+          {
+            "issue": 3110,
+            "title": "`shopify-app-express` silently reads env vars (`SHOPIFY_API_KEY`, `SHOPIFY_API_SECRET`, `HOST`) but this is not documented",
+            "state": "open",
+            "labels": [
+              "Stale"
+            ],
+            "comments": 7,
+            "url": "https://github.com/Shopify/shopify-app-js/issues/3110"
+          },
+          {
+            "tree_matches": [
+              ".changeset/README.md",
+              "README.md",
+              "packages/api-clients/README.md",
+              "packages/api-clients/admin-api-client/README.md",
+              "packages/api-clients/api-codegen-preset/README.md",
+              "packages/api-clients/graphql-client/README.md",
+              "packages/api-clients/storefront-api-client/README.md",
+              "packages/apps/README.md",
+              "packages/apps/session-storage/README.md",
+              "packages/apps/session-storage/shopify-app-session-storage/README.md",
+              "packages/apps/session-storage/shopify-app-session-storage-drizzle/README.md",
+              "packages/apps/session-storage/shopify-app-session-storage-dynamodb/README.md",
+              "packages/apps/session-storage/shopify-app-session-storage-kv/README.md",
+              "packages/apps/session-storage/shopify-app-session-storage-memory/README.md",
+              "packages/apps/session-storage/shopify-app-session-storage-mongodb/README.md",
+              "packages/apps/session-storage/shopify-app-session-storage-mysql/README.md",
+              "packages/apps/session-storage/shopify-app-session-storage-postgresql/README.md",
+              "packages/apps/session-storage/shopify-app-session-storage-prisma/README.md",
+              "packages/apps/session-storage/shopify-app-session-storage-redis/README.md",
+              "packages/apps/session-storage/shopify-app-session-storage-sqlite/README.md",
+              "packages/apps/shopify-api/README.md",
+              "packages/apps/shopify-api/adapters/__e2etests__/node-localhost-fetch.ts",
+              "packages/apps/shopify-api/adapters/__e2etests__/test_environments.ts",
+              "packages/apps/shopify-api/docs/reference/README.md",
+              "packages/apps/shopify-api/docs/reference/auth/README.md",
+              "packages/apps/shopify-api/docs/reference/billing/README.md",
+              "packages/apps/shopify-api/docs/reference/clients/README.md",
+              "packages/apps/shopify-api/docs/reference/flow/README.md",
+              "packages/apps/shopify-api/docs/reference/fulfillment-service/README.md",
+              "packages/apps/shopify-api/docs/reference/session/README.md",
+              "packages/apps/shopify-api/docs/reference/utils/README.md",
+              "packages/apps/shopify-api/docs/reference/utils/sanitizeHost.md",
+              "packages/apps/shopify-api/docs/reference/webhooks/README.md",
+              "packages/apps/shopify-api/lib/auth/decode-host.ts",
+              "packages/apps/shopify-api/test-helpers/get-host-value.ts",
+              "packages/apps/shopify-app-express/CHANGELOG.md",
+              "packages/apps/shopify-app-express/LICENSE.md",
+              "packages/apps/shopify-app-express/README.md",
+              "packages/apps/shopify-app-express/docs/reference/README.md",
+              "packages/apps/shopify-app-express/docs/reference/auth.md",
+              "packages/apps/shopify-app-express/docs/reference/cspHeaders.md",
+              "packages/apps/shopify-app-express/docs/reference/ensureInstalledOnShop.md",
+              "packages/apps/shopify-app-express/docs/reference/guides/managed-pricing.md",
+              "packages/apps/shopify-app-express/docs/reference/migrating-app-v6-api-lib-to-express-lib.md",
+              "packages/apps/shopify-app-express/docs/reference/processWebhooks.md",
+              "packages/apps/shopify-app-express/docs/reference/redirectOutOfApp.md",
+              "packages/apps/shopify-app-express/docs/reference/redirectToShopifyOrAppRoot.md",
+              "packages/apps/shopify-app-express/docs/reference/shopifyApp.md",
+              "packages/apps/shopify-app-express/docs/reference/validateAuthenticatedSession.md",
+              "packages/apps/shopify-app-express/jest.config.ts"
+            ]
+          },
+          {
+            "grep_matches": [
+              {
+                "path": ".changeset/README.md",
+                "line": 3,
+                "term": "automatically",
+                "sample": "Hello and welcome! This folder has been automatically generated by `@changesets/cli`, a build tool that works"
+              },
+              {
+                "path": ".changeset/tricky-boats-learn.md",
+                "line": 5,
+                "term": "variabl",
+                "sample": "Consolidates the polaris url into a single, shared variable"
+              },
+              {
+                "path": ".claude/skills/dependabot/fix-broken-major-upgrade/SKILL.md",
+                "line": 5,
+                "term": "read",
+                "sample": "allowed-tools: Task, AskUserQuestion, Read, Edit, Write, Glob, Grep, Bash(git *), Bash(gh *), Bash(pnpm *), Bash(npx *), Bash(ls *), Bash(timeout *), Bash(node *), Bash(wc *), WebFetch, WebSearch"
+              },
+              {
+                "path": ".claude/skills/dependabot/fix-broken-major-upgrade/SKILL.md",
+                "line": 22,
+                "term": "read",
+                "sample": "   - If the PR `state` is not `OPEN`, stop immediately - report that the PR is already merged/closed and there is nothing to do."
+              },
+              {
+                "path": ".claude/skills/dependabot/fix-broken-major-upgrade/SKILL.md",
+                "line": 23,
+                "term": "read",
+                "sample": "   - If **all CI checks are passing**, stop immediately - report that CI is already green and there is nothing to do. Skip to the Final Output section and report as **COMPLETED** with a note that no c"
+              },
+              {
+                "path": ".claude/skills/dependabot/fix-broken-major-upgrade/SKILL.md",
+                "line": 47,
+                "term": "read",
+                "sample": "- **For reading files**: Prefer the `Read` tool over `cat`. Prefer the `Grep` tool over shell `grep`/`rg`. Prefer the `Glob` tool over shell `find`/`ls` for file searching."
+              },
+              {
+                "path": ".claude/skills/dependabot/fix-broken-major-upgrade/SKILL.md",
+                "line": 68,
+                "term": "read",
+                "sample": "5. **Check branch freshness** (requires `origin/main` to be up to date - Phase 0 already fetched it):"
+              },
+              {
+                "path": ".claude/skills/dependabot/fix-broken-major-upgrade/SKILL.md",
+                "line": 126,
+                "term": "they",
+                "sample": "2. Use the `AskUserQuestion` tool to ask the user how they want to proceed. Offer options such as:"
+              },
+              {
+                "path": ".claude/skills/dependabot/fix-broken-major-upgrade/SKILL.md",
+                "line": 130,
+                "term": "explicitly",
+                "sample": "3. Only proceed to Phase 2 once the user has explicitly approved the approach."
+              },
+              {
+                "path": ".claude/skills/dependabot/fix-broken-major-upgrade/SKILL.md",
+                "line": 147,
+                "term": "explicitly",
+                "sample": "   - **Do NOT change any public-facing APIs, exported types, or package interfaces** unless the user has explicitly approved consumer-facing breaking changes in the gate above"
+              }
+            ]
+          }
+        ],
+        "signals": [],
+        "checked": [
+          "fetched issue Shopify/shopify-app-js#3110",
+          "shallow cloned Shopify/shopify-app-js",
+          "searched candidate terms in tree and file contents"
+        ],
+        "not_checked": [
+          "directory or string existence does not prove the issue's intent is satisfied; read both before making any public claim."
+        ],
+        "cached": false,
+        "fetched_at": "2026-07-09T00:20:28.929Z"
+      }
+    },
+    {
+      "name": "branch_scan",
+      "ok": true,
+      "result": {
+        "verdict_summary": "1 matching branch found, but no recent token-verified activity was established.",
+        "evidence": [
+          {
+            "branch": "fix-remix-package-readme",
+            "sha": "36d1841415527ff0de03b3e285dbb761e7b8a884",
+            "url": "https://github.com/Shopify/shopify-app-js/commit/36d1841415527ff0de03b3e285dbb761e7b8a884",
+            "date": "2023-07-19T21:32:42Z",
+            "subject": "Add changeset"
+          }
+        ],
+        "signals": [],
+        "checked": [
+          "listed remote heads for Shopify/shopify-app-js",
+          "matched branch names against keywords: shopify-app-expres, silently, read, vars, shopify_api_key, shopify_api_secret, host, documented"
+        ],
+        "not_checked": [
+          "fork branches are invisible to this remote branch scan.",
+          "branch name matching is lexical and can miss renamed or differently named work."
+        ],
+        "cached": true,
+        "fetched_at": "2026-07-09T00:19:24.463Z"
+      }
+    },
+    {
+      "name": "linked_work",
+      "ok": true,
+      "result": {
+        "verdict_summary": "found 3 linked pull requests and 0 assignees.",
+        "evidence": [
+          {
+            "kind": "linked_pr",
+            "number": 3111,
+            "state": "closed",
+            "draft": false,
+            "merged": true,
+            "date": "2026-03-25T14:14:42Z",
+            "author": "sergiocasao",
+            "title": "shopify-app-express: document environment variable defaults",
+            "url": "https://github.com/Shopify/shopify-app-js/pull/3111",
+            "source": "comment",
+            "referrer": "https://github.com/Shopify/shopify-app-js/issues/3110#issuecomment-4126946913"
+          },
+          {
+            "kind": "linked_pr",
+            "number": 3275,
+            "state": "closed",
+            "draft": false,
+            "merged": false,
+            "date": "2026-06-15T15:45:35Z",
+            "author": "dependabot[bot]",
+            "title": "build(deps): bump redis from 5.11.0 to 5.12.1",
+            "url": "https://github.com/Shopify/shopify-app-js/pull/3275",
+            "source": "search"
+          },
+          {
+            "kind": "linked_pr",
+            "number": 3286,
+            "state": "closed",
+            "draft": false,
+            "merged": true,
+            "date": "2026-06-16T15:10:11Z",
+            "author": "dependabot[bot]",
+            "title": "build(deps): bump the minor-and-patch-updates group with 6 updates",
+            "url": "https://github.com/Shopify/shopify-app-js/pull/3286",
+            "source": "search"
+          }
+        ],
+        "signals": [
+          "linked_pr_merged"
+        ],
+        "checked": [
+          "fetched issue Shopify/shopify-app-js#3110",
+          "fetched issue timeline cross-reference and assignment events",
+          "fetched issue comments for pull request references",
+          "searched pull requests for explicit issue-number mentions"
+        ],
+        "not_checked": [
+          "PR linkage depends on GitHub cross-reference events or explicit issue-number mentions; a PR that never mentions the issue number remains invisible."
+        ],
+        "cached": false,
+        "fetched_at": "2026-07-09T00:20:31.972Z"
+      }
+    },
+    {
+      "name": "dupe_cluster",
+      "ok": true,
+      "result": {
+        "verdict_summary": "no lexical duplicate candidates found.",
+        "evidence": [],
+        "signals": [],
+        "checked": [
+          "fetched target issue Shopify/shopify-app-js#3110",
+          "searched GitHub issues by distinctive title tokens",
+          "scored open issues by lexical overlap"
+        ],
+        "not_checked": [
+          "lexical similarity only; semantic duplicates with different vocabulary will be missed."
+        ],
+        "cached": false,
+        "fetched_at": "2026-07-09T00:20:34.892Z"
+      }
+    },
+    {
+      "name": "contrib_policy",
+      "ok": true,
+      "result": {
+        "verdict_summary": "found 5 contribution policy signals.",
+        "evidence": [
+          {
+            "category": "issue_first_or_alignment",
+            "file": "CONTRIBUTING.md",
+            "url": "https://github.com/Shopify/shopify-app-js/blob/main/CONTRIBUTING.md",
+            "excerpt": "- Open an issue to discuss the feature/bug - If feature/bug is deemed valid then fork repo. - Implement patch to resolve issue. - Include tests to prevent regressions and validate the patch.",
+            "ambiguous": false
+          },
+          {
+            "category": "contacts_or_channels",
+            "file": "CODE_OF_CONDUCT.md",
+            "url": "https://github.com/Shopify/shopify-app-js/blob/main/CODE_OF_CONDUCT.md",
+            "excerpt": "harassing, or otherwise unacceptable behavior may be reported by contacting a project maintainer at <opensource@shopify.com>. All complaints will be reviewed and investigated and will result in a response that is deemed necessary and appropriate to the circumstances. Maintainers are obligated",
+            "ambiguous": false
+          },
+          {
+            "category": "pr_caps_or_rate_limits",
+            "file": ".github/PULL_REQUEST_TEMPLATE.md",
+            "url": "https://github.com/Shopify/shopify-app-js/blob/main/.github/PULL_REQUEST_TEMPLATE.md",
+            "excerpt": "### WHAT is this pull request doing?",
+            "ambiguous": false
+          },
+          {
+            "category": "evidence_requirements",
+            "file": ".github/PULL_REQUEST_TEMPLATE.md",
+            "url": "https://github.com/Shopify/shopify-app-js/blob/main/.github/PULL_REQUEST_TEMPLATE.md",
+            "excerpt": "<!-- Summary of the changes committed. Before / after screenshots appreciated for UI changes, if applicable. -->",
+            "ambiguous": false
+          },
+          {
+            "category": "evidence_requirements",
+            "file": ".github/PULL_REQUEST_TEMPLATE.md",
+            "url": "https://github.com/Shopify/shopify-app-js/blob/main/.github/PULL_REQUEST_TEMPLATE.md",
+            "excerpt": "NOT update the `CHANGELOG.md` files manually) - [ ] I have added/updated tests for this change - [ ] I have documented new APIs/updated the documentation for modified APIs (for public APIs)",
+            "ambiguous": false
+          }
+        ],
+        "signals": [],
+        "checked": [
+          "looked for CONTRIBUTING.md on main and master",
+          "looked for .github/CONTRIBUTING.md on main and master",
+          "looked for AGENTS.md on main and master",
+          "looked for AI_POLICY.md on main and master",
+          "looked for CODE_OF_CONDUCT.md on main and master",
+          "looked for .github/PULL_REQUEST_TEMPLATE.md on main and master",
+          "looked for SECURITY.md on main and master"
+        ],
+        "not_checked": [
+          "policy extraction is keyword and heading based; ambiguous sections are reported rather than inferred."
+        ],
+        "cached": true,
+        "fetched_at": "2026-07-09T00:19:31.655Z"
+      }
+    }
+  ]
+}

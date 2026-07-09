@@ -12,6 +12,7 @@ vi.mock('../src/lib/github.js', () => ({
   githubJson: vi.fn(async (requestPath: string) => {
     if (requestPath.includes('/commits/')) return { commit: { author: { date: new Date().toISOString() }, message: 'fix sleep' }, html_url: 'https://github.com/o/r/commit/abc' };
     if (requestPath.includes('/timeline')) return [];
+    if (requestPath.includes('/comments')) return [];
     if (requestPath.includes('/search/issues')) return { items: [] };
     if (requestPath.includes('/issues/')) return { number: 1, title: 'sleep fix', body: 'sleep', state: 'open', labels: [], assignees: [], comments: 0, html_url: 'https://github.com/o/r/issues/1', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z', closed_at: null };
     if (requestPath.includes('/issues?')) return [];
