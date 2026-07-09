@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { realpathSync } from 'node:fs';
 import { parseArgs } from 'node:util';
 import { pathToFileURL } from 'node:url';
 import { branch_scan, contrib_policy, dupe_cluster, issue_vs_main, linked_work, release_gap, scan, worth_check } from '../core/index.js';
@@ -119,7 +120,15 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
 }
 
 const invokedPath = process.argv[1];
-if (invokedPath && import.meta.url === pathToFileURL(invokedPath).href) {
+function invokedUrl(path: string): string {
+  try {
+    return pathToFileURL(realpathSync(path)).href;
+  } catch {
+    return pathToFileURL(path).href;
+  }
+}
+
+if (invokedPath && import.meta.url === invokedUrl(invokedPath)) {
   runCli().then((code) => {
     process.exitCode = code;
   }).catch((error: unknown) => {
