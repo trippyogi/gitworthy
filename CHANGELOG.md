@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.1
+
+- Fix Linux/macOS global npm installs where the `gitworthy` bin symlink silently no-oped because CLI entry detection compared the symlink path to the real compiled module path.
+- Add compiled-entry coverage for npm-style symlinked bin invocation.
+
 ## 0.3.0
 
 - Added `no_pr_path` detection: `contrib_policy` flags repos that reject PRs (mirror/auto-close language) and extracts the alternate feedback channel; `worth_check` caps such repos at VERIFY.
