@@ -6,6 +6,7 @@
 - Added `linked_work` check: detects linked/referenced PRs (open and merged) and assignees from issue timeline and comments; `worth_check` now cites the blocking PR or assignee by number. ACT requires zero open linked PRs and zero assignees.
 - `scan` now surfaces assignees per candidate and a cached no-PR policy hint.
 - Eval expanded to 12 frozen cases, including four real ACT-precision failures from 2026-07-09.
+- Tightened false-SKIP controls: `branch_scan` now requires stronger token-aware matches for broad terms, and `dupe_cluster` no longer emits blocking duplicates from weakly titled closed issues.
 
 ## 0.2.0
 

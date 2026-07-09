@@ -2,21 +2,54 @@ import { readCache, writeCache } from '../lib/cache.js';
 import { githubJson } from '../lib/github.js';
 import { lsRemoteHeads } from '../lib/git.js';
 import { createEnvelope, Envelope, GitworthyError } from './envelope.js';
+import { isGenericTerm, normalizeTerm } from './terms.js';
 
 const TTL = 15 * 60 * 1000;
 const LIMIT_BRANCH = 'fork branches are invisible to this remote branch scan.';
 const LIMIT_MATCH = 'branch name matching is lexical and can miss renamed or differently named work.';
+const BROAD_BRANCH_TERMS = new Set(['agent', 'agents', 'domain', 'domains']);
 
 type Input = { repo: string; keywords: string[]; max_age_days?: number; force_refresh?: boolean };
 type CommitInfo = { date?: string; subject?: string; url?: string };
+
+function branchTokens(branch: string): Set<string> {
+  return new Set((branch.toLowerCase().match(/[a-z][a-z0-9]{2,}/g) ?? []).map(normalizeTerm));
+}
+
+function normalizedKeywords(keywords: string[]): string[] {
+  const seen = new Set<string>();
+  const terms: string[] = [];
+  for (const keyword of keywords) {
+    const raw = keyword.toLowerCase().match(/[a-z][a-z0-9]{2,}/g) ?? [];
+    for (const term of raw) {
+      const normalized = normalizeTerm(term);
+      if (!normalized || seen.has(normalized)) continue;
+      seen.add(normalized);
+      terms.push(normalized);
+    }
+  }
+  return terms;
+}
+
+function isBroadBranchTerm(term: string): boolean {
+  return isGenericTerm(term) || BROAD_BRANCH_TERMS.has(term);
+}
+
+function branchMatches(branch: string, keywords: string[]): boolean {
+  const tokens = branchTokens(branch);
+  const hits = keywords.filter((keyword) => tokens.has(keyword));
+  if (hits.length >= 2) return true;
+  if (hits.length === 0) return false;
+  return keywords.length === 1 && !isBroadBranchTerm(hits[0] ?? '');
+}
 
 export async function branch_scan(input: Input): Promise<Envelope> {
   const cached = await readCache<Envelope>('branch_scan', input, TTL, input.force_refresh);
   if (cached.hit) return { ...cached.value, cached: true, fetched_at: cached.fetched_at };
   const fetched_at = new Date().toISOString();
   const heads = await lsRemoteHeads(input.repo);
-  const lowered = input.keywords.map((keyword) => keyword.toLowerCase());
-  const matches = heads.filter((head) => lowered.some((keyword) => head.name.toLowerCase().includes(keyword)));
+  const keywords = normalizedKeywords(input.keywords);
+  const matches = heads.filter((head) => branchMatches(head.name, keywords));
   const evidence = [] as Array<Record<string, unknown>>;
   const not_checked = [LIMIT_BRANCH, LIMIT_MATCH];
   for (const match of matches) {

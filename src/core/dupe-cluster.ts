@@ -3,6 +3,7 @@ import { createEnvelope, Envelope } from './envelope.js';
 
 const DUPE_LIMIT = 'lexical similarity only; semantic duplicates with different vocabulary will be missed.';
 const STOP = new Set(['the', 'and', 'for', 'with', 'from', 'that', 'this', 'should', 'would', 'could', 'please', 'issue']);
+const CLOSED_TITLE_THRESHOLD = 0.6;
 
 type Input = { repo: string; issue_number: number; max_candidates?: number };
 
@@ -37,8 +38,10 @@ export async function dupe_cluster(input: Input): Promise<Envelope> {
   const byNumber = new Map<number, GithubIssue>();
   for (const issue of [...searched.items, ...listed]) if (issue.number !== target.number) byNumber.set(issue.number, issue);
   const targetText = `${target.title} ${target.body ?? ''}`.slice(0, 600);
+  const targetTitleTokens = tokens(target.title);
   const candidates = Array.from(byNumber.values()).map((issue) => {
     const issueText = `${issue.title} ${issue.body ?? ''}`.slice(0, 600);
+    const titleScore = jaccard(targetTitleTokens, tokens(issue.title));
     const score = Math.max(jaccard(targetTokens, tokens(issueText)), sharedErrorPhrase(targetText, issueText) ? 0.5 : 0);
     return {
       number: issue.number,
@@ -46,9 +49,10 @@ export async function dupe_cluster(input: Input): Promise<Envelope> {
       state: issue.state,
       closed: issue.state === 'closed',
       url: issue.html_url,
+      title_score: Number(titleScore.toFixed(3)),
       score: Number(score.toFixed(3))
     };
-  }).filter((candidate) => candidate.score >= 0.35).sort((a, b) => b.score - a.score);
+  }).filter((candidate) => candidate.score >= 0.35 && (!candidate.closed || candidate.title_score >= CLOSED_TITLE_THRESHOLD)).sort((a, b) => b.score - a.score);
   return createEnvelope({
     verdict_summary: candidates.length > 0 ? `${candidates.length} lexical duplicate ${candidates.length === 1 ? 'candidate' : 'candidates'} found.` : 'no lexical duplicate candidates found.',
     evidence: candidates,
