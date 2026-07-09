@@ -19,8 +19,8 @@ npx gitworthy check owner/repo#123 --npm-package package-name --json
 Interpretation:
 
 - ACT means the completed deterministic checks did not find a blocking signal.
-- VERIFY means a human must perform the named checks before investing or making any public claim. If `no_pr_path` is present, do not plan a PR unless the stated feedback channel says otherwise.
-- SKIP means the tool found a strong signal that the work is already handled, in flight, released, or duplicated.
+- VERIFY means a human must perform the named checks before investing or making any public claim. If `assigned` is present, coordinate before acting. If `no_pr_path` is present, do not plan a PR unless the stated feedback channel says otherwise.
+- SKIP means the tool found a strong signal that the work is already handled, in flight, linked to an open PR, released, or duplicated.
 
 Mandatory rule: never make a public claim from a VERIFY verdict without performing the named human checks.
 

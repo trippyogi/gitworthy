@@ -8,6 +8,7 @@ type Candidate = {
   number: number;
   title: string;
   labels: string[];
+  assignees: string[];
   age_days: number;
   comments: number;
   url: string;
@@ -48,6 +49,7 @@ function candidate(issue: GithubIssue): Candidate {
     number: issue.number,
     title: issue.title,
     labels: issue.labels.map((label) => label.name),
+    assignees: (issue.assignees ?? []).map((assignee) => assignee.login),
     age_days: issueAgeDays(issue.created_at),
     comments: issue.comments,
     url: issue.html_url,

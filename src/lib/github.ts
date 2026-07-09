@@ -6,6 +6,7 @@ export type GithubIssue = {
   body: string | null;
   state: string;
   labels: Array<{ name: string }>;
+  assignees?: Array<{ login: string }>;
   comments: number;
   html_url: string;
   created_at: string;

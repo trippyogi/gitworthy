@@ -30,6 +30,7 @@ gitworthy branches owner/repo keyword[,keyword] [--json]
 gitworthy issue owner/repo 123 [--json]
 gitworthy release owner/repo package-name [--probe-glob glob] [--probe-contains text] [--json]
 gitworthy dupes owner/repo 123 [--json]
+gitworthy linked owner/repo 123 [--json]
 gitworthy policy owner/repo [--json]
 gitworthy scan Shopify/cli --label "good first issue" --json
 gitworthy mcp
@@ -87,13 +88,17 @@ Fetches npm metadata, reads package version from main, compares it to npm latest
 
 Fetches the target issue, searches GitHub issues for distinctive title tokens, lists open issues, and scores lexical similarity.
 
+### linked_work
+
+Fetches issue timeline cross-references, explicit issue-number PR mentions, and current assignees. It emits `linked_pr_open` for open linked PRs, `linked_pr_merged` for merged linked PRs, and `assigned` for maintainer assignment. PR linkage depends on GitHub cross-reference events or explicit issue-number mentions, so unrelated PRs remain invisible.
+
 ### contrib_policy
 
 Reads common contribution policy files from main or master and extracts deterministic policy signals with raw excerpts. If docs state that pull requests are not accepted or will be auto-closed, it emits `no_pr_path` and extracts the stated alternate feedback channel when present.
 
 ### scan
 
-Lists open issue tracker candidates for triage. Scan does not vet issues and does not produce ACT, VERIFY, or SKIP verdicts. It appends a one-line cached contribution-policy hint when available, or reminds you to run policy before investing. Use it to find candidate issue numbers, then run `gitworthy check owner/repo#123` on specific targets.
+Lists open issue tracker candidates for triage, including candidate assignee logins from the issue API response. Scan does not vet issues and does not produce ACT, VERIFY, or SKIP verdicts. It appends a one-line cached contribution-policy hint when available, or reminds you to run policy before investing. Use it to find candidate issue numbers, then run `gitworthy check owner/repo#123` on specific targets.
 
 Example composition:
 
@@ -104,7 +109,7 @@ gitworthy scan Shopify/cli --label "good first issue" --json
 
 ### worth_check
 
-Composes the checks into ACT, VERIFY, or SKIP. Any sub-check error forces VERIFY. The `no_pr_path` signal caps ACT at VERIFY with the alternate feedback channel, because a repo with no PR path has no direct contribution path. Sub-results remain visible in full.
+Composes the checks into ACT, VERIFY, or SKIP. Any sub-check error forces VERIFY. `linked_pr_open` forces SKIP with the PR citation. `assigned` caps ACT at VERIFY with the assignee and assignment date. The `no_pr_path` signal caps ACT at VERIFY with the alternate feedback channel, because a repo with no PR path has no direct contribution path. Sub-results remain visible in full.
 
 ## Output envelope
 

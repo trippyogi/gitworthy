@@ -1,0 +1,393 @@
+{
+  "verdict_summary": "mixed signals or sub-check errors require human review.",
+  "evidence": [],
+  "signals": [
+    "assigned"
+  ],
+  "checked": [
+    "issue_vs_main",
+    "branch_scan",
+    "linked_work",
+    "dupe_cluster",
+    "contrib_policy"
+  ],
+  "not_checked": [
+    "directory or string existence does not prove the issue's intent is satisfied; read both before making any public claim.",
+    "fork branches are invisible to this remote branch scan.",
+    "branch name matching is lexical and can miss renamed or differently named work.",
+    "PR linkage depends on GitHub cross-reference events or explicit issue-number mentions; a PR that never mentions the issue number remains invisible.",
+    "lexical similarity only; semantic duplicates with different vocabulary will be missed.",
+    "policy extraction is keyword and heading based; ambiguous sections are reported rather than inferred."
+  ],
+  "cached": false,
+  "fetched_at": "2026-07-09T00:12:37.486Z",
+  "verdict": "VERIFY",
+  "reasons": [
+    "linked_work: assigned",
+    "issue is assigned: cconstable at 2026-07-06T13:50:11Z"
+  ],
+  "sub_results": [
+    {
+      "name": "issue_vs_main",
+      "ok": true,
+      "result": {
+        "verdict_summary": "partial overlap found.",
+        "evidence": [
+          {
+            "issue": 2151,
+            "title": "[Feature Request] Move off Node 20 (EOL)",
+            "state": "open",
+            "labels": [
+              "enhancement"
+            ],
+            "comments": 0,
+            "url": "https://github.com/temporalio/sdk-typescript/issues/2151"
+          },
+          {
+            "tree_matches": [
+              ".github/actions/setup-node-deps/action.yml",
+              "contrib/ai-sdk/package.json",
+              "contrib/external-storage-gcs/package.json",
+              "contrib/external-storage-gcs-google-sdk/package.json",
+              "contrib/external-storage-s3/package.json",
+              "contrib/external-storage-s3-aws-sdk/package.json",
+              "contrib/interceptors-opentelemetry/package.json",
+              "contrib/interceptors-opentelemetry/src/__tests__/workflows/update-start-otel.ts",
+              "contrib/interceptors-opentelemetry-v2/package.json",
+              "contrib/interceptors-opentelemetry-v2/src/__tests__/workflows/update-start-otel.ts",
+              "contrib/langsmith/package.json",
+              "contrib/openai-agents/package.json",
+              "contrib/strands/package.json",
+              "contrib/workflow-streams/package.json",
+              "package.json",
+              "packages/activity/README.md",
+              "packages/activity/package.json",
+              "packages/activity/src/index.ts",
+              "packages/activity/tsconfig.json",
+              "packages/client/README.md",
+              "packages/client/package.json",
+              "packages/client/src/activity-client.ts",
+              "packages/client/src/async-completion-client.ts",
+              "packages/client/src/base-client.ts",
+              "packages/client/src/build-id-types.ts",
+              "packages/client/src/client.ts",
+              "packages/client/src/connection.ts",
+              "packages/client/src/errors.ts",
+              "packages/client/src/grpc-retry.ts",
+              "packages/client/src/helpers.ts",
+              "packages/client/src/index.ts",
+              "packages/client/src/interceptor-adapters.ts",
+              "packages/client/src/interceptors.ts",
+              "packages/client/src/internal.ts",
+              "packages/client/src/iterators-utils.ts",
+              "packages/client/src/nexus-client.ts",
+              "packages/client/src/nexus-types.ts",
+              "packages/client/src/pkg.ts",
+              "packages/client/src/schedule-client.ts",
+              "packages/client/src/schedule-helpers.ts",
+              "packages/client/src/schedule-types.ts",
+              "packages/client/src/task-queue-client.ts",
+              "packages/client/src/types.ts",
+              "packages/client/src/workflow-client.ts",
+              "packages/client/src/workflow-options.ts",
+              "packages/client/src/workflow-update-stage.ts",
+              "packages/client/tsconfig.json",
+              "packages/cloud/README.md",
+              "packages/cloud/package.json",
+              "packages/cloud/src/cloud-operations-client.ts"
+            ]
+          },
+          {
+            "grep_matches": [
+              {
+                "path": ".github/CODEOWNERS",
+                "line": 3,
+                "term": "request",
+                "sample": "# @temporalio/sdk will be requested for review when"
+              },
+              {
+                "path": ".github/CODEOWNERS",
+                "line": 4,
+                "term": "request",
+                "sample": "# someone opens a pull request."
+              },
+              {
+                "path": ".github/actions/setup-bun-deps/action.yml",
+                "line": 5,
+                "term": "version",
+                "sample": "  bun-version:"
+              },
+              {
+                "path": ".github/actions/setup-bun-deps/action.yml",
+                "line": 6,
+                "term": "version",
+                "sample": "    description: 'Version of Bun to install'"
+              },
+              {
+                "path": ".github/actions/setup-bun-deps/action.yml",
+                "line": 19,
+                "term": "version",
+                "sample": "        bun-version: ${{ inputs.bun-version }}"
+              },
+              {
+                "path": ".github/actions/setup-bun-deps/action.yml",
+                "line": 24,
+                "term": "version",
+                "sample": "        version: '10'"
+              },
+              {
+                "path": ".github/actions/setup-bun-deps/action.yml",
+                "line": 27,
+                "term": "node",
+                "sample": "    - name: Install Node (needed for pnpm and some tooling)"
+              },
+              {
+                "path": ".github/actions/setup-bun-deps/action.yml",
+                "line": 28,
+                "term": "node",
+                "sample": "      uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6"
+              },
+              {
+                "path": ".github/actions/setup-bun-deps/action.yml",
+                "line": 30,
+                "term": "node",
+                "sample": "        node-version: '22'"
+              },
+              {
+                "path": ".github/actions/setup-node-deps/action.yml",
+                "line": 1,
+                "term": "node",
+                "sample": "name: 'Setup Node and Install Dependencies'"
+              }
+            ]
+          }
+        ],
+        "signals": [],
+        "checked": [
+          "fetched issue temporalio/sdk-typescript#2151",
+          "shallow cloned temporalio/sdk-typescript",
+          "searched candidate terms in tree and file contents"
+        ],
+        "not_checked": [
+          "directory or string existence does not prove the issue's intent is satisfied; read both before making any public claim."
+        ],
+        "cached": false,
+        "fetched_at": "2026-07-09T00:12:33.130Z"
+      }
+    },
+    {
+      "name": "branch_scan",
+      "ok": true,
+      "result": {
+        "verdict_summary": "no matching remote branches found.",
+        "evidence": [],
+        "signals": [],
+        "checked": [
+          "listed remote heads for temporalio/sdk-typescript",
+          "matched branch names against keywords: request, move, node"
+        ],
+        "not_checked": [
+          "fork branches are invisible to this remote branch scan.",
+          "branch name matching is lexical and can miss renamed or differently named work."
+        ],
+        "cached": true,
+        "fetched_at": "2026-07-09T00:11:24.070Z"
+      }
+    },
+    {
+      "name": "linked_work",
+      "ok": true,
+      "result": {
+        "verdict_summary": "found 1 linked pull request and 1 assignee.",
+        "evidence": [
+          {
+            "kind": "linked_pr",
+            "number": 2072,
+            "state": "closed",
+            "draft": false,
+            "merged": false,
+            "date": "2026-05-20T14:47:26Z",
+            "author": "dependabot[bot]",
+            "title": "build(deps): bump protobufjs-cli from 1.1.3 to 2.0.3",
+            "url": "https://github.com/temporalio/sdk-typescript/pull/2072",
+            "source": "search"
+          },
+          {
+            "kind": "assignment",
+            "assignee": "cconstable",
+            "assigned_at": "2026-07-06T13:50:11Z",
+            "assigned_by": "yuandrew"
+          }
+        ],
+        "signals": [
+          "assigned"
+        ],
+        "checked": [
+          "fetched issue temporalio/sdk-typescript#2151",
+          "fetched issue timeline cross-reference and assignment events",
+          "searched pull requests for explicit issue-number mentions"
+        ],
+        "not_checked": [
+          "PR linkage depends on GitHub cross-reference events or explicit issue-number mentions; a PR that never mentions the issue number remains invisible."
+        ],
+        "cached": false,
+        "fetched_at": "2026-07-09T00:12:34.552Z"
+      }
+    },
+    {
+      "name": "dupe_cluster",
+      "ok": true,
+      "result": {
+        "verdict_summary": "no lexical duplicate candidates found.",
+        "evidence": [],
+        "signals": [],
+        "checked": [
+          "fetched target issue temporalio/sdk-typescript#2151",
+          "searched GitHub issues by distinctive title tokens",
+          "scored open issues by lexical overlap"
+        ],
+        "not_checked": [
+          "lexical similarity only; semantic duplicates with different vocabulary will be missed."
+        ],
+        "cached": false,
+        "fetched_at": "2026-07-09T00:12:37.485Z"
+      }
+    },
+    {
+      "name": "contrib_policy",
+      "ok": true,
+      "result": {
+        "verdict_summary": "found 16 contribution policy signals.",
+        "evidence": [
+          {
+            "category": "ai_assistance_policy",
+            "file": "CONTRIBUTING.md",
+            "url": "https://github.com/temporalio/sdk-typescript/blob/main/CONTRIBUTING.md",
+            "excerpt": "<!-- START doctoc generated TOC please keep comment here to allow auto update --> <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->",
+            "ambiguous": false
+          },
+          {
+            "category": "cla_requirement",
+            "file": "CONTRIBUTING.md",
+            "url": "https://github.com/temporalio/sdk-typescript/blob/main/CONTRIBUTING.md",
+            "excerpt": "- [Maintenance](#maintenance) - [Getting started](#getting-started) - [Contributor License Agreement (CLA)](#contributor-license-agreement-cla) - [Environment setup](#environment-setup) - [Development](#development) - [Working with Individual Packages](#working-with-individual-packages) - [Testing](#testing) - [Testing local changes to core](#testing-local-changes-to-core) - [Integration tests](#integration-tests) - [test-npm-init](#test-npm-init) - [Style Guide](#style-guide) -",
+            "ambiguous": false
+          },
+          {
+            "category": "ai_assistance_policy",
+            "file": "CONTRIBUTING.md",
+            "url": "https://github.com/temporalio/sdk-typescript/blob/main/CONTRIBUTING.md",
+            "excerpt": "<!-- END doctoc generated TOC please keep comment here to allow auto update -->",
+            "ambiguous": false
+          },
+          {
+            "category": "pr_caps_or_rate_limits",
+            "file": "CONTRIBUTING.md",
+            "url": "https://github.com/temporalio/sdk-typescript/blob/main/CONTRIBUTING.md",
+            "excerpt": "has been agreed upon, development may start and be submitted via a [pull request](https://github.com/temporalio/sdk-typescript/pulls).",
+            "ambiguous": false
+          },
+          {
+            "category": "cla_requirement",
+            "file": "CONTRIBUTING.md",
+            "url": "https://github.com/temporalio/sdk-typescript/blob/main/CONTRIBUTING.md",
+            "excerpt": "### Contributor License Agreement (CLA)",
+            "ambiguous": false
+          },
+          {
+            "category": "cla_requirement",
+            "file": "CONTRIBUTING.md",
+            "url": "https://github.com/temporalio/sdk-typescript/blob/main/CONTRIBUTING.md",
+            "excerpt": "Contributors must agree to the CLA before their PR can be merged. You only have to do this once. Follow [this link](https://cla-assistant.io/temporalio/sdk-typescript) and sign in with your GitHub account.",
+            "ambiguous": false
+          },
+          {
+            "category": "evidence_requirements",
+            "file": "CONTRIBUTING.md",
+            "url": "https://github.com/temporalio/sdk-typescript/blob/main/CONTRIBUTING.md",
+            "excerpt": "1. To run tests, you will need access to a local Temporal server, e.g. using the [Temporal CLI's integrated dev server](https://docs.temporal.io/cli). 2. Install the [Rust toolchain](https://rustup.rs/). 3. Install [Protocol Buffers](https://protobuf.dev/installation/). 4.",
+            "ambiguous": false
+          },
+          {
+            "category": "evidence_requirements",
+            "file": "CONTRIBUTING.md",
+            "url": "https://github.com/temporalio/sdk-typescript/blob/main/CONTRIBUTING.md",
+            "excerpt": "watches filesystem for changes and incrementally compiles Typescript on change. - `pnpm test` runs the test suite. Tests assume you have a [Temporal server running locally](https://docs.temporal.io/cli#start-dev-server). - `pnpm test:watch` runs the test suite on each change to Typescript files. -",
+            "ambiguous": false
+          },
+          {
+            "category": "evidence_requirements",
+            "file": "CONTRIBUTING.md",
+            "url": "https://github.com/temporalio/sdk-typescript/blob/main/CONTRIBUTING.md",
+            "excerpt": "You can build or test a single package using pnpm's filter flag:",
+            "ambiguous": false
+          },
+          {
+            "category": "evidence_requirements",
+            "file": "CONTRIBUTING.md",
+            "url": "https://github.com/temporalio/sdk-typescript/blob/main/CONTRIBUTING.md",
+            "excerpt": "# Run tests for a single package pnpm -F @temporalio/common run test ```",
+            "ambiguous": false
+          },
+          {
+            "category": "evidence_requirements",
+            "file": "CONTRIBUTING.md",
+            "url": "https://github.com/temporalio/sdk-typescript/blob/main/CONTRIBUTING.md",
+            "excerpt": "##### Integration tests",
+            "ambiguous": false
+          },
+          {
+            "category": "evidence_requirements",
+            "file": "CONTRIBUTING.md",
+            "url": "https://github.com/temporalio/sdk-typescript/blob/main/CONTRIBUTING.md",
+            "excerpt": "In order to run integration tests:",
+            "ambiguous": false
+          },
+          {
+            "category": "evidence_requirements",
+            "file": "CONTRIBUTING.md",
+            "url": "https://github.com/temporalio/sdk-typescript/blob/main/CONTRIBUTING.md",
+            "excerpt": "#### test-npm-init",
+            "ambiguous": false
+          },
+          {
+            "category": "evidence_requirements",
+            "file": "CONTRIBUTING.md",
+            "url": "https://github.com/temporalio/sdk-typescript/blob/main/CONTRIBUTING.md",
+            "excerpt": "To replicate the `test-npm-init` CI test locally, you can start with the below steps:",
+            "ambiguous": false
+          },
+          {
+            "category": "evidence_requirements",
+            "file": "CONTRIBUTING.md",
+            "url": "https://github.com/temporalio/sdk-typescript/blob/main/CONTRIBUTING.md",
+            "excerpt": "\"$TMP_DIR\" pnpm tsx scripts/init-from-verdaccio.ts --registry-dir \"$TMP_DIR\" --target-dir \"./example\" --sample hello-world pnpm tsx scripts/test-example.ts --work-dir \"./example\"",
+            "ambiguous": false
+          },
+          {
+            "category": "pr_caps_or_rate_limits",
+            "file": "CONTRIBUTING.md",
+            "url": "https://github.com/temporalio/sdk-typescript/blob/main/CONTRIBUTING.md",
+            "excerpt": "usable. The reverse is a breaking change, so prefer starting narrow. - Pull request titles SHOULD adhere to the [Conventional Commits specification](https://conventionalcommits.org/), for example:",
+            "ambiguous": false
+          }
+        ],
+        "signals": [],
+        "checked": [
+          "looked for CONTRIBUTING.md on main and master",
+          "looked for .github/CONTRIBUTING.md on main and master",
+          "looked for AGENTS.md on main and master",
+          "looked for AI_POLICY.md on main and master",
+          "looked for CODE_OF_CONDUCT.md on main and master",
+          "looked for .github/PULL_REQUEST_TEMPLATE.md on main and master",
+          "looked for SECURITY.md on main and master"
+        ],
+        "not_checked": [
+          "policy extraction is keyword and heading based; ambiguous sections are reported rather than inferred."
+        ],
+        "cached": true,
+        "fetched_at": "2026-07-09T00:11:28.859Z"
+      }
+    }
+  ]
+}

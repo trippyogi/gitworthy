@@ -1,0 +1,326 @@
+{
+  "verdict_summary": "blocking evidence was found by completed checks.",
+  "evidence": [],
+  "signals": [
+    "linked_pr_open"
+  ],
+  "checked": [
+    "issue_vs_main",
+    "branch_scan",
+    "linked_work",
+    "dupe_cluster",
+    "contrib_policy"
+  ],
+  "not_checked": [
+    "directory or string existence does not prove the issue's intent is satisfied; read both before making any public claim.",
+    "fork branches are invisible to this remote branch scan.",
+    "branch name matching is lexical and can miss renamed or differently named work.",
+    "PR linkage depends on GitHub cross-reference events or explicit issue-number mentions; a PR that never mentions the issue number remains invisible.",
+    "lexical similarity only; semantic duplicates with different vocabulary will be missed.",
+    "policy extraction is keyword and heading based; ambiguous sections are reported rather than inferred."
+  ],
+  "cached": false,
+  "fetched_at": "2026-07-09T00:12:31.704Z",
+  "verdict": "SKIP",
+  "reasons": [
+    "linked_work: linked_pr_open",
+    "open linked PR found: #4499 https://github.com/modelcontextprotocol/servers/pull/4499"
+  ],
+  "sub_results": [
+    {
+      "name": "issue_vs_main",
+      "ok": true,
+      "result": {
+        "verdict_summary": "partial overlap found.",
+        "evidence": [
+          {
+            "issue": 4487,
+            "title": "[server-filesystem] Windows: server fails to start when Node.js installed at default path (C:\\Program Files\\nodejs) due to space in command path",
+            "state": "open",
+            "labels": [],
+            "comments": 0,
+            "url": "https://github.com/modelcontextprotocol/servers/issues/4487"
+          },
+          {
+            "tree_matches": [
+              ".github/workflows/claude.yml",
+              "CLAUDE.md",
+              "src/everything/Dockerfile",
+              "src/everything/__tests__/server.test.ts",
+              "src/everything/docs/startup.md",
+              "src/everything/resources/files.ts",
+              "src/everything/server/index.ts",
+              "src/everything/server/logging.ts",
+              "src/everything/server/roots.ts",
+              "src/everything/tools/gzip-file-as-resource.ts",
+              "src/fetch/Dockerfile",
+              "src/fetch/src/mcp_server_fetch/__init__.py",
+              "src/fetch/src/mcp_server_fetch/__main__.py",
+              "src/fetch/src/mcp_server_fetch/server.py",
+              "src/fetch/tests/test_server.py",
+              "src/filesystem/Dockerfile",
+              "src/filesystem/README.md",
+              "src/filesystem/__tests__/directory-tree.test.ts",
+              "src/filesystem/__tests__/lib.test.ts",
+              "src/filesystem/__tests__/path-utils.test.ts",
+              "src/filesystem/__tests__/path-validation.test.ts",
+              "src/filesystem/__tests__/roots-utils.test.ts",
+              "src/filesystem/__tests__/startup-validation.test.ts",
+              "src/filesystem/__tests__/structured-content.test.ts",
+              "src/filesystem/index.ts",
+              "src/filesystem/lib.ts",
+              "src/filesystem/package.json",
+              "src/filesystem/path-utils.ts",
+              "src/filesystem/path-validation.ts",
+              "src/filesystem/roots-utils.ts",
+              "src/filesystem/tsconfig.json",
+              "src/filesystem/vitest.config.ts",
+              "src/git/Dockerfile",
+              "src/git/src/mcp_server_git/__init__.py",
+              "src/git/src/mcp_server_git/__main__.py",
+              "src/git/src/mcp_server_git/py.typed",
+              "src/git/src/mcp_server_git/server.py",
+              "src/git/tests/test_server.py",
+              "src/memory/Dockerfile",
+              "src/memory/__tests__/file-path.test.ts",
+              "src/sequentialthinking/Dockerfile",
+              "src/time/Dockerfile",
+              "src/time/src/mcp_server_time/__init__.py",
+              "src/time/src/mcp_server_time/__main__.py",
+              "src/time/src/mcp_server_time/server.py",
+              "src/time/test/time_server_test.py"
+            ]
+          },
+          {
+            "grep_matches": [
+              {
+                "path": ".github/pull_request_template.md",
+                "line": 5,
+                "term": "server",
+                "sample": "## Publishing Your Server"
+              },
+              {
+                "path": ".github/pull_request_template.md",
+                "line": 7,
+                "term": "server",
+                "sample": "**Note: We are no longer accepting PRs to add servers to the README.** Instead, please publish your server to the [MCP Server Registry](https://github.com/modelcontextprotocol/registry) to make it dis"
+              },
+              {
+                "path": ".github/pull_request_template.md",
+                "line": 9,
+                "term": "server",
+                "sample": "To publish your server, follow the [quickstart guide](https://github.com/modelcontextprotocol/registry/blob/main/docs/modelcontextprotocol-io/quickstart.mdx). You can browse published servers at [http"
+              },
+              {
+                "path": ".github/pull_request_template.md",
+                "line": 11,
+                "term": "server",
+                "sample": "## Server Details"
+              },
+              {
+                "path": ".github/pull_request_template.md",
+                "line": 12,
+                "term": "server",
+                "sample": "<!-- If modifying an existing server, provide details -->"
+              },
+              {
+                "path": ".github/pull_request_template.md",
+                "line": 13,
+                "term": "server",
+                "sample": "- Server: <!-- e.g., filesystem, github -->"
+              },
+              {
+                "path": ".github/pull_request_template.md",
+                "line": 36,
+                "term": "server",
+                "sample": "- [ ] I have updated the server's README accordingly"
+              },
+              {
+                "path": ".github/pull_request_template.md",
+                "line": 41,
+                "term": "environment",
+                "sample": "- [ ] I have documented all environment variables and configuration options"
+              },
+              {
+                "path": ".github/workflows/claude.yml",
+                "line": 1,
+                "term": "claude",
+                "sample": "name: Claude Code"
+              },
+              {
+                "path": ".github/workflows/claude.yml",
+                "line": 14,
+                "term": "claude",
+                "sample": "  claude:"
+              }
+            ]
+          }
+        ],
+        "signals": [],
+        "checked": [
+          "fetched issue modelcontextprotocol/servers#4487",
+          "shallow cloned modelcontextprotocol/servers",
+          "searched candidate terms in tree and file contents"
+        ],
+        "not_checked": [
+          "directory or string existence does not prove the issue's intent is satisfied; read both before making any public claim."
+        ],
+        "cached": false,
+        "fetched_at": "2026-07-09T00:12:26.731Z"
+      }
+    },
+    {
+      "name": "branch_scan",
+      "ok": true,
+      "result": {
+        "verdict_summary": "7 matching branches found, but no recent token-verified activity was established.",
+        "evidence": [
+          {
+            "branch": "adamj/add-time-mcp-servers",
+            "sha": "af9487bab5895beaeae9200fb7d9723a49362dfb",
+            "url": "https://github.com/modelcontextprotocol/servers/commit/af9487bab5895beaeae9200fb7d9723a49362dfb",
+            "date": "2025-10-19T11:17:57Z",
+            "subject": "Add time-mcp-nuget and time-mcp-pypi to community servers"
+          },
+          {
+            "branch": "adamj/mcp-server-time-url",
+            "sha": "9c90c9305c1c0f03cfd8ab9aa741e470ed8d7cde",
+            "url": "https://github.com/modelcontextprotocol/servers/commit/9c90c9305c1c0f03cfd8ab9aa741e470ed8d7cde",
+            "date": "2025-09-04T12:45:47Z",
+            "subject": "mcp-server-time: Add MCP name verification for registry"
+          },
+          {
+            "branch": "archive-servers",
+            "sha": "e247123893df338d565d5fb4fa221a7de7a68a7b",
+            "url": "https://github.com/modelcontextprotocol/servers/commit/e247123893df338d565d5fb4fa221a7de7a68a7b",
+            "date": "2025-05-27T13:42:32Z",
+            "subject": "Merge pull request #1828 from GongRzhe/patch-7"
+          },
+          {
+            "branch": "claude/update-server-registration-011CUDKWFSZGE2ksN2wLyi8f",
+            "sha": "cc18d398853e0da9a44466509472befb1157fa9c",
+            "url": "https://github.com/modelcontextprotocol/servers/commit/cc18d398853e0da9a44466509472befb1157fa9c",
+            "date": "2025-10-18T10:50:08Z",
+            "subject": "WIP: Partial conversion of filesystem and everything servers"
+          },
+          {
+            "branch": "jadamson/click-server",
+            "sha": "060c1e49228cb76695a915db24540dd67a41cc6f",
+            "url": "https://github.com/modelcontextprotocol/servers/commit/060c1e49228cb76695a915db24540dd67a41cc6f",
+            "date": "2024-11-28T15:17:19Z",
+            "subject": "WIP: add server to convert any command-line into a set of tools"
+          },
+          {
+            "branch": "ochafik/use-mcpserver",
+            "sha": "289857b924d8498c811dfd7574a96a1bd4784908",
+            "url": "https://github.com/modelcontextprotocol/servers/commit/289857b924d8498c811dfd7574a96a1bd4784908",
+            "date": "2025-10-16T15:17:37Z",
+            "subject": "Fix TypeScript type error in RESOURCE prompt"
+          },
+          {
+            "branch": "remove-archived-servers",
+            "sha": "ee0849f1b1ff2464cbbb9632a5fd3c0060681170",
+            "url": "https://github.com/modelcontextprotocol/servers/commit/ee0849f1b1ff2464cbbb9632a5fd3c0060681170",
+            "date": "2025-09-12T21:17:57Z",
+            "subject": "Move archived servers to archived.md instead of deleting"
+          }
+        ],
+        "signals": [],
+        "checked": [
+          "listed remote heads for modelcontextprotocol/servers",
+          "matched branch names against keywords: server-filesystem, window, server, fail, start, node, installed, default"
+        ],
+        "not_checked": [
+          "fork branches are invisible to this remote branch scan.",
+          "branch name matching is lexical and can miss renamed or differently named work."
+        ],
+        "cached": true,
+        "fetched_at": "2026-07-09T00:10:56.947Z"
+      }
+    },
+    {
+      "name": "linked_work",
+      "ok": true,
+      "result": {
+        "verdict_summary": "found 1 linked pull request and 0 assignees.",
+        "evidence": [
+          {
+            "kind": "linked_pr",
+            "number": 4499,
+            "state": "open",
+            "draft": false,
+            "merged": false,
+            "date": "2026-07-08T16:54:42Z",
+            "author": "tarunag10",
+            "title": "docs: clarify Windows launch commands",
+            "url": "https://github.com/modelcontextprotocol/servers/pull/4499",
+            "source": "search"
+          }
+        ],
+        "signals": [
+          "linked_pr_open"
+        ],
+        "checked": [
+          "fetched issue modelcontextprotocol/servers#4487",
+          "fetched issue timeline cross-reference and assignment events",
+          "searched pull requests for explicit issue-number mentions"
+        ],
+        "not_checked": [
+          "PR linkage depends on GitHub cross-reference events or explicit issue-number mentions; a PR that never mentions the issue number remains invisible."
+        ],
+        "cached": false,
+        "fetched_at": "2026-07-09T00:12:28.562Z"
+      }
+    },
+    {
+      "name": "dupe_cluster",
+      "ok": true,
+      "result": {
+        "verdict_summary": "no lexical duplicate candidates found.",
+        "evidence": [],
+        "signals": [],
+        "checked": [
+          "fetched target issue modelcontextprotocol/servers#4487",
+          "searched GitHub issues by distinctive title tokens",
+          "scored open issues by lexical overlap"
+        ],
+        "not_checked": [
+          "lexical similarity only; semantic duplicates with different vocabulary will be missed."
+        ],
+        "cached": false,
+        "fetched_at": "2026-07-09T00:12:31.703Z"
+      }
+    },
+    {
+      "name": "contrib_policy",
+      "ok": true,
+      "result": {
+        "verdict_summary": "found 1 contribution policy signal.",
+        "evidence": [
+          {
+            "category": "evidence_requirements",
+            "file": "CONTRIBUTING.md",
+            "url": "https://github.com/modelcontextprotocol/servers/blob/main/CONTRIBUTING.md",
+            "excerpt": "When adding or configuring tests for servers implemented in TypeScript, use **vitest** as the test framework. Vitest provides better ESM support, faster test execution, and a more modern testing experience.",
+            "ambiguous": false
+          }
+        ],
+        "signals": [],
+        "checked": [
+          "looked for CONTRIBUTING.md on main and master",
+          "looked for .github/CONTRIBUTING.md on main and master",
+          "looked for AGENTS.md on main and master",
+          "looked for AI_POLICY.md on main and master",
+          "looked for CODE_OF_CONDUCT.md on main and master",
+          "looked for .github/PULL_REQUEST_TEMPLATE.md on main and master",
+          "looked for SECURITY.md on main and master"
+        ],
+        "not_checked": [
+          "policy extraction is keyword and heading based; ambiguous sections are reported rather than inferred."
+        ],
+        "cached": true,
+        "fetched_at": "2026-07-09T00:11:04.608Z"
+      }
+    }
+  ]
+}

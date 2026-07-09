@@ -19,6 +19,7 @@ vi.mock('../src/core/issue-vs-main.js', () => ({
   }))
 }));
 vi.mock('../src/core/dupe-cluster.js', () => ({ dupe_cluster: vi.fn(async () => createEnvelope({ verdict_summary: 'no lexical duplicate candidates found.', evidence: [], checked: ['mock dupes'], not_checked: ['lexical similarity only; semantic duplicates with different vocabulary will be missed.'] })) }));
+vi.mock('../src/core/linked-work.js', () => ({ linked_work: vi.fn(async () => createEnvelope({ verdict_summary: 'no linked pull requests or current assignees found.', evidence: [], checked: ['mock linked work'], not_checked: ['PR linkage depends on GitHub cross-reference events or explicit issue-number mentions; a PR that never mentions the issue number remains invisible.'] })) }));
 vi.mock('../src/core/contrib-policy.js', () => ({ contrib_policy: vi.fn(async () => createEnvelope({ verdict_summary: 'no contribution policy signals found.', evidence: [], checked: ['mock policy'], not_checked: ['policy extraction is keyword and heading based; ambiguous sections are reported rather than inferred.'] })) }));
 
 const { worth_check } = await import('../src/core/worth-check.js');

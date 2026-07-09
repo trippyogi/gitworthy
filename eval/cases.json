@@ -59,5 +59,21 @@
     "input": { "repo": "PostHog/code", "issue_number": 2886 },
     "expect": { "verdict": "SKIP", "signal": "in_flight", "evidence_contains": "recover-sleep-interrupted-turns" },
     "time_sensitive": true
+  },
+  {
+    "id": 9,
+    "name": "MCP servers issue 4487 linked open PR",
+    "function": "worth_check",
+    "input": { "repo": "modelcontextprotocol/servers", "issue_number": 4487 },
+    "expect": { "verdict": "SKIP", "signal": "linked_pr_open", "evidence_contains": "4499" },
+    "time_sensitive": true
+  },
+  {
+    "id": 10,
+    "name": "Temporal TypeScript issue 2151 assigned maintainer",
+    "function": "worth_check",
+    "input": { "repo": "temporalio/sdk-typescript", "issue_number": 2151 },
+    "expect": { "verdict": "VERIFY", "signal": "assigned", "evidence_contains": "cconstable" },
+    "time_sensitive": true
   }
 ]

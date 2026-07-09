@@ -1,11 +1,11 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { branch_scan, contrib_policy, dupe_cluster, issue_vs_main, release_gap, worth_check } from '../src/core/index.js';
+import { branch_scan, contrib_policy, dupe_cluster, issue_vs_main, linked_work, release_gap, worth_check } from '../src/core/index.js';
 
 type Case = {
   id: number;
   name: string;
-  function: 'branch_scan' | 'issue_vs_main' | 'release_gap' | 'dupe_cluster' | 'contrib_policy' | 'worth_check';
+  function: 'branch_scan' | 'issue_vs_main' | 'release_gap' | 'dupe_cluster' | 'contrib_policy' | 'linked_work' | 'worth_check';
   input: Record<string, unknown>;
   expect: Record<string, unknown>;
   note?: string;
@@ -14,7 +14,7 @@ type Case = {
 
 type Row = { id: number; name: string; status: 'passed' | 'failed' | 'drifted' | 'blocked'; detail: string };
 
-const runners = { branch_scan, issue_vs_main, release_gap, dupe_cluster, contrib_policy, worth_check } as const;
+const runners = { branch_scan, issue_vs_main, release_gap, dupe_cluster, contrib_policy, linked_work, worth_check } as const;
 
 function textOf(value: unknown): string {
   return JSON.stringify(value).toLowerCase();

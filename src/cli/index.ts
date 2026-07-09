@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { parseArgs } from 'node:util';
 import { pathToFileURL } from 'node:url';
-import { branch_scan, contrib_policy, dupe_cluster, issue_vs_main, release_gap, scan, worth_check } from '../core/index.js';
+import { branch_scan, contrib_policy, dupe_cluster, issue_vs_main, linked_work, release_gap, scan, worth_check } from '../core/index.js';
 import { startMcpServer } from '../mcp/server.js';
 
 const help = `gitworthy
@@ -13,6 +13,7 @@ Usage:
   gitworthy issue owner/repo 123 [--json]
   gitworthy release owner/repo package-name [--probe-glob glob] [--probe-contains text] [--json]
   gitworthy dupes owner/repo 123 [--json]
+  gitworthy linked owner/repo 123 [--json]
   gitworthy policy owner/repo [--json]
   gitworthy scan owner/repo [--label "good first issue"] [--keywords term,term] [--since 90d] [--limit 25] [--json]
   gitworthy mcp
@@ -97,6 +98,9 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
     } else if (command === 'dupes') {
       if (!first || !second) throw new Error('dupes requires owner/repo and issue number.');
       output = await dupe_cluster({ repo: first, issue_number: Number(second) });
+    } else if (command === 'linked') {
+      if (!first || !second) throw new Error('linked requires owner/repo and issue number.');
+      output = await linked_work({ repo: first, issue_number: Number(second) });
     } else if (command === 'policy') {
       if (!first) throw new Error('policy requires owner/repo.');
       output = await contrib_policy({ repo: first, force_refresh: parsed.values['force-refresh'] === true });
