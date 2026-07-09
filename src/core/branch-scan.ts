@@ -40,7 +40,7 @@ function branchMatches(branch: string, keywords: string[]): boolean {
   const hits = keywords.filter((keyword) => tokens.has(keyword));
   if (hits.length >= 2) return true;
   if (hits.length === 0) return false;
-  return keywords.length === 1 && !isBroadBranchTerm(hits[0] ?? '');
+  return !isBroadBranchTerm(hits[0] ?? '');
 }
 
 export async function branch_scan(input: Input): Promise<Envelope> {

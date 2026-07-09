@@ -28,12 +28,13 @@ vi.mock('../src/lib/registry.js', () => ({
 }));
 
 describe('structured signals and CLI polish', () => {
-  it('emits in_flight and worth_check drives SKIP from signals', async () => {
+  it('emits in_flight and worth_check caps branch-only in_flight at VERIFY when linked_work is clean', async () => {
     const branch = await branch_scan({ repo: 'o/r', keywords: ['sleep'], force_refresh: true });
     expect(branch.signals).toEqual(['in_flight']);
     const worth = await worth_check({ repo: 'o/r', issue_number: 1 });
-    expect(worth.verdict).toBe('SKIP');
+    expect(worth.verdict).toBe('VERIFY');
     expect(worth.reasons.join(' ')).toContain('in_flight');
+    expect(worth.reasons).toContain('keyword-matched branches exist but no linked PR or assignee; read the matched branches.');
   });
 
   it('dedupes human-readable verdict prefixes and warns for dash keywords', async () => {

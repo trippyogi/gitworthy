@@ -39,6 +39,17 @@ function err(name: string, error: unknown): SubResult {
   return { name, ok: false, error: { code: 'unknown_error', message: error instanceof Error ? error.message : String(error), not_checked: ['sub-check failed with an unknown error.'] } };
 }
 
+function hasCleanLinkedWork(subResults: SubResult[]): boolean {
+  const linked = subResults.find((result) => result.name === 'linked_work');
+  return Boolean(linked?.ok && (linked.result.signals ?? []).length === 0);
+}
+
+function isBranchOnlySkipSignal(signals: Signal[], subResults: SubResult[]): boolean {
+  if (!hasCleanLinkedWork(subResults)) return false;
+  const blocking = signals.filter((signal) => !['no_pr_path', 'linked_pr_merged', 'assigned'].includes(signal));
+  return blocking.length === 1 && blocking[0] === 'in_flight';
+}
+
 export async function worth_check(input: Input): Promise<WorthEnvelope> {
   const sub_results: SubResult[] = [];
   let issueKeywords = [String(input.issue_number)];
@@ -63,14 +74,17 @@ export async function worth_check(input: Input): Promise<WorthEnvelope> {
   const signals = [...new Set(sub_results.flatMap((result) => result.ok ? (result.result.signals ?? []) : []))] as Signal[];
   const verifySignals: Signal[] = ['no_pr_path', 'linked_pr_merged', 'assigned'];
   const skipSignals = signals.filter((signal) => !verifySignals.includes(signal));
+  const branchOnlyInFlightWithCleanLinkedWork = isBranchOnlySkipSignal(signals, sub_results);
   for (const result of sub_results) {
     if (!result.ok) reasons.push(`${result.name} errored: ${result.error.message}`);
     if (result.ok && (result.result.signals ?? []).length > 0) reasons.push(`${result.name}: ${(result.result.signals ?? []).join(', ')}`);
   }
   let verdict: 'ACT' | 'VERIFY' | 'SKIP' = 'ACT';
   if (errors.length > 0) verdict = 'VERIFY';
+  else if (branchOnlyInFlightWithCleanLinkedWork) verdict = 'VERIFY';
   else if (skipSignals.length > 0) verdict = 'SKIP';
   else if (signals.some((signal) => verifySignals.includes(signal))) verdict = 'VERIFY';
+  if (branchOnlyInFlightWithCleanLinkedWork) reasons.push('keyword-matched branches exist but no linked PR or assignee; read the matched branches.');
   if (signals.includes('no_pr_path')) reasons.push(`repo accepts no pull requests; feedback channel: ${noPrFeedbackChannel(sub_results)}`);
   if (signals.includes('linked_pr_open')) reasons.push(`open linked PR found: ${linkedPrCitation(sub_results, (item) => item.state === 'open') ?? 'citation unavailable'}`);
   if (signals.includes('assigned')) reasons.push(`issue is assigned: ${assignmentCitation(sub_results) ?? 'assignee date unavailable'}`);

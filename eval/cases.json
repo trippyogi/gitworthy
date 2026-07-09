@@ -57,7 +57,7 @@
     "name": "PostHog code worth check issue 2886",
     "function": "worth_check",
     "input": { "repo": "PostHog/code", "issue_number": 2886 },
-    "expect": { "verdict": "SKIP", "signal": "in_flight", "evidence_contains": "recover-sleep-interrupted-turns" },
+    "expect": { "verdict": "VERIFY", "signal": "in_flight", "evidence_contains": "recover-sleep-interrupted-turns" },
     "time_sensitive": true
   },
   {

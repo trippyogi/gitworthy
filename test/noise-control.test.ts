@@ -25,9 +25,10 @@ vi.mock('../src/core/contrib-policy.js', () => ({ contrib_policy: vi.fn(async ()
 const { worth_check } = await import('../src/core/worth-check.js');
 
 describe('term extraction noise controls', () => {
-  it('filters generic title words before branch_scan while preserving the sleep signal', async () => {
+  it('filters generic title words before branch_scan while capping branch-only in_flight at VERIFY when linked_work is clean', async () => {
     const result = await worth_check({ repo: 'PostHog/code', issue_number: 2886 });
-    expect(result.verdict).toBe('SKIP');
+    expect(result.verdict).toBe('VERIFY');
+    expect(result.reasons).toContain('keyword-matched branches exist but no linked PR or assignee; read the matched branches.');
     expect(JSON.stringify(result)).toContain('recover-sleep-interrupted-turns');
     expect(branchScanMock).toHaveBeenCalledWith({ repo: 'PostHog/code', keywords: ['laptop', 'sleep'] });
   });
