@@ -1,5 +1,6 @@
 import { readCache, writeCache } from '../lib/cache.js';
 import { fetchRaw } from '../lib/github.js';
+import { loadCanonicalRepo } from '../lib/repo.js';
 import { createEnvelope, Envelope } from './envelope.js';
 
 export const CONTRIB_POLICY_TTL = 24 * 60 * 60 * 1000;
@@ -80,19 +81,23 @@ export async function contrib_policy(input: Input): Promise<Envelope> {
   const cached = await readCache<Envelope>('contrib_policy', cacheInput, CONTRIB_POLICY_TTL, input.force_refresh);
   if (cached.hit) return { ...cached.value, cached: true, fetched_at: cached.fetched_at };
   const fetched_at = new Date().toISOString();
+  const resolved = await loadCanonicalRepo(input.repo, input.force_refresh);
   const evidence: Array<Record<string, unknown>> = [];
-  const checked: string[] = [];
-  const not_checked = ['policy extraction is keyword and heading based; ambiguous sections are reported rather than inferred.'];
+  const checked: string[] = [...resolved.checked];
+  const not_checked = [...resolved.not_checked, 'policy extraction is keyword and heading based; ambiguous sections are reported rather than inferred.'];
   const seen = new Set<string>();
+  const branches = resolved.not_checked.length > 0 ? ['main', 'master'] : [resolved.default_branch];
   for (const file of FILES) {
     let text: string | null = null;
-    let branch = 'main';
-    text = await fetchRaw(input.repo, branch, file);
-    if (text === null) {
-      branch = 'master';
-      text = await fetchRaw(input.repo, branch, file);
+    let branch = branches[0];
+    for (const candidate of branches) {
+      text = await fetchRaw(resolved.full_name, candidate, file);
+      if (text !== null) {
+        branch = candidate;
+        break;
+      }
     }
-    checked.push(`looked for ${file} on main and master`);
+    checked.push(resolved.not_checked.length > 0 ? `looked for ${file} on main and master` : `looked for ${file} on ${resolved.default_branch}`);
     if (!text) continue;
     const fileFeedbackChannel = feedbackChannel(text);
     for (const section of splitSections(text)) {
@@ -102,7 +107,7 @@ export async function contrib_policy(input: Input): Promise<Envelope> {
       const key = `${file}:${rawExcerpt}`;
       if (seen.has(key)) continue;
       seen.add(key);
-      evidence.push({ category: match.category, file, url: `https://github.com/${input.repo}/blob/${branch}/${file}`, excerpt: rawExcerpt, feedback_channel: match.category === 'no_pr_path' ? feedbackChannel(section) ?? fileFeedbackChannel : undefined, ambiguous: match.category === 'ambiguous' });
+      evidence.push({ category: match.category, file, url: `https://github.com/${resolved.full_name}/blob/${branch}/${file}`, excerpt: rawExcerpt, feedback_channel: match.category === 'no_pr_path' ? feedbackChannel(section) ?? fileFeedbackChannel : undefined, ambiguous: match.category === 'ambiguous' });
     }
   }
   if (evidence.length === 0) not_checked.push('no contribution policy excerpts were found in the checked files.');

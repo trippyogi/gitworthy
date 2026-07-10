@@ -1,6 +1,6 @@
 {
   "name": "gitworthy",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "mcpName": "io.github.trippyogi/gitworthy",
   "description": "is it worth your commit? A pre-flight tool for OSS contribution targets: checks whether an issue is already done, in flight, fixed but unreleased, duplicated, or genuinely open.",
   "type": "module",
@@ -37,7 +37,8 @@
     "dist",
     "README.md",
     "LICENSE",
-    "SKILL.md"
+    "SKILL.md",
+    "CASE_STUDIES.md"
   ],
   "author": "Jeremy McKeehen",
   "homepage": "https://github.com/trippyogi/gitworthy#readme",

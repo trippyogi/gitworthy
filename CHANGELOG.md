@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.3
+
+- Exclude pull requests from `dupe_cluster` candidate sets; emit blocking `duplicate` only at lexical score ≥ 0.65 (medium-confidence hits may remain evidence-only).
+- Require an explicit matching tarball probe before emitting `released_fix`; version equality alone no longer proves an issue-specific fix shipped.
+- Canonicalize renamed repositories before Search `repo:` queries, with a cache bust + one re-resolve after Search 422 on a cached canonical name; use the resolved default branch in `contrib_policy` raw fetches.
+- Make `pnpm eval` compare-only by default; write fixtures only with `--update-fixtures`.
+- Sync the MCP server version with `package.json` and return structured `GitworthyError` envelopes from tool handlers.
+- Include GitHub `message` / `documentation_url` details in API error messages.
+- Add honesty-scoped calibration case studies in `CASE_STUDIES.md`.
+
 ## 0.3.1
 
 - Fix Linux/macOS global npm installs where the `gitworthy` bin symlink silently no-oped because CLI entry detection compared the symlink path to the real compiled module path.

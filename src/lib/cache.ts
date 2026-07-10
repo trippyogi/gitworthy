@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
-import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, stat, unlink, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import path from 'node:path';
+import { packageVersion } from './package-meta.js';
 
 export type CacheReadResult<T> = { hit: true; value: T; fetched_at: string } | { hit: false };
 
@@ -12,8 +12,7 @@ export function cacheRoot(): string {
 
 export function cacheVersion(): string {
   if (process.env.GITWORTHY_CACHE_VERSION) return process.env.GITWORTHY_CACHE_VERSION;
-  const packageJson = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8')) as { version?: string };
-  return packageJson.version ?? 'unknown';
+  return packageVersion();
 }
 
 export function cacheKey(scope: string, args: unknown): string {
@@ -38,4 +37,13 @@ export async function writeCache<T>(scope: string, args: unknown, value: T, fetc
   const file = cacheKey(scope, args);
   await mkdir(path.dirname(file), { recursive: true });
   await writeFile(file, JSON.stringify({ value, fetched_at }, null, 2));
+}
+
+export async function deleteCache(scope: string, args: unknown): Promise<void> {
+  const file = cacheKey(scope, args);
+  try {
+    await unlink(file);
+  } catch {
+    // missing cache entry is a successful bust
+  }
 }

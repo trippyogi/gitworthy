@@ -16,10 +16,10 @@ No telemetry is active by default. Optional PostHog telemetry requires both `GIT
 ## Quickstart
 
 ```sh
-npx gitworthy check owner/repo#123
-npx gitworthy check owner/repo#123 --npm-package package-name --json
-npx gitworthy scan Shopify/cli --label "good first issue" --json
-gitworthy mcp
+npx -y gitworthy@0.3.3 check owner/repo#123
+npx -y gitworthy@0.3.3 check owner/repo#123 --npm-package package-name --json
+npx -y gitworthy@0.3.3 scan Shopify/cli --label "good first issue" --json
+npx -y gitworthy@0.3.3 mcp
 ```
 
 ## CLI
@@ -50,7 +50,7 @@ Exit codes for `check`:
   "mcpServers": {
     "gitworthy": {
       "command": "npx",
-      "args": ["gitworthy", "mcp"],
+      "args": ["-y", "gitworthy@0.3.3", "mcp"],
       "env": { "GITHUB_TOKEN": "github_pat_..." }
     }
   }
@@ -82,7 +82,7 @@ Fetches issue metadata, shallow clones main, extracts deterministic candidate te
 
 ### release_gap
 
-Fetches npm metadata, reads package version from main, compares it to npm latest, and optionally downloads the latest tarball for a string probe.
+Fetches npm metadata, reads package version from main, and compares it to npm latest. `--npm-package` alone reports package release state; it does not prove an issue-specific fix shipped. Emit `released_fix` only when you also pass a tarball probe (`--probe-glob` + `--probe-contains`) and that probe matches in the published artifact.
 
 ### dupe_cluster
 
@@ -98,7 +98,7 @@ Reads common contribution policy files from main or master and extracts determin
 
 ### scan
 
-Lists open issue tracker candidates for triage, including candidate assignee logins from the issue API response. Scan does not vet issues and does not produce ACT, VERIFY, or SKIP verdicts. It appends a one-line cached contribution-policy hint when available, or reminds you to run policy before investing. Use it to find candidate issue numbers, then run `gitworthy check owner/repo#123` on specific targets.
+Tracker triage only: lists open issue tracker candidates, including candidate assignee logins from the issue API response. Scan does not vet issues and does not produce ACT, VERIFY, or SKIP verdicts. It appends a one-line cached contribution-policy hint when available, or reminds you to run policy before investing. Use it to find candidate issue numbers, then run `gitworthy check owner/repo#123` on specific targets.
 
 Example composition:
 
@@ -130,6 +130,10 @@ Every core result includes:
 `checked` and `not_checked` are load-bearing. Empty `not_checked` on a real result is a bug.
 
 `signals` is the only load-bearing verdict input for `worth_check`. Human-readable prose is never parsed to decide ACT, VERIFY, or SKIP.
+
+## Calibration cases
+
+Real contribution sessions that calibrated false-positive fixes in v0.3.3 (Dawn cart drawer, Buzz PR leakage into duplicate detection, Firecrawl renamed-repo Search, and release-probe semantics) are documented in [CASE_STUDIES.md](./CASE_STUDIES.md).
 
 ## Why
 

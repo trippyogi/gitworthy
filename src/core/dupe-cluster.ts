@@ -1,9 +1,12 @@
 import { githubJson, GithubIssue } from '../lib/github.js';
+import { runSearchWithCanonicalRepo } from '../lib/repo.js';
 import { createEnvelope, Envelope } from './envelope.js';
 
 const DUPE_LIMIT = 'lexical similarity only; semantic duplicates with different vocabulary will be missed.';
 const STOP = new Set(['the', 'and', 'for', 'with', 'from', 'that', 'this', 'should', 'would', 'could', 'please', 'issue']);
 const CLOSED_TITLE_THRESHOLD = 0.6;
+const EVIDENCE_THRESHOLD = 0.35;
+const BLOCKING_THRESHOLD = 0.65;
 
 type Input = { repo: string; issue_number: number; max_candidates?: number };
 
@@ -28,15 +31,21 @@ export async function dupe_cluster(input: Input): Promise<Envelope> {
   const target = await githubJson<GithubIssue>(`/repos/${input.repo}/issues/${input.issue_number}`);
   const targetTokens = tokens(`${target.title} ${target.body ?? ''}`.slice(0, 600));
   const distinctive = Array.from(tokens(target.title)).slice(0, 5);
-  const query = encodeURIComponent(`repo:${input.repo} is:issue ${distinctive.join(' ')}`);
-  const searched = await githubJson<{ items: GithubIssue[] }>(`/search/issues?q=${query}&per_page=${input.max_candidates ?? 50}`);
+  const { result: searched, context } = await runSearchWithCanonicalRepo(input.repo, async (fullName) => {
+    const query = encodeURIComponent(`repo:${fullName} is:issue ${distinctive.join(' ')}`);
+    return githubJson<{ items: GithubIssue[] }>(`/search/issues?q=${query}&per_page=${input.max_candidates ?? 50}`);
+  });
   const listed = [] as GithubIssue[];
   const pages = input.max_candidates ? 1 : 3;
   for (let page = 1; page <= pages; page += 1) {
     listed.push(...await githubJson<GithubIssue[]>(`/repos/${input.repo}/issues?state=all&per_page=${input.max_candidates ?? 100}&page=${page}`));
   }
   const byNumber = new Map<number, GithubIssue>();
-  for (const issue of [...searched.items, ...listed]) if (issue.number !== target.number) byNumber.set(issue.number, issue);
+  for (const issue of [...searched.items, ...listed]) {
+    if ('pull_request' in issue) continue;
+    if (issue.number === target.number) continue;
+    byNumber.set(issue.number, issue);
+  }
   const targetText = `${target.title} ${target.body ?? ''}`.slice(0, 600);
   const targetTitleTokens = tokens(target.title);
   const candidates = Array.from(byNumber.values()).map((issue) => {
@@ -52,13 +61,14 @@ export async function dupe_cluster(input: Input): Promise<Envelope> {
       title_score: Number(titleScore.toFixed(3)),
       score: Number(score.toFixed(3))
     };
-  }).filter((candidate) => candidate.score >= 0.35 && (!candidate.closed || candidate.title_score >= CLOSED_TITLE_THRESHOLD)).sort((a, b) => b.score - a.score);
+  }).filter((candidate) => candidate.score >= EVIDENCE_THRESHOLD && (!candidate.closed || candidate.title_score >= CLOSED_TITLE_THRESHOLD)).sort((a, b) => b.score - a.score);
+  const blocking = candidates.some((candidate) => candidate.score >= BLOCKING_THRESHOLD);
   return createEnvelope({
     verdict_summary: candidates.length > 0 ? `${candidates.length} lexical duplicate ${candidates.length === 1 ? 'candidate' : 'candidates'} found.` : 'no lexical duplicate candidates found.',
     evidence: candidates,
-    signals: candidates.length > 0 ? ['duplicate'] : [],
-    checked: [`fetched target issue ${input.repo}#${input.issue_number}`, 'searched GitHub issues by distinctive title tokens', 'scored open issues by lexical overlap'],
-    not_checked: [DUPE_LIMIT],
+    signals: blocking ? ['duplicate'] : [],
+    checked: [`fetched target issue ${input.repo}#${input.issue_number}`, ...context.checked, 'searched GitHub issues by distinctive title tokens', 'scored open issues by lexical overlap'],
+    not_checked: [...context.not_checked, DUPE_LIMIT],
     cached: false
   });
 }

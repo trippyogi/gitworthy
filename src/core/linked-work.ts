@@ -1,4 +1,5 @@
 import { githubJson, GithubIssue } from '../lib/github.js';
+import { loadCanonicalRepo, runSearchWithCanonicalRepo } from '../lib/repo.js';
 import { GitworthyError } from './envelope.js';
 import { createEnvelope, Envelope } from './envelope.js';
 
@@ -59,35 +60,40 @@ async function timelineLinkedPrs(repo: string, events: TimelineEvent[]): Promise
   return [...prs.values()].sort((left, right) => left.number - right.number);
 }
 
-async function searchLinkedPrs(repo: string, issueNumber: number, existing: Set<number>): Promise<LinkedPrEvidence[]> {
-  const query = encodeURIComponent(`repo:${repo} is:pr ${issueNumber}`);
-  const result = await githubJson<SearchResult>(`/search/issues?q=${query}&per_page=20`);
+async function searchLinkedPrs(repo: string, apiRepo: string, issueNumber: number, existing: Set<number>): Promise<{ prs: LinkedPrEvidence[]; checked: string[]; not_checked: string[] }> {
+  const { result, context } = await runSearchWithCanonicalRepo(repo, async (fullName) => {
+    const query = encodeURIComponent(`repo:${fullName} is:pr ${issueNumber}`);
+    return githubJson<SearchResult>(`/search/issues?q=${query}&per_page=20`);
+  });
   const prs = [] as LinkedPrEvidence[];
   for (const item of result.items) {
     if (!('pull_request' in item) || existing.has(item.number)) continue;
-    const pr = await prDetails(repo, item.number);
+    const pr = await prDetails(apiRepo, item.number);
     const body = item.body ?? '';
     if (!new RegExp(`(?:#|issues/)${issueNumber}(?:\\D|$)`, 'i').test(body)) continue;
     prs.push(linkedPrEvidence(pr, pr.created_at, 'search'));
+    existing.add(item.number);
   }
-  return prs.sort((left, right) => left.number - right.number);
+  return { prs: prs.sort((left, right) => left.number - right.number), checked: context.checked, not_checked: context.not_checked };
 }
 
-function commentPrNumbers(repo: string, body: string): number[] {
+function commentPrNumbers(repos: string[], body: string): number[] {
   const numbers = new Set<number>();
-  const escapedRepo = repo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  for (const match of body.matchAll(new RegExp(`github\\.com/${escapedRepo}/pull/(\\d+)`, 'gi'))) numbers.add(Number(match[1]));
+  for (const repo of new Set(repos.filter(Boolean))) {
+    const escapedRepo = repo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    for (const match of body.matchAll(new RegExp(`github\\.com/${escapedRepo}/pull/(\\d+)`, 'gi'))) numbers.add(Number(match[1]));
+  }
   for (const match of body.matchAll(/(?:pull request|pull|pr)\s*#(\d+)/gi)) numbers.add(Number(match[1]));
   return [...numbers].filter((number) => Number.isInteger(number));
 }
 
-async function commentLinkedPrs(repo: string, issueNumber: number, existing: Set<number>): Promise<LinkedPrEvidence[]> {
-  const comments = await githubJson<IssueComment[]>(`/repos/${repo}/issues/${issueNumber}/comments?per_page=100`);
+async function commentLinkedPrs(canonicalRepo: string, apiRepo: string, issueNumber: number, existing: Set<number>): Promise<LinkedPrEvidence[]> {
+  const comments = await githubJson<IssueComment[]>(`/repos/${apiRepo}/issues/${issueNumber}/comments?per_page=100`);
   const prs = [] as LinkedPrEvidence[];
   for (const comment of comments) {
-    for (const number of commentPrNumbers(repo, comment.body ?? '')) {
+    for (const number of commentPrNumbers([canonicalRepo, apiRepo], comment.body ?? '')) {
       if (existing.has(number)) continue;
-      const pr = await maybePrDetails(repo, number);
+      const pr = await maybePrDetails(apiRepo, number);
       if (!pr) continue;
       existing.add(number);
       prs.push(linkedPrEvidence(pr, comment.created_at, 'comment', comment.html_url));
@@ -109,12 +115,13 @@ function assignmentEvidence(issue: GithubIssue, events: TimelineEvent[]): Assign
 }
 
 export async function linked_work(input: Input): Promise<Envelope> {
+  const resolved = await loadCanonicalRepo(input.repo);
   const issue = await githubJson<GithubIssue>(`/repos/${input.repo}/issues/${input.issue_number}`);
   const events = await timeline(input.repo, input.issue_number);
   const timelinePrs = await timelineLinkedPrs(input.repo, events);
   const knownPrs = new Set(timelinePrs.map((pr) => pr.number));
-  const commentPrs = await commentLinkedPrs(input.repo, input.issue_number, knownPrs);
-  const searchPrs = await searchLinkedPrs(input.repo, input.issue_number, knownPrs);
+  const commentPrs = await commentLinkedPrs(resolved.full_name, input.repo, input.issue_number, knownPrs);
+  const { prs: searchPrs, checked: searchChecked, not_checked: searchNotChecked } = await searchLinkedPrs(input.repo, input.repo, input.issue_number, knownPrs);
   const linkedPrs = [...timelinePrs, ...commentPrs, ...searchPrs].sort((left, right) => left.number - right.number);
   const assignments = assignmentEvidence(issue, events);
   const signals = [
@@ -124,12 +131,14 @@ export async function linked_work(input: Input): Promise<Envelope> {
   ];
   const linkedLabel = linkedPrs.length === 1 ? 'linked pull request' : 'linked pull requests';
   const assignedLabel = assignments.length === 1 ? 'assignee' : 'assignees';
+  const checkedNotes = [...new Set([...resolved.checked, ...searchChecked])];
+  const notCheckedNotes = [...new Set([...resolved.not_checked, ...searchNotChecked, LINKAGE_LIMIT])];
   return createEnvelope({
     verdict_summary: linkedPrs.length > 0 || assignments.length > 0 ? `found ${linkedPrs.length} ${linkedLabel} and ${assignments.length} ${assignedLabel}.` : 'no linked pull requests or current assignees found.',
     evidence: [...linkedPrs, ...assignments],
     signals,
-    checked: [`fetched issue ${input.repo}#${input.issue_number}`, 'fetched issue timeline cross-reference and assignment events', 'fetched issue comments for pull request references', 'searched pull requests for explicit issue-number mentions'],
-    not_checked: [LINKAGE_LIMIT],
+    checked: [`fetched issue ${input.repo}#${input.issue_number}`, ...checkedNotes, 'fetched issue timeline cross-reference and assignment events', 'fetched issue comments for pull request references', 'searched pull requests for explicit issue-number mentions'],
+    not_checked: notCheckedNotes,
     cached: false
   });
 }

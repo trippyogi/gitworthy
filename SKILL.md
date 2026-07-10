@@ -16,6 +16,8 @@ If the project publishes an npm package, include it:
 npx gitworthy check owner/repo#123 --npm-package package-name --json
 ```
 
+`--npm-package` alone reports package release state; it does not prove an issue-specific fix shipped. For that, add `--probe-glob` and `--probe-contains` so `release_gap` can search the published tarball.
+
 Interpretation:
 
 - ACT means the completed deterministic checks did not find a blocking signal.

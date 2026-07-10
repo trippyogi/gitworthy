@@ -35,13 +35,25 @@ export class GitworthyError extends Error {
   readonly checked: string[];
   readonly not_checked: string[];
   readonly status?: number;
+  readonly github_message?: string;
+  readonly documentation_url?: string;
 
-  constructor(input: { code: string; message: string; checked?: string[]; not_checked?: string[]; status?: number }) {
+  constructor(input: {
+    code: string;
+    message: string;
+    checked?: string[];
+    not_checked?: string[];
+    status?: number;
+    github_message?: string;
+    documentation_url?: string;
+  }) {
     super(input.message);
     this.name = 'GitworthyError';
     this.code = input.code;
     this.checked = input.checked ?? [];
     this.not_checked = input.not_checked ?? [input.message];
     this.status = input.status;
+    this.github_message = input.github_message;
+    this.documentation_url = input.documentation_url;
   }
 }

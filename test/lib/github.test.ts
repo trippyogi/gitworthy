@@ -37,4 +37,19 @@ describe('github client', () => {
     await expect(githubJson('/repos/a/b')).rejects.toBeInstanceOf(GitworthyError);
     await expect(githubJson('/repos/a/b')).rejects.toMatchObject({ code: 'github_rate_limit_exhausted' });
   });
+
+  it('includes GitHub message details in API errors', async () => {
+    process.env.GITHUB_TOKEN = 'token';
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
+      message: 'Validation Failed',
+      documentation_url: 'https://docs.github.com/rest/search/search'
+    }), { status: 422, headers: { 'content-type': 'application/json' } })));
+    await expect(githubJson('/search/issues?q=repo:x/y')).rejects.toMatchObject({
+      code: 'github_api_error',
+      status: 422,
+      github_message: 'Validation Failed',
+      documentation_url: 'https://docs.github.com/rest/search/search',
+      message: expect.stringContaining('with status 422: Validation Failed')
+    });
+  });
 });

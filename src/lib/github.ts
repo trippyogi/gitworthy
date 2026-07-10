@@ -12,6 +12,7 @@ export type GithubIssue = {
   created_at: string;
   updated_at: string;
   closed_at: string | null;
+  pull_request?: { url?: string; html_url?: string; merged_at?: string | null };
 };
 
 export function githubToken(): string | undefined {
@@ -48,10 +49,22 @@ export async function githubJson<T>(path: string, init: RequestInit = {}): Promi
         not_checked: ['GitHub API request was not checked because the rate limit was exhausted.']
       });
     }
+    let github_message: string | undefined;
+    let documentation_url: string | undefined;
+    try {
+      const body = await response.json() as { message?: unknown; documentation_url?: unknown };
+      if (typeof body.message === 'string') github_message = body.message;
+      if (typeof body.documentation_url === 'string') documentation_url = body.documentation_url;
+    } catch {
+      // non-JSON error bodies still produce a status-only message
+    }
+    const detail = github_message ? `: ${github_message}` : '.';
     throw new GitworthyError({
       code: 'github_api_error',
-      message: `GitHub API request failed with status ${response.status}.`,
+      message: `GitHub API request failed for ${url} with status ${response.status}${detail}`,
       status: response.status,
+      github_message,
+      documentation_url,
       not_checked: [`GitHub API request failed for ${url}.`]
     });
   }

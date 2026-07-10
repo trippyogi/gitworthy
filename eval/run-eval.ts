@@ -64,6 +64,8 @@ function evaluate(result: Record<string, unknown>, spec: Case, previous: Record<
 }
 
 async function main(): Promise<void> {
+  const updateFixtures = process.argv.includes('--update-fixtures');
+  console.log(`mode: ${updateFixtures ? 'update-fixtures' : 'compare-only'}`);
   const cases = JSON.parse(await readFile(new URL('./cases.json', import.meta.url), 'utf8')) as Case[];
   await mkdir('fixtures', { recursive: true });
   const rows: Row[] = [];
@@ -73,7 +75,7 @@ async function main(): Promise<void> {
       const previous = await readFile(fixturePath, 'utf8').then((content) => JSON.parse(content) as Record<string, unknown>).catch(() => null);
       const result = await runners[item.function](item.input as never) as Record<string, unknown>;
       rows.push(evaluate(result, item, previous));
-      await writeFile(fixturePath, `${fixtureJson(result)}\n`);
+      if (updateFixtures) await writeFile(fixturePath, `${fixtureJson(result)}\n`);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       const tokenBlocked = /GITHUB_TOKEN|required for this GitHub API check|rate limit/i.test(message);

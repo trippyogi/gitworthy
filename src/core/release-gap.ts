@@ -8,6 +8,7 @@ import { createEnvelope, Envelope } from './envelope.js';
 const TTL = 60 * 60 * 1000;
 
 type Input = { repo: string; npm_package: string; probe?: { file_glob?: string; contains?: string }; force_refresh?: boolean };
+type ProbeResult = { probe: { file_glob?: string; contains?: string }; matches: Array<Record<string, unknown>>; matched: boolean };
 
 async function walk(dir: string): Promise<string[]> {
   const entries = await readdir(dir, { withFileTypes: true });
@@ -49,7 +50,9 @@ export async function release_gap(input: Input): Promise<Envelope> {
     evidence.push({ repo: input.repo, ref: 'main package.json', version: mainPackage.version, url: `https://github.com/${input.repo}/blob/main/package.json` });
     const latestMeta = metadata.versions[latest];
     evidence.push({ package: input.npm_package, version: latest, published_at: metadata.time[latest], url: `https://www.npmjs.com/package/${input.npm_package}/v/${latest}` });
-    if (input.probe?.contains && latestMeta?.dist?.tarball) {
+    let probe: ProbeResult | undefined;
+    const probeRequested = Boolean(input.probe?.contains);
+    if (probeRequested && latestMeta?.dist?.tarball) {
       const tarball = await downloadAndExtractTarball(latestMeta.dist.tarball);
       try {
         const root = path.join(tarball.dir, 'package');
@@ -57,20 +60,26 @@ export async function release_gap(input: Input): Promise<Envelope> {
         const matches = [] as Array<Record<string, unknown>>;
         for (const file of files) {
           const relative = path.relative(root, file);
-          if (input.probe.file_glob && !globMatch(relative, input.probe.file_glob)) continue;
+          if (input.probe?.file_glob && !globMatch(relative, input.probe.file_glob)) continue;
           const text = await readFile(file, 'utf8').catch(() => '');
-          if (text.includes(input.probe.contains)) matches.push({ path: relative, context: contextLines(text, input.probe.contains) });
+          if (text.includes(input.probe!.contains!)) matches.push({ path: relative, context: contextLines(text, input.probe!.contains!) });
         }
-        evidence.push({ probe: input.probe, matches });
+        probe = { probe: input.probe!, matches, matched: matches.length > 0 };
+        evidence.push(probe);
+        if (!probe.matched) {
+          evidence.push({ note: 'probe ran; no issue-specific match found in the published artifact' });
+        }
       } finally {
         await tarball.cleanup();
       }
+    } else if (probeRequested) {
+      not_checked.push('Issue-specific artifact contents were not checked because the npm tarball was unavailable.');
     } else {
-      not_checked.push('tarball probe was not checked because no probe was provided.');
+      not_checked.push('Issue-specific artifact contents were not checked because no probe was provided.');
     }
     const latestPublished = metadata.time[latest] ? `, published ${metadata.time[latest].slice(0, 10)}` : '';
-    const probeEvidence = evidence.find((item) => 'probe' in item) as { matches?: unknown[] } | undefined;
-    const releasedFix = mainPackage.version === latest && (!input.probe?.contains || (probeEvidence?.matches?.length ?? 0) > 0);
+    const probeMatched = probe?.matched === true;
+    const releasedFix = mainPackage.version === latest && probeRequested && probeMatched;
     const verdict_summary = mainPackage.version === latest ? `main and npm are equal at ${latest}${latestPublished}.` : `main package version ${mainPackage.version ?? 'unknown'} differs from npm latest ${latest}${latestPublished}.`;
     const envelope = createEnvelope({ verdict_summary, evidence, signals: releasedFix ? ['released_fix'] : [], checked: [`fetched npm metadata for ${input.npm_package}`, `read package.json from ${input.repo}`], not_checked, cached: false, fetched_at });
     await writeCache('release_gap', input, envelope, fetched_at);
