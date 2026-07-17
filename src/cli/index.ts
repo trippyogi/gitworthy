@@ -2,7 +2,7 @@
 import { realpathSync } from 'node:fs';
 import { parseArgs } from 'node:util';
 import { pathToFileURL } from 'node:url';
-import { branch_scan, contrib_policy, dupe_cluster, issue_vs_main, linked_work, release_gap, scan, worth_check } from '../core/index.js';
+import { branch_scan, contrib_policy, dupe_cluster, issue_vs_main, ledger_add, ledger_claim, ledger_list, ledger_update, linked_work, release_gap, scan, worth_check, type LedgerStatus, type LedgerVerdict } from '../core/index.js';
 import { startMcpServer } from '../mcp/server.js';
 
 const help = `gitworthy
@@ -17,6 +17,10 @@ Usage:
   gitworthy linked owner/repo 123 [--json]
   gitworthy policy owner/repo [--json]
   gitworthy scan owner/repo [--label "good first issue"] [--keywords term,term] [--since 90d] [--limit 25] [--json]
+  gitworthy ledger add owner/repo#123 [--verdict ACT] [--status candidate] [--json]
+  gitworthy ledger list [--status claimed] [--repo owner/repo] [--json]
+  gitworthy ledger claim owner/repo#123 [--chat-id id] [--json]
+  gitworthy ledger update owner/repo#123 --status patched [--notes text] [--json]
   gitworthy mcp
 `;
 
@@ -49,6 +53,41 @@ function probe(values: { 'probe-glob'?: unknown; 'probe-contains'?: unknown }): 
   return { file_glob, contains };
 }
 
+const LEDGER_STATUSES = new Set<LedgerStatus>(['candidate', 'claimed', 'reproved', 'patched', 'pr_or_comment', 'done', 'abandoned']);
+const LEDGER_VERDICTS = new Set<LedgerVerdict>(['ACT', 'VERIFY', 'SKIP']);
+
+function ledgerStatus(value: unknown): LedgerStatus | undefined {
+  const status = stringValue(value);
+  if (!status) return undefined;
+  if (!LEDGER_STATUSES.has(status as LedgerStatus)) throw new Error(`Unknown ledger status ${status}.`);
+  return status as LedgerStatus;
+}
+
+function ledgerVerdict(value: unknown): LedgerVerdict | undefined {
+  const verdict = stringValue(value);
+  if (!verdict) return undefined;
+  if (!LEDGER_VERDICTS.has(verdict as LedgerVerdict)) throw new Error(`Unknown verdict ${verdict}.`);
+  return verdict as LedgerVerdict;
+}
+
+function printLedger(output: unknown, asJson: boolean, write: Write): void {
+  if (asJson) {
+    write(`${JSON.stringify(output, null, 2)}\n`);
+    return;
+  }
+  if (Array.isArray((output as { records?: unknown[] }).records)) {
+    const records = (output as { records: Array<{ repo: string; issue_number: number; status: string; url: string }> }).records;
+    if (records.length === 0) {
+      write('No ledger records.\n');
+      return;
+    }
+    for (const record of records) write(`${record.repo}#${record.issue_number} ${record.status} ${record.url}\n`);
+    return;
+  }
+  const record = output as { repo: string; issue_number: number; status: string; url: string };
+  write(`${record.repo}#${record.issue_number} ${record.status} ${record.url}\n`);
+}
+
 function exitFor(output: unknown): number {
   const value = output as { verdict?: string };
   if (value.verdict === 'ACT') return 0;
@@ -70,7 +109,7 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
     print(output, argv.includes('--json'), stdout);
     return 0;
   }
-  const parsed = parseArgs({ args: argv, allowPositionals: true, strict: false, options: { help: { type: 'boolean', short: 'h' }, json: { type: 'boolean' }, 'npm-package': { type: 'string' }, 'probe-glob': { type: 'string' }, 'probe-contains': { type: 'string' }, 'force-refresh': { type: 'boolean' }, label: { type: 'string' }, keywords: { type: 'string' }, since: { type: 'string' }, limit: { type: 'string' } } });
+  const parsed = parseArgs({ args: argv, allowPositionals: true, strict: false, options: { help: { type: 'boolean', short: 'h' }, json: { type: 'boolean' }, 'npm-package': { type: 'string' }, 'probe-glob': { type: 'string' }, 'probe-contains': { type: 'string' }, 'force-refresh': { type: 'boolean' }, label: { type: 'string' }, keywords: { type: 'string' }, since: { type: 'string' }, limit: { type: 'string' }, verdict: { type: 'string' }, status: { type: 'string' }, repo: { type: 'string' }, 'chat-id': { type: 'string' }, notes: { type: 'string' } } });
   const [command, first, second] = parsed.positionals;
   if (parsed.values.help || !command) {
     stdout(help);
@@ -108,10 +147,29 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
     } else if (command === 'scan') {
       if (!first) throw new Error('scan requires owner/repo.');
       output = await scan({ repo: first, label: stringValue(parsed.values.label), keywords: stringValue(parsed.values.keywords)?.split(',').filter(Boolean), since: stringValue(parsed.values.since), limit: stringValue(parsed.values.limit) ? Number(stringValue(parsed.values.limit)) : undefined });
+    } else if (command === 'ledger') {
+      const ledgerCommand = first;
+      if (ledgerCommand === 'add') {
+        if (!second) throw new Error('ledger add requires owner/repo#123.');
+        output = await ledger_add({ ...parseIssueRef(second), verdict: ledgerVerdict(parsed.values.verdict), status: ledgerStatus(parsed.values.status) });
+      } else if (ledgerCommand === 'list') {
+        output = await ledger_list({ status: ledgerStatus(parsed.values.status), repo: stringValue(parsed.values.repo) });
+      } else if (ledgerCommand === 'claim') {
+        if (!second) throw new Error('ledger claim requires owner/repo#123.');
+        output = await ledger_claim({ ...parseIssueRef(second), chat_id: stringValue(parsed.values['chat-id']) });
+      } else if (ledgerCommand === 'update') {
+        if (!second) throw new Error('ledger update requires owner/repo#123.');
+        const status = ledgerStatus(parsed.values.status);
+        if (!status) throw new Error('ledger update requires --status.');
+        output = await ledger_update({ ...parseIssueRef(second), status, notes: stringValue(parsed.values.notes) });
+      } else {
+        throw new Error(`Unknown ledger subcommand ${ledgerCommand ?? '(missing)'}.`);
+      }
     } else {
       throw new Error(`Unknown subcommand ${command}.`);
     }
-    print(output, asJson, stdout);
+    if (command === 'ledger') printLedger(output, asJson, stdout);
+    else print(output, asJson, stdout);
     return exitFor(output);
   } catch (error) {
     stderr(`${error instanceof Error ? error.message : String(error)}\n`);

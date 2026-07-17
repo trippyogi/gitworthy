@@ -1,7 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import { branch_scan, contrib_policy, dupe_cluster, issue_vs_main, linked_work, release_gap, scan, worth_check } from '../core/index.js';
+import { branch_scan, contrib_policy, dupe_cluster, issue_vs_main, ledger_add, ledger_claim, ledger_list, ledger_update, linked_work, release_gap, scan, worth_check } from '../core/index.js';
 import { GitworthyError } from '../core/envelope.js';
 import { packageVersion } from '../lib/package-meta.js';
 
@@ -36,6 +36,10 @@ export function createMcpServer(): McpServer {
   server.registerTool('contrib_policy', { title: 'Contribution policy', inputSchema: { repo: z.string(), force_refresh: z.boolean().optional() } }, async (input) => withToolErrors(() => contrib_policy(input)));
   server.registerTool('worth_check', { title: 'Worth check', inputSchema: { repo: z.string(), issue_number: z.number(), npm_package: z.string().optional(), probe: z.object({ file_glob: z.string().optional(), contains: z.string().optional() }).optional() } }, async (input) => withToolErrors(() => worth_check(input)));
   server.registerTool('scan', { title: 'Scan issues', inputSchema: { repo: z.string(), label: z.string().optional(), keywords: z.array(z.string()).optional(), since: z.string().optional(), limit: z.number().optional() } }, async (input) => withToolErrors(() => scan(input)));
+  server.registerTool('ledger_add', { title: 'Ledger add', inputSchema: { repo: z.string(), issue_number: z.number(), verdict: z.enum(['ACT', 'VERIFY', 'SKIP']).optional(), status: z.enum(['candidate', 'claimed', 'reproved', 'patched', 'pr_or_comment', 'done', 'abandoned']).optional(), signals: z.array(z.string()).optional(), url: z.string().optional() } }, async (input) => withToolErrors(() => ledger_add(input)));
+  server.registerTool('ledger_list', { title: 'Ledger list', inputSchema: { status: z.enum(['candidate', 'claimed', 'reproved', 'patched', 'pr_or_comment', 'done', 'abandoned']).optional(), repo: z.string().optional() } }, async (input) => withToolErrors(() => ledger_list(input)));
+  server.registerTool('ledger_claim', { title: 'Ledger claim', inputSchema: { repo: z.string(), issue_number: z.number(), chat_id: z.string().optional() } }, async (input) => withToolErrors(() => ledger_claim(input)));
+  server.registerTool('ledger_update', { title: 'Ledger update', inputSchema: { repo: z.string(), issue_number: z.number(), status: z.enum(['candidate', 'claimed', 'reproved', 'patched', 'pr_or_comment', 'done', 'abandoned']), notes: z.string().optional() } }, async (input) => withToolErrors(() => ledger_update(input)));
   return server;
 }
 
