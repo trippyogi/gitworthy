@@ -3,6 +3,9 @@
 ## Unreleased
 
 - Emit `linked_pr_closed` for closed unmerged linked PRs; `worth_check` caps those issues at VERIFY with a PR citation so ACT is not treated as claimable when prior attempts exist.
+- When a labeled `scan` returns a thin candidate set or only assigned issues, append advisory `widen_hint` evidence with suggestions to broaden triage (no extra GitHub fetches).
+- Expand [SKILL.md](./SKILL.md) with mandatory OSS contribution loop: policy-before-fork gate, contribution path matrix (`pr` | `issue_comment_patch` | `security_report` | `skip`), apply-lane `worth_check` revalidation at claim time, scout→execute bridge, and closed-linked-PR evidence review before claiming ACT items.
+- Add Cursor project rule [.cursor/rules/oss-contrib-loop.mdc](./.cursor/rules/oss-contrib-loop.mdc) and README agent workflow section pointing agents to the skill.
 
 ## 0.3.3
 
