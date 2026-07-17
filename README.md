@@ -33,6 +33,10 @@ gitworthy dupes owner/repo 123 [--json]
 gitworthy linked owner/repo 123 [--json]
 gitworthy policy owner/repo [--json]
 gitworthy scan Shopify/cli --label "good first issue" --json
+gitworthy ledger add owner/repo#123 [--verdict ACT] [--status candidate] [--json]
+gitworthy ledger list [--status claimed] [--repo owner/repo] [--json]
+gitworthy ledger claim owner/repo#123 [--chat-id id] [--json]
+gitworthy ledger update owner/repo#123 --status patched [--notes text] [--json]
 gitworthy mcp
 ```
 
@@ -63,6 +67,7 @@ The token needs only fine-grained, read-only access to public repositories.
 
 - `GITHUB_TOKEN` enables authenticated GitHub REST checks.
 - `GITWORTHY_CACHE_DIR` overrides the default cache at `~/.gitworthy/cache`.
+- `GITWORTHY_LEDGER_PATH` overrides the default scout ledger at `~/.gitworthy/ledger.json`.
 - `GITWORTHY_TELEMETRY=on` plus `GITWORTHY_POSTHOG_KEY` requests optional telemetry. Install `posthog-node` yourself if you want this path active. It is not part of the default install.
 
 When `GITHUB_TOKEN` is absent, checks that require GitHub REST return structured errors or explicit `not_checked` entries. Checks that can use public git or npm endpoints still run.
@@ -99,6 +104,10 @@ Reads common contribution policy files from main or master and extracts determin
 ### scan
 
 Tracker triage only: lists open issue tracker candidates, including candidate assignee logins from the issue API response. Scan does not vet issues and does not produce ACT, VERIFY, or SKIP verdicts. It appends a one-line cached contribution-policy hint when available, or reminds you to run policy before investing. Use it to find candidate issue numbers, then run `gitworthy check owner/repo#123` on specific targets.
+
+### ledger
+
+Local scout ledger for tracking issue work across sessions. Records live at `~/.gitworthy/ledger.json` (override with `GITWORTHY_LEDGER_PATH`). Claim an issue before working it; claim fails when another active claim exists (`claimed`, `reproved`, `patched`, or `pr_or_comment`). Ledger state is separate from `worth_check` and does not affect verdict composition.
 
 Example composition:
 

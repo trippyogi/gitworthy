@@ -7,3 +7,5 @@ export { dupe_cluster } from './dupe-cluster.js';
 export { linked_work } from './linked-work.js';
 export { worth_check } from './worth-check.js';
 export { scan } from './scan.js';
+export { ledger_add, ledger_claim, ledger_list, ledger_update, parseIssueRef } from './ledger.js';
+export type { LedgerRecord, LedgerStatus, LedgerVerdict } from './ledger.js';

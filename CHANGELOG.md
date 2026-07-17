@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Add scout ledger: local issue tracking at `~/.gitworthy/ledger.json` with CLI `gitworthy ledger …` and MCP tools `ledger_add`, `ledger_list`, `ledger_claim`, and `ledger_update`.
+
 ## 0.3.3
 
 - Exclude pull requests from `dupe_cluster` candidate sets; emit blocking `duplicate` only at lexical score ≥ 0.65 (medium-confidence hits may remain evidence-only).
