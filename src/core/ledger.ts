@@ -62,9 +62,7 @@ async function withLedgerLock<T>(run: () => Promise<T>): Promise<T> {
       try {
         const info = await stat(path);
         if (Date.now() - info.mtimeMs > 30_000) {
-          const stale = await readFile(path, 'utf8').catch(() => '');
-          // Only remove if still the same stale contents we observed via age.
-          if (stale) await unlink(path).catch(() => undefined);
+          await unlink(path).catch(() => undefined);
         }
       } catch {
         // lock may have been removed between checks
