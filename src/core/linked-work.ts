@@ -127,6 +127,7 @@ export async function linked_work(input: Input): Promise<Envelope> {
   const signals = [
     ...(linkedPrs.some((pr) => pr.state === 'open') ? ['linked_pr_open' as const] : []),
     ...(linkedPrs.some((pr) => pr.merged) ? ['linked_pr_merged' as const] : []),
+    ...(linkedPrs.some((pr) => pr.state === 'closed' && !pr.merged) ? ['linked_pr_closed' as const] : []),
     ...(assignments.length > 0 ? ['assigned' as const] : [])
   ];
   const linkedLabel = linkedPrs.length === 1 ? 'linked pull request' : 'linked pull requests';
