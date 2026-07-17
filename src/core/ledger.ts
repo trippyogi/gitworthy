@@ -50,16 +50,22 @@ export function parseIssueRef(ref: string): { repo: string; issue_number: number
 async function withLedgerLock<T>(run: () => Promise<T>): Promise<T> {
   const path = lockPath();
   await mkdir(dirname(path), { recursive: true });
+  const token = `${process.pid}.${Date.now()}.${Math.random().toString(16).slice(2)}`;
   let handle: Awaited<ReturnType<typeof open>> | undefined;
   const started = Date.now();
   while (!handle) {
     try {
       handle = await open(path, 'wx');
+      await handle.writeFile(token, 'utf8');
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
       try {
         const info = await stat(path);
-        if (Date.now() - info.mtimeMs > 10_000) await unlink(path).catch(() => undefined);
+        if (Date.now() - info.mtimeMs > 30_000) {
+          const stale = await readFile(path, 'utf8').catch(() => '');
+          // Only remove if still the same stale contents we observed via age.
+          if (stale) await unlink(path).catch(() => undefined);
+        }
       } catch {
         // lock may have been removed between checks
       }
@@ -72,8 +78,13 @@ async function withLedgerLock<T>(run: () => Promise<T>): Promise<T> {
   try {
     return await run();
   } finally {
+    try {
+      const current = await readFile(path, 'utf8');
+      if (current === token) await unlink(path).catch(() => undefined);
+    } catch {
+      // lock already gone or unreadable
+    }
     await handle.close().catch(() => undefined);
-    await unlink(path).catch(() => undefined);
   }
 }
 
@@ -209,7 +220,7 @@ export async function ledger_claim(input: ClaimInput): Promise<LedgerRecord> {
       existing.status = 'claimed';
       existing.claimed_at = now;
       existing.updated_at = now;
-      if (input.chat_id !== undefined) existing.chat_id = input.chat_id;
+      existing.chat_id = input.chat_id;
       await writeLedger(ledger);
       return existing;
     }
