@@ -1,4 +1,4 @@
-import { mkdir, open, readFile, rename, unlink, writeFile } from 'node:fs/promises';
+import { mkdir, open, readFile, rename, stat, unlink, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { GitworthyError } from './envelope.js';
@@ -57,6 +57,12 @@ async function withLedgerLock<T>(run: () => Promise<T>): Promise<T> {
       handle = await open(path, 'wx');
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+      try {
+        const info = await stat(path);
+        if (Date.now() - info.mtimeMs > 10_000) await unlink(path).catch(() => undefined);
+      } catch {
+        // lock may have been removed between checks
+      }
       if (Date.now() - started > 5000) {
         throw new GitworthyError({ code: 'ledger_lock_timeout', message: `Timed out waiting for ledger lock at ${path}.` });
       }
@@ -74,9 +80,27 @@ async function withLedgerLock<T>(run: () => Promise<T>): Promise<T> {
 async function readLedger(): Promise<LedgerFile> {
   try {
     const raw = await readFile(ledgerPath(), 'utf8');
-    return JSON.parse(raw) as LedgerFile;
+    const parsed = JSON.parse(raw) as Partial<LedgerFile> | null;
+    if (!parsed || !Array.isArray(parsed.records)) {
+      throw new GitworthyError({
+        code: 'ledger_corrupt',
+        message: `Ledger file at ${ledgerPath()} is missing a records array.`,
+        checked: [`read ${ledgerPath()}`],
+        not_checked: []
+      });
+    }
+    return { records: parsed.records };
   } catch (error) {
+    if (error instanceof GitworthyError) throw error;
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') return { records: [] };
+    if (error instanceof SyntaxError) {
+      throw new GitworthyError({
+        code: 'ledger_corrupt',
+        message: `Ledger file at ${ledgerPath()} is not valid JSON.`,
+        checked: [`read ${ledgerPath()}`],
+        not_checked: []
+      });
+    }
     throw error;
   }
 }
@@ -106,6 +130,10 @@ type AddInput = {
   url?: string;
 };
 
+function applyClaimedAt(record: LedgerRecord, status: LedgerStatus, now: string): void {
+  if (status === 'claimed') record.claimed_at = now;
+}
+
 export async function ledger_add(input: AddInput): Promise<LedgerRecord> {
   return withLedgerLock(async () => {
     const ledger = await readLedger();
@@ -123,22 +151,27 @@ export async function ledger_add(input: AddInput): Promise<LedgerRecord> {
       }
       if (input.verdict !== undefined) existing.verdict = input.verdict;
       if (input.signals !== undefined) existing.signals = input.signals;
-      if (input.status !== undefined) existing.status = input.status;
+      if (input.status !== undefined) {
+        existing.status = input.status;
+        applyClaimedAt(existing, input.status, now);
+      }
       if (input.url) existing.url = input.url;
       existing.updated_at = now;
       await writeLedger(ledger);
       return existing;
     }
 
+    const status = input.status ?? 'candidate';
     const record: LedgerRecord = {
       repo: input.repo,
       issue_number: input.issue_number,
       url: input.url ?? issueUrl(input.repo, input.issue_number),
       verdict: input.verdict,
       signals: input.signals,
-      status: input.status ?? 'candidate',
+      status,
       updated_at: now
     };
+    applyClaimedAt(record, status, now);
     ledger.records.push(record);
     await writeLedger(ledger);
     return record;
@@ -212,8 +245,10 @@ export async function ledger_update(input: UpdateInput): Promise<LedgerRecord> {
       });
     }
 
+    const now = nowIso();
     existing.status = input.status;
-    existing.updated_at = nowIso();
+    applyClaimedAt(existing, input.status, now);
+    existing.updated_at = now;
     if (input.notes !== undefined) existing.notes = input.notes;
     await writeLedger(ledger);
     return existing;
