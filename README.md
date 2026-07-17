@@ -13,6 +13,10 @@ It ships as one package with a shared TypeScript core and two thin adapters:
 
 No telemetry is active by default. Optional PostHog telemetry requires both `GITWORTHY_TELEMETRY=on` and `GITWORTHY_POSTHOG_KEY`, plus a user-installed `posthog-node` package. If telemetry is requested but `posthog-node` is missing, gitworthy prints one warning and continues with telemetry disabled. The MCP server path emits no telemetry at all.
 
+## Agent workflow
+
+Agents and MCP clients must follow the mandatory OSS contribution loop in [SKILL.md](./SKILL.md): run `contrib_policy` before forking, pick a contribution path from the policy path matrix, treat ACT results as a scout queue (not claimable until evidence is read), re-run `worth_check` at claim time, then fork → repro → implement → Bugbot → PR or comment. The Cursor rule at [.cursor/rules/oss-contrib-loop.mdc](./.cursor/rules/oss-contrib-loop.mdc) enforces the same ordering in this repo.
+
 ## Quickstart
 
 ```sh

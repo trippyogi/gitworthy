@@ -1,0 +1,33 @@
+---
+description: Mandatory OSS contribution loop — policy gate, path matrix, re-check at claim, scout→execute bridge
+alwaysApply: true
+---
+
+# OSS contribution loop
+
+Follow [SKILL.md](../../SKILL.md) ordering. Never fork, implement, or open a PR on an unfamiliar external repo without running it.
+
+## Required order
+
+1. **`contrib_policy`** — choose path: `pr` | `issue_comment_patch` | `security_report` | `skip`
+2. **`scan`** (optional triage) → **`worth_check`** on specific issues
+3. **Ledger claim** when user says "take #N"
+4. **Re-run `worth_check`** at claim time (apply-lane revalidation)
+5. **Fork → repro → implement → Bugbot → PR or comment** per chosen path
+
+## Hard rules
+
+- **Policy before fork.** Read `no_pr_path`, `feedback_channel`, and `SECURITY.md` excerpts before cloning for implementation.
+- **ACT ≠ claimable.** Read `worth_check.reasons` and `linked_work` evidence (including closed unmerged PRs) before claiming.
+- **`linked_pr_closed` or closed PRs in evidence → VERIFY behavior:** inspect why each closed linked PR failed before investing.
+- **Scout ≠ execute.** Scout builds the ACT queue; execute owns one claimed issue. Do not open PRs from scout-only sessions.
+- **Never invert policy and implement.** If path is `skip` or `security_report`, do not open a drive-by PR.
+
+## Path matrix (from `contrib_policy` signals)
+
+| Path | Trigger |
+|------|---------|
+| `pr` | PRs accepted; no security-only channel |
+| `issue_comment_patch` | Issue-first policy or forum/issue feedback channel |
+| `security_report` | Private disclosure required |
+| `skip` | SKIP verdict, forbidden change type, or no actionable channel |
