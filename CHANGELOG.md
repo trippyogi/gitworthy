@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Emit `linked_pr_closed` for closed unmerged linked PRs; `worth_check` caps those issues at VERIFY with a PR citation so ACT is not treated as claimable when prior attempts exist.
+
 ## 0.3.3
 
 - Exclude pull requests from `dupe_cluster` candidate sets; emit blocking `duplicate` only at lexical score ≥ 0.65 (medium-confidence hits may remain evidence-only).

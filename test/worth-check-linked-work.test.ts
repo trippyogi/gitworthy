@@ -33,4 +33,11 @@ describe('worth_check linked work rubric', () => {
     expect(result.verdict).toBe('VERIFY');
     expect(result.reasons).toContain('issue is assigned: cconstable at 2026-07-06T13:50:11Z');
   });
+
+  it('caps ACT to VERIFY when a closed unmerged linked PR exists', async () => {
+    mocks.linkedWork.mockResolvedValueOnce({ verdict_summary: 'found 1 linked pull request and 0 assignees.', evidence: [{ kind: 'linked_pr', number: 528, state: 'closed', draft: false, merged: false, date: '2026-07-08T16:54:42Z', author: 'someone', url: 'https://github.com/o/r/pull/528' }], signals: ['linked_pr_closed'], checked: ['mock linked'], not_checked: ['PR linkage depends on GitHub cross-reference events or explicit issue-number mentions; a PR that never mentions the issue number remains invisible.'], cached: false, fetched_at: '2026-01-01T00:00:00.000Z' });
+    const result = await worth_check({ repo: 'o/r', issue_number: 1 });
+    expect(result.verdict).toBe('VERIFY');
+    expect(result.reasons).toContain('closed unmerged linked PR found: #528 https://github.com/o/r/pull/528');
+  });
 });

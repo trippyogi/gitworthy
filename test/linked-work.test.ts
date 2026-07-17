@@ -51,4 +51,25 @@ describe('linked_work', () => {
     expect(result.signals).toContain('linked_pr_merged');
     expect(result.evidence).toContainEqual(expect.objectContaining({ kind: 'linked_pr', number: 707, merged: true, source: 'comment', referrer: 'https://github.com/o/r/issues/606#issuecomment-1' }));
   });
+
+  it('emits linked_pr_closed for closed unmerged linked pull requests', async () => {
+    mocks.githubJson.mockImplementation(async (path: string) => {
+      if (path.includes('/repos/o/r') && !path.includes('/issues') && !path.includes('/pulls') && !path.includes('/search')) {
+        return { full_name: 'o/r', default_branch: 'main', html_url: 'https://github.com/o/r' };
+      }
+      if (path.includes('/issues/808/timeline')) return [
+        { event: 'cross-referenced', created_at: '2026-07-09T00:00:00Z', source: { type: 'issue', issue: { number: 809, pull_request: { url: 'https://api.github.com/repos/o/r/pulls/809' } } } }
+      ];
+      if (path.includes('/issues/808/comments')) return [];
+      if (path.includes('/pulls/809')) return { number: 809, state: 'closed', draft: false, merged: false, title: 'Abandoned fix', html_url: 'https://github.com/o/r/pull/809', user: { login: 'dev4' }, created_at: '2026-07-08T00:00:00Z', updated_at: '2026-07-09T00:00:00Z', closed_at: '2026-07-09T00:00:00Z', merged_at: null };
+      if (path.includes('/search/issues')) return { items: [] };
+      if (path.includes('/issues/808')) return { number: 808, title: 'Closed PR issue', body: null, state: 'open', labels: [], assignees: [], comments: 0, html_url: 'https://github.com/o/r/issues/808', created_at: '2026-07-01T00:00:00Z', updated_at: '2026-07-09T00:00:00Z', closed_at: null };
+      return { items: [] };
+    });
+    const result = await linked_work({ repo: 'o/r', issue_number: 808 });
+    expect(result.signals).toContain('linked_pr_closed');
+    expect(result.signals).not.toContain('linked_pr_open');
+    expect(result.signals).not.toContain('linked_pr_merged');
+    expect(result.evidence).toContainEqual(expect.objectContaining({ kind: 'linked_pr', number: 809, state: 'closed', merged: false, source: 'timeline' }));
+  });
 });

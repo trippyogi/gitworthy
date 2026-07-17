@@ -90,7 +90,7 @@ Fetches the target issue, searches GitHub issues for distinctive title tokens, l
 
 ### linked_work
 
-Fetches issue timeline cross-references, explicit issue-number PR mentions, and current assignees. It emits `linked_pr_open` for open linked PRs, `linked_pr_merged` for merged linked PRs, and `assigned` for maintainer assignment. PR linkage depends on GitHub cross-reference events or explicit issue-number mentions, so unrelated PRs remain invisible.
+Fetches issue timeline cross-references, explicit issue-number PR mentions, and current assignees. It emits `linked_pr_open` for open linked PRs, `linked_pr_merged` for merged linked PRs, `linked_pr_closed` for closed unmerged linked PRs, and `assigned` for maintainer assignment. PR linkage depends on GitHub cross-reference events or explicit issue-number mentions, so unrelated PRs remain invisible.
 
 ### contrib_policy
 
@@ -109,7 +109,7 @@ gitworthy scan Shopify/cli --label "good first issue" --json
 
 ### worth_check
 
-Composes the checks into ACT, VERIFY, or SKIP. Any sub-check error forces VERIFY. `linked_pr_open` forces SKIP with the PR citation. `assigned` caps ACT at VERIFY with the assignee and assignment date. The `no_pr_path` signal caps ACT at VERIFY with the alternate feedback channel, because a repo with no PR path has no direct contribution path. Sub-results remain visible in full.
+Composes the checks into ACT, VERIFY, or SKIP. Any sub-check error forces VERIFY. `linked_pr_open` forces SKIP with the PR citation. `linked_pr_closed` and `linked_pr_merged` cap ACT at VERIFY with the PR citation so agents inspect abandoned or landed attempts before claiming. `assigned` caps ACT at VERIFY with the assignee and assignment date. The `no_pr_path` signal caps ACT at VERIFY with the alternate feedback channel, because a repo with no PR path has no direct contribution path. Sub-results remain visible in full. ACT is not the same as claimable: always read `linked_work` evidence and `reasons` before investing.
 
 ## Output envelope
 

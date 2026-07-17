@@ -13,7 +13,7 @@ const mocks = vi.hoisted(() => ({
 function envelope(signals: Signal[] = []) {
   return createEnvelope({
     verdict_summary: signals.length > 0 ? `${signals.join(', ')} found.` : 'no signals found.',
-    evidence: signals.includes('linked_pr_open') ? [{ kind: 'linked_pr', number: 123, state: 'open', url: 'https://github.com/o/r/pull/123' }] : signals.includes('linked_pr_merged') ? [{ kind: 'linked_pr', number: 124, merged: true, url: 'https://github.com/o/r/pull/124' }] : signals.includes('assigned') ? [{ kind: 'assignment', assignee: 'maintainer', assigned_at: '2026-01-01T00:00:00Z' }] : [],
+    evidence: signals.includes('linked_pr_open') ? [{ kind: 'linked_pr', number: 123, state: 'open', url: 'https://github.com/o/r/pull/123' }] : signals.includes('linked_pr_merged') ? [{ kind: 'linked_pr', number: 124, merged: true, url: 'https://github.com/o/r/pull/124' }] : signals.includes('linked_pr_closed') ? [{ kind: 'linked_pr', number: 528, state: 'closed', merged: false, url: 'https://github.com/o/r/pull/528' }] : signals.includes('assigned') ? [{ kind: 'assignment', assignee: 'maintainer', assigned_at: '2026-01-01T00:00:00Z' }] : [],
     signals,
     checked: ['mock check'],
     not_checked: ['mock limitation']
@@ -78,12 +78,13 @@ describe('worth_check authority hierarchy', () => {
     ['released_fix', 'SKIP'],
     ['linked_pr_open', 'SKIP'],
     ['linked_pr_merged', 'VERIFY'],
+    ['linked_pr_closed', 'VERIFY'],
     ['assigned', 'VERIFY'],
     ['no_pr_path', 'VERIFY']
   ] as Array<[Signal, 'SKIP' | 'VERIFY']>)('maps %s to %s', async (signal, expected) => {
     if (signal === 'duplicate') mocks.dupeSignals = [signal];
     else if (signal === 'released_fix') mocks.releaseSignals = [signal];
-    else if (signal === 'linked_pr_open' || signal === 'linked_pr_merged' || signal === 'assigned') mocks.linkedSignals = [signal];
+    else if (signal === 'linked_pr_open' || signal === 'linked_pr_merged' || signal === 'linked_pr_closed' || signal === 'assigned') mocks.linkedSignals = [signal];
     else if (signal === 'no_pr_path') mocks.policySignals = [signal];
     else mocks.branchSignals = [signal];
 

@@ -46,7 +46,7 @@ function hasCleanLinkedWork(subResults: SubResult[]): boolean {
 
 function isBranchOnlySkipSignal(signals: Signal[], subResults: SubResult[]): boolean {
   if (!hasCleanLinkedWork(subResults)) return false;
-  const blocking = signals.filter((signal) => !['no_pr_path', 'linked_pr_merged', 'assigned'].includes(signal));
+  const blocking = signals.filter((signal) => !['no_pr_path', 'linked_pr_merged', 'linked_pr_closed', 'assigned'].includes(signal));
   return blocking.length === 1 && blocking[0] === 'in_flight';
 }
 
@@ -72,7 +72,7 @@ export async function worth_check(input: Input): Promise<WorthEnvelope> {
   const reasons: string[] = [];
   const errors = sub_results.filter((result) => !result.ok);
   const signals = [...new Set(sub_results.flatMap((result) => result.ok ? (result.result.signals ?? []) : []))] as Signal[];
-  const verifySignals: Signal[] = ['no_pr_path', 'linked_pr_merged', 'assigned'];
+  const verifySignals: Signal[] = ['no_pr_path', 'linked_pr_merged', 'linked_pr_closed', 'assigned'];
   const skipSignals = signals.filter((signal) => !verifySignals.includes(signal));
   const branchOnlyInFlightWithCleanLinkedWork = isBranchOnlySkipSignal(signals, sub_results);
   for (const result of sub_results) {
@@ -89,6 +89,7 @@ export async function worth_check(input: Input): Promise<WorthEnvelope> {
   if (signals.includes('linked_pr_open')) reasons.push(`open linked PR found: ${linkedPrCitation(sub_results, (item) => item.state === 'open') ?? 'citation unavailable'}`);
   if (signals.includes('assigned')) reasons.push(`issue is assigned: ${assignmentCitation(sub_results) ?? 'assignee date unavailable'}`);
   if (signals.includes('linked_pr_merged')) reasons.push(`linked PR was merged: ${linkedPrCitation(sub_results, (item) => item.merged === true) ?? 'citation unavailable'}`);
+  if (signals.includes('linked_pr_closed')) reasons.push(`closed unmerged linked PR found: ${linkedPrCitation(sub_results, (item) => item.state === 'closed' && item.merged !== true) ?? 'citation unavailable'}`);
   const base = createEnvelope({
     verdict_summary: verdict === 'ACT' ? 'no blocking evidence found by completed checks.' : verdict === 'SKIP' ? 'blocking evidence was found by completed checks.' : 'mixed signals or sub-check errors require human review.',
     evidence: [],
