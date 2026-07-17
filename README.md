@@ -98,7 +98,7 @@ Reads common contribution policy files from main or master and extracts determin
 
 ### scan
 
-Tracker triage only: lists open issue tracker candidates, including candidate assignee logins from the issue API response. Scan does not vet issues and does not produce ACT, VERIFY, or SKIP verdicts. It appends a one-line cached contribution-policy hint when available, or reminds you to run policy before investing. Use it to find candidate issue numbers, then run `gitworthy check owner/repo#123` on specific targets.
+Tracker triage only: lists open issue tracker candidates, including candidate assignee logins from the issue API response. Scan does not vet issues and does not produce ACT, VERIFY, or SKIP verdicts. It appends a one-line cached contribution-policy hint when available, or reminds you to run policy before investing. When a label filter yields a thin set (below `min(5, limit)` candidates) or every remaining candidate is assigned, scan appends a `widen_hint` evidence item with suggestions such as dropping the label, trying `help wanted`, or scanning without a label. Use it to find candidate issue numbers, then run `gitworthy check owner/repo#123` on specific targets.
 
 Example composition:
 

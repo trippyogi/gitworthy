@@ -67,6 +67,42 @@ async function cachedPolicyHint(repo: string): Promise<{ checked: string[]; not_
   return { checked: [`policy hint: cached contrib_policy says repo accepts no pull requests; feedback channel: ${channel}`], not_checked: [] };
 }
 
+type WidenHint = {
+  kind: 'widen_hint';
+  reason: string;
+  suggestions: string[];
+};
+
+function widenHintEvidence(input: Input, candidates: Candidate[], limit: number): WidenHint | null {
+  if (!input.label) return null;
+  const threshold = Math.min(5, limit);
+  const allAssigned = candidates.length > 0 && candidates.every((item) => item.assignees.length > 0);
+  const thin = candidates.length < threshold;
+  if (!thin && !allAssigned) return null;
+  const appliedFilters = [
+    `label "${input.label}"`,
+    ...(input.keywords?.length ? [`keywords ${input.keywords.join(',')}`] : []),
+    ...(input.since ? [`since ${input.since}`] : [])
+  ];
+  const filterPhrase = appliedFilters.join(', ');
+  const reasons: string[] = [];
+  if (thin) reasons.push(`only ${candidates.length} candidate${candidates.length === 1 ? '' : 's'} after ${filterPhrase} (below ${threshold})`);
+  if (allAssigned) reasons.push('every remaining candidate is assigned');
+  const suggestions = [
+    'drop the label filter and scan again',
+    'try label "help wanted"',
+    'scan without a label for broader tracker triage',
+    'try quieter sibling keywords or a less contested label'
+  ];
+  if (input.keywords?.length) suggestions.unshift('drop or relax the keyword filter and scan again');
+  if (input.since) suggestions.unshift('widen or drop the --since age filter and scan again');
+  return {
+    kind: 'widen_hint',
+    reason: reasons.join('; '),
+    suggestions
+  };
+}
+
 export async function scan(input: Input): Promise<Envelope> {
   const limit = Math.min(Math.max(input.limit ?? 25, 1), 100);
   const query = new URLSearchParams({ state: 'open', per_page: '100', sort: 'updated', direction: 'desc' });
@@ -82,10 +118,12 @@ export async function scan(input: Input): Promise<Envelope> {
     .slice(0, limit)
     .map(candidate);
   const policyHint = await cachedPolicyHint(input.repo);
+  const widenHint = widenHintEvidence(input, candidates, limit);
+  const evidence = widenHint ? [...candidates, widenHint] : candidates;
   return createEnvelope({
     verdict_summary: `found ${candidates.length} open issue ${candidates.length === 1 ? 'candidate' : 'candidates'} for tracker triage; scan does not vet them.`,
-    evidence: candidates,
-    checked: [`fetched open issues for ${input.repo}`, 'excluded pull requests', input.label ? `filtered by label: ${input.label}` : 'no label filter requested', input.keywords?.length ? `filtered titles by keywords: ${input.keywords.join(', ')}` : 'no keyword filter requested', input.since ? `filtered by created date since ${input.since}` : 'no age filter requested', ...policyHint.checked],
+    evidence,
+    checked: [`fetched open issues for ${input.repo}`, 'excluded pull requests', input.label ? `filtered by label: ${input.label}` : 'no label filter requested', input.keywords?.length ? `filtered titles by keywords: ${input.keywords.join(', ')}` : 'no keyword filter requested', input.since ? `filtered by created date since ${input.since}` : 'no age filter requested', ...policyHint.checked, ...(widenHint ? [`widen hint: ${widenHint.reason}`] : [])],
     not_checked: [TRACKER_LIMIT, ...policyHint.not_checked],
     cached: false
   });

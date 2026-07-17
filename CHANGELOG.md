@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Emit `linked_pr_closed` for closed unmerged linked PRs; `worth_check` caps those issues at VERIFY with a PR citation so ACT is not treated as claimable when prior attempts exist.
+- When a labeled `scan` returns a thin candidate set or only assigned issues, append advisory `widen_hint` evidence with suggestions to broaden triage (no extra GitHub fetches).
 
 ## 0.3.3
 
