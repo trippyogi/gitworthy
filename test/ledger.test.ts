@@ -90,4 +90,19 @@ describe('ledger', () => {
       code: 'ledger_not_found'
     });
   });
+
+  it('preserves active status when ledger_add omits status', async () => {
+    await ledger_add({ repo: 'owner/repo', issue_number: 7, verdict: 'ACT' });
+    await ledger_claim({ repo: 'owner/repo', issue_number: 7 });
+    const updated = await ledger_add({ repo: 'owner/repo', issue_number: 7, verdict: 'VERIFY' });
+    expect(updated.status).toBe('claimed');
+    expect(updated.verdict).toBe('VERIFY');
+  });
+
+  it('rejects ledger_add status changes while claim is active', async () => {
+    await ledger_claim({ repo: 'owner/repo', issue_number: 8 });
+    await expect(ledger_add({ repo: 'owner/repo', issue_number: 8, status: 'candidate' })).rejects.toMatchObject({
+      code: 'ledger_claim_conflict'
+    });
+  });
 });

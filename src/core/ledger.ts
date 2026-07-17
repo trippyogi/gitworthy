@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, open, readFile, rename, unlink, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { GitworthyError } from './envelope.js';
@@ -27,6 +27,10 @@ function ledgerPath(): string {
   return process.env.GITWORTHY_LEDGER_PATH ?? join(homedir(), '.gitworthy', 'ledger.json');
 }
 
+function lockPath(): string {
+  return `${ledgerPath()}.lock`;
+}
+
 function nowIso(): string {
   return new Date().toISOString();
 }
@@ -43,6 +47,30 @@ export function parseIssueRef(ref: string): { repo: string; issue_number: number
   return { repo: match[1], issue_number: Number(match[2]) };
 }
 
+async function withLedgerLock<T>(run: () => Promise<T>): Promise<T> {
+  const path = lockPath();
+  await mkdir(dirname(path), { recursive: true });
+  let handle: Awaited<ReturnType<typeof open>> | undefined;
+  const started = Date.now();
+  while (!handle) {
+    try {
+      handle = await open(path, 'wx');
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+      if (Date.now() - started > 5000) {
+        throw new GitworthyError({ code: 'ledger_lock_timeout', message: `Timed out waiting for ledger lock at ${path}.` });
+      }
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+  }
+  try {
+    return await run();
+  } finally {
+    await handle.close().catch(() => undefined);
+    await unlink(path).catch(() => undefined);
+  }
+}
+
 async function readLedger(): Promise<LedgerFile> {
   try {
     const raw = await readFile(ledgerPath(), 'utf8');
@@ -56,7 +84,9 @@ async function readLedger(): Promise<LedgerFile> {
 async function writeLedger(data: LedgerFile): Promise<void> {
   const path = ledgerPath();
   await mkdir(dirname(path), { recursive: true });
-  await writeFile(path, `${JSON.stringify(data, null, 2)}\n`, 'utf8');
+  const temp = `${path}.${process.pid}.${Date.now()}.tmp`;
+  await writeFile(temp, `${JSON.stringify(data, null, 2)}\n`, 'utf8');
+  await rename(temp, path);
 }
 
 function findRecord(records: LedgerRecord[], repo: string, issue_number: number): LedgerRecord | undefined {
@@ -77,33 +107,42 @@ type AddInput = {
 };
 
 export async function ledger_add(input: AddInput): Promise<LedgerRecord> {
-  const ledger = await readLedger();
-  const existing = findRecord(ledger.records, input.repo, input.issue_number);
-  const now = nowIso();
-  const status = input.status ?? 'candidate';
+  return withLedgerLock(async () => {
+    const ledger = await readLedger();
+    const existing = findRecord(ledger.records, input.repo, input.issue_number);
+    const now = nowIso();
 
-  if (existing) {
-    if (input.verdict !== undefined) existing.verdict = input.verdict;
-    if (input.signals !== undefined) existing.signals = input.signals;
-    existing.status = status;
-    if (input.url) existing.url = input.url;
-    existing.updated_at = now;
+    if (existing) {
+      if (hasActiveClaim(existing) && input.status !== undefined && input.status !== existing.status) {
+        throw new GitworthyError({
+          code: 'ledger_claim_conflict',
+          message: `Issue ${input.repo}#${input.issue_number} already has status ${existing.status}; use ledger update or abandon before changing status via add.`,
+          checked: [`ledger entry for ${existing.url}`],
+          not_checked: []
+        });
+      }
+      if (input.verdict !== undefined) existing.verdict = input.verdict;
+      if (input.signals !== undefined) existing.signals = input.signals;
+      if (input.status !== undefined) existing.status = input.status;
+      if (input.url) existing.url = input.url;
+      existing.updated_at = now;
+      await writeLedger(ledger);
+      return existing;
+    }
+
+    const record: LedgerRecord = {
+      repo: input.repo,
+      issue_number: input.issue_number,
+      url: input.url ?? issueUrl(input.repo, input.issue_number),
+      verdict: input.verdict,
+      signals: input.signals,
+      status: input.status ?? 'candidate',
+      updated_at: now
+    };
+    ledger.records.push(record);
     await writeLedger(ledger);
-    return existing;
-  }
-
-  const record: LedgerRecord = {
-    repo: input.repo,
-    issue_number: input.issue_number,
-    url: input.url ?? issueUrl(input.repo, input.issue_number),
-    verdict: input.verdict,
-    signals: input.signals,
-    status,
-    updated_at: now
-  };
-  ledger.records.push(record);
-  await writeLedger(ledger);
-  return record;
+    return record;
+  });
 }
 
 type ListInput = { status?: LedgerStatus; repo?: string };
@@ -119,60 +158,64 @@ export async function ledger_list(input: ListInput = {}): Promise<{ records: Led
 type ClaimInput = { repo: string; issue_number: number; chat_id?: string };
 
 export async function ledger_claim(input: ClaimInput): Promise<LedgerRecord> {
-  const ledger = await readLedger();
-  const existing = findRecord(ledger.records, input.repo, input.issue_number);
+  return withLedgerLock(async () => {
+    const ledger = await readLedger();
+    const existing = findRecord(ledger.records, input.repo, input.issue_number);
 
-  if (existing && hasActiveClaim(existing)) {
-    throw new GitworthyError({
-      code: 'ledger_claim_conflict',
-      message: `Issue ${input.repo}#${input.issue_number} already has status ${existing.status}.`,
-      checked: [`ledger entry for ${existing.url}`],
-      not_checked: []
-    });
-  }
+    if (existing && hasActiveClaim(existing)) {
+      throw new GitworthyError({
+        code: 'ledger_claim_conflict',
+        message: `Issue ${input.repo}#${input.issue_number} already has status ${existing.status}.`,
+        checked: [`ledger entry for ${existing.url}`],
+        not_checked: []
+      });
+    }
 
-  const now = nowIso();
-  if (existing) {
-    existing.status = 'claimed';
-    existing.claimed_at = now;
-    existing.updated_at = now;
-    if (input.chat_id !== undefined) existing.chat_id = input.chat_id;
+    const now = nowIso();
+    if (existing) {
+      existing.status = 'claimed';
+      existing.claimed_at = now;
+      existing.updated_at = now;
+      if (input.chat_id !== undefined) existing.chat_id = input.chat_id;
+      await writeLedger(ledger);
+      return existing;
+    }
+
+    const record: LedgerRecord = {
+      repo: input.repo,
+      issue_number: input.issue_number,
+      url: issueUrl(input.repo, input.issue_number),
+      status: 'claimed',
+      claimed_at: now,
+      chat_id: input.chat_id,
+      updated_at: now
+    };
+    ledger.records.push(record);
     await writeLedger(ledger);
-    return existing;
-  }
-
-  const record: LedgerRecord = {
-    repo: input.repo,
-    issue_number: input.issue_number,
-    url: issueUrl(input.repo, input.issue_number),
-    status: 'claimed',
-    claimed_at: now,
-    chat_id: input.chat_id,
-    updated_at: now
-  };
-  ledger.records.push(record);
-  await writeLedger(ledger);
-  return record;
+    return record;
+  });
 }
 
 type UpdateInput = { repo: string; issue_number: number; status: LedgerStatus; notes?: string };
 
 export async function ledger_update(input: UpdateInput): Promise<LedgerRecord> {
-  const ledger = await readLedger();
-  const existing = findRecord(ledger.records, input.repo, input.issue_number);
+  return withLedgerLock(async () => {
+    const ledger = await readLedger();
+    const existing = findRecord(ledger.records, input.repo, input.issue_number);
 
-  if (!existing) {
-    throw new GitworthyError({
-      code: 'ledger_not_found',
-      message: `No ledger entry for ${input.repo}#${input.issue_number}.`,
-      checked: [],
-      not_checked: [`ledger has no record for ${input.repo}#${input.issue_number}`]
-    });
-  }
+    if (!existing) {
+      throw new GitworthyError({
+        code: 'ledger_not_found',
+        message: `No ledger entry for ${input.repo}#${input.issue_number}.`,
+        checked: [],
+        not_checked: [`ledger has no record for ${input.repo}#${input.issue_number}`]
+      });
+    }
 
-  existing.status = input.status;
-  existing.updated_at = nowIso();
-  if (input.notes !== undefined) existing.notes = input.notes;
-  await writeLedger(ledger);
-  return existing;
+    existing.status = input.status;
+    existing.updated_at = nowIso();
+    if (input.notes !== undefined) existing.notes = input.notes;
+    await writeLedger(ledger);
+    return existing;
+  });
 }

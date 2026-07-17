@@ -168,8 +168,11 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
     } else {
       throw new Error(`Unknown subcommand ${command}.`);
     }
-    if (command === 'ledger') printLedger(output, asJson, stdout);
-    else print(output, asJson, stdout);
+    if (command === 'ledger') {
+      printLedger(output, asJson, stdout);
+      return 0;
+    }
+    print(output, asJson, stdout);
     return exitFor(output);
   } catch (error) {
     stderr(`${error instanceof Error ? error.message : String(error)}\n`);
