@@ -43,8 +43,8 @@ describe('scan', () => {
     expect(result.evidence).toHaveLength(2);
     expect(result.evidence[1]).toMatchObject({
       kind: 'widen_hint',
-      reason: expect.stringContaining('only 1 candidate'),
-      suggestions: expect.arrayContaining(['drop the label filter and scan again', 'try label "help wanted"'])
+      reason: expect.stringContaining('after label "good first issue", keywords typed'),
+      suggestions: expect.arrayContaining(['drop or relax the keyword filter and scan again', 'drop the label filter and scan again', 'try label "help wanted"'])
     });
     expect(result.checked.some((item) => item.startsWith('widen hint:'))).toBe(true);
     expect(result.signals).toEqual([]);

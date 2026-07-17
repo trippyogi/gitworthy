@@ -79,18 +79,27 @@ function widenHintEvidence(input: Input, candidates: Candidate[], limit: number)
   const allAssigned = candidates.length > 0 && candidates.every((item) => item.assignees.length > 0);
   const thin = candidates.length < threshold;
   if (!thin && !allAssigned) return null;
+  const appliedFilters = [
+    `label "${input.label}"`,
+    ...(input.keywords?.length ? [`keywords ${input.keywords.join(',')}`] : []),
+    ...(input.since ? [`since ${input.since}`] : [])
+  ];
+  const filterPhrase = appliedFilters.join(', ');
   const reasons: string[] = [];
-  if (thin) reasons.push(`only ${candidates.length} candidate${candidates.length === 1 ? '' : 's'} after label filter (below ${threshold})`);
+  if (thin) reasons.push(`only ${candidates.length} candidate${candidates.length === 1 ? '' : 's'} after ${filterPhrase} (below ${threshold})`);
   if (allAssigned) reasons.push('every remaining candidate is assigned');
+  const suggestions = [
+    'drop the label filter and scan again',
+    'try label "help wanted"',
+    'scan without a label for broader tracker triage',
+    'try quieter sibling keywords or a less contested label'
+  ];
+  if (input.keywords?.length) suggestions.unshift('drop or relax the keyword filter and scan again');
+  if (input.since) suggestions.unshift('widen or drop the --since age filter and scan again');
   return {
     kind: 'widen_hint',
     reason: reasons.join('; '),
-    suggestions: [
-      'drop the label filter and scan again',
-      'try label "help wanted"',
-      'scan without a label for broader tracker triage',
-      'try quieter sibling keywords or a less contested label'
-    ]
+    suggestions
   };
 }
 
