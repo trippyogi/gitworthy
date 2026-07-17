@@ -122,12 +122,23 @@ async function writeLedger(data: LedgerFile): Promise<void> {
   await rename(temp, path);
 }
 
+function normalizeRepo(repo: string): string {
+  const [owner, ...rest] = repo.split('/');
+  if (!owner || rest.length === 0) return repo;
+  return `${owner.toLowerCase()}/${rest.join('/')}`;
+}
+
 function findRecord(records: LedgerRecord[], repo: string, issue_number: number): LedgerRecord | undefined {
-  return records.find((record) => record.repo === repo && record.issue_number === issue_number);
+  const needle = normalizeRepo(repo);
+  return records.find((record) => normalizeRepo(record.repo) === needle && record.issue_number === issue_number);
 }
 
 function hasActiveClaim(record: LedgerRecord): boolean {
   return ACTIVE_CLAIM_STATUSES.includes(record.status);
+}
+
+function applyClaimedAt(record: LedgerRecord, previousStatus: LedgerStatus | undefined, status: LedgerStatus, now: string): void {
+  if (status === 'claimed' && previousStatus !== 'claimed') record.claimed_at = now;
 }
 
 type AddInput = {
@@ -139,15 +150,12 @@ type AddInput = {
   url?: string;
 };
 
-function applyClaimedAt(record: LedgerRecord, status: LedgerStatus, now: string): void {
-  if (status === 'claimed') record.claimed_at = now;
-}
-
 export async function ledger_add(input: AddInput): Promise<LedgerRecord> {
   return withLedgerLock(async () => {
     const ledger = await readLedger();
     const existing = findRecord(ledger.records, input.repo, input.issue_number);
     const now = nowIso();
+    const repo = normalizeRepo(input.repo);
 
     if (existing) {
       if (hasActiveClaim(existing) && input.status !== undefined && input.status !== existing.status) {
@@ -161,10 +169,12 @@ export async function ledger_add(input: AddInput): Promise<LedgerRecord> {
       if (input.verdict !== undefined) existing.verdict = input.verdict;
       if (input.signals !== undefined) existing.signals = input.signals;
       if (input.status !== undefined) {
+        const previous = existing.status;
         existing.status = input.status;
-        applyClaimedAt(existing, input.status, now);
+        applyClaimedAt(existing, previous, input.status, now);
       }
       if (input.url) existing.url = input.url;
+      existing.repo = repo;
       existing.updated_at = now;
       await writeLedger(ledger);
       return existing;
@@ -172,15 +182,15 @@ export async function ledger_add(input: AddInput): Promise<LedgerRecord> {
 
     const status = input.status ?? 'candidate';
     const record: LedgerRecord = {
-      repo: input.repo,
+      repo,
       issue_number: input.issue_number,
-      url: input.url ?? issueUrl(input.repo, input.issue_number),
+      url: input.url ?? issueUrl(repo, input.issue_number),
       verdict: input.verdict,
       signals: input.signals,
       status,
       updated_at: now
     };
-    applyClaimedAt(record, status, now);
+    applyClaimedAt(record, undefined, status, now);
     ledger.records.push(record);
     await writeLedger(ledger);
     return record;
@@ -192,7 +202,10 @@ type ListInput = { status?: LedgerStatus; repo?: string };
 export async function ledger_list(input: ListInput = {}): Promise<{ records: LedgerRecord[] }> {
   const ledger = await readLedger();
   let records = ledger.records;
-  if (input.repo) records = records.filter((record) => record.repo === input.repo);
+  if (input.repo) {
+    const needle = normalizeRepo(input.repo);
+    records = records.filter((record) => normalizeRepo(record.repo) === needle);
+  }
   if (input.status) records = records.filter((record) => record.status === input.status);
   return { records };
 }
@@ -203,6 +216,7 @@ export async function ledger_claim(input: ClaimInput): Promise<LedgerRecord> {
   return withLedgerLock(async () => {
     const ledger = await readLedger();
     const existing = findRecord(ledger.records, input.repo, input.issue_number);
+    const repo = normalizeRepo(input.repo);
 
     if (existing && hasActiveClaim(existing)) {
       throw new GitworthyError({
@@ -215,6 +229,7 @@ export async function ledger_claim(input: ClaimInput): Promise<LedgerRecord> {
 
     const now = nowIso();
     if (existing) {
+      existing.repo = repo;
       existing.status = 'claimed';
       existing.claimed_at = now;
       existing.updated_at = now;
@@ -224,9 +239,9 @@ export async function ledger_claim(input: ClaimInput): Promise<LedgerRecord> {
     }
 
     const record: LedgerRecord = {
-      repo: input.repo,
+      repo,
       issue_number: input.issue_number,
-      url: issueUrl(input.repo, input.issue_number),
+      url: issueUrl(repo, input.issue_number),
       status: 'claimed',
       claimed_at: now,
       chat_id: input.chat_id,
@@ -254,12 +269,14 @@ export async function ledger_update(input: UpdateInput): Promise<LedgerRecord> {
       });
     }
 
+    const previous = existing.status;
     const now = nowIso();
     existing.status = input.status;
-    applyClaimedAt(existing, input.status, now);
+    applyClaimedAt(existing, previous, input.status, now);
     existing.updated_at = now;
     if (input.notes !== undefined) existing.notes = input.notes;
     await writeLedger(ledger);
     return existing;
   });
 }
+
