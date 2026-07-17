@@ -2,7 +2,9 @@ node_modules/
 dist/
 coverage/
 .gitworthy-cache-test/
-.cursor/
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
 .env
 *.log
 gw-*.json

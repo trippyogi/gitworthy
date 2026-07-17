@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Expand [SKILL.md](./SKILL.md) with mandatory OSS contribution loop: policy-before-fork gate, contribution path matrix (`pr` | `issue_comment_patch` | `security_report` | `skip`), apply-lane `worth_check` revalidation at claim time, scout→execute bridge, and closed-linked-PR evidence review before claiming ACT items.
+- Add Cursor project rule [.cursor/rules/oss-contrib-loop.mdc](./.cursor/rules/oss-contrib-loop.mdc) and README agent workflow section pointing agents to the skill.
+
 ## 0.3.3
 
 - Exclude pull requests from `dupe_cluster` candidate sets; emit blocking `duplicate` only at lexical score ≥ 0.65 (medium-confidence hits may remain evidence-only).
