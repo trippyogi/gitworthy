@@ -7,13 +7,14 @@ const mocks = vi.hoisted(() => ({
   linkedSignals: [] as Signal[],
   linkedError: null as Error | null,
   releaseSignals: [] as Signal[],
-  policySignals: [] as Signal[]
+  policySignals: [] as Signal[],
+  issueSignals: [] as Signal[]
 }));
 
 function envelope(signals: Signal[] = []) {
   return createEnvelope({
     verdict_summary: signals.length > 0 ? `${signals.join(', ')} found.` : 'no signals found.',
-    evidence: signals.includes('linked_pr_open') ? [{ kind: 'linked_pr', number: 123, state: 'open', url: 'https://github.com/o/r/pull/123' }] : signals.includes('linked_pr_merged') ? [{ kind: 'linked_pr', number: 124, merged: true, url: 'https://github.com/o/r/pull/124' }] : signals.includes('linked_pr_closed') ? [{ kind: 'linked_pr', number: 528, state: 'closed', merged: false, url: 'https://github.com/o/r/pull/528' }] : signals.includes('assigned') ? [{ kind: 'assignment', assignee: 'maintainer', assigned_at: '2026-01-01T00:00:00Z' }] : [],
+    evidence: signals.includes('linked_pr_open') ? [{ kind: 'linked_pr', number: 123, state: 'open', url: 'https://github.com/o/r/pull/123' }] : signals.includes('linked_pr_merged') ? [{ kind: 'linked_pr', number: 124, merged: true, url: 'https://github.com/o/r/pull/124' }] : signals.includes('linked_pr_closed') ? [{ kind: 'linked_pr', number: 528, state: 'closed', merged: false, url: 'https://github.com/o/r/pull/528' }] : signals.includes('assigned') ? [{ kind: 'assignment', assignee: 'maintainer', assigned_at: '2026-01-01T00:00:00Z' }] : signals.includes('claim_required') ? [{ category: 'claim_required', excerpt: 'please request assignment before opening a PR' }] : [],
     signals,
     checked: ['mock check'],
     not_checked: ['mock limitation']
@@ -22,8 +23,9 @@ function envelope(signals: Signal[] = []) {
 
 vi.mock('../src/core/issue-vs-main.js', () => ({
   issue_vs_main: vi.fn(async () => createEnvelope({
-    verdict_summary: 'target issue fetched.',
+    verdict_summary: mocks.issueSignals.length > 0 ? `${mocks.issueSignals.join(', ')} found.` : 'target issue fetched.',
     evidence: [{ title: 'Windows agent domain iframe task' }],
+    signals: mocks.issueSignals,
     checked: ['mock issue'],
     not_checked: ['mock issue limitation']
   }))
@@ -49,6 +51,7 @@ describe('worth_check authority hierarchy', () => {
     mocks.linkedError = null;
     mocks.releaseSignals = [];
     mocks.policySignals = [];
+    mocks.issueSignals = [];
   });
 
   it('caps branch-only in_flight at VERIFY when linked_work completed cleanly', async () => {
@@ -80,18 +83,23 @@ describe('worth_check authority hierarchy', () => {
     ['linked_pr_merged', 'VERIFY'],
     ['linked_pr_closed', 'VERIFY'],
     ['assigned', 'VERIFY'],
-    ['no_pr_path', 'VERIFY']
+    ['no_pr_path', 'VERIFY'],
+    ['needs_repro', 'VERIFY'],
+    ['claim_required', 'VERIFY']
   ] as Array<[Signal, 'SKIP' | 'VERIFY']>)('maps %s to %s', async (signal, expected) => {
     if (signal === 'duplicate') mocks.dupeSignals = [signal];
     else if (signal === 'released_fix') mocks.releaseSignals = [signal];
     else if (signal === 'linked_pr_open' || signal === 'linked_pr_merged' || signal === 'linked_pr_closed' || signal === 'assigned') mocks.linkedSignals = [signal];
-    else if (signal === 'no_pr_path') mocks.policySignals = [signal];
+    else if (signal === 'no_pr_path' || signal === 'claim_required') mocks.policySignals = [signal];
+    else if (signal === 'shipped' || signal === 'needs_repro') mocks.issueSignals = [signal];
     else mocks.branchSignals = [signal];
 
     const result = await worth_check({ repo: 'o/r', issue_number: 1, npm_package: 'pkg' });
 
     expect(result.verdict).toBe(expected);
     expect(result.signals).toContain(signal);
+    if (signal === 'claim_required') expect(result.reasons.join(' ')).toContain('requires claim/assignment');
+    if (signal === 'needs_repro') expect(result.reasons.join(' ')).toContain('lacks reproduction steps');
   });
 
   it('does not cap in_flight when another blocking signal is present', async () => {

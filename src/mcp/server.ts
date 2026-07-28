@@ -28,7 +28,7 @@ async function withToolErrors<T>(run: () => Promise<T>) {
 
 export function createMcpServer(): McpServer {
   const server = new McpServer({ name: 'gitworthy', version: packageVersion() });
-  server.registerTool('branch_scan', { title: 'Branch scan', inputSchema: { repo: z.string(), keywords: z.array(z.string()), max_age_days: z.number().optional(), force_refresh: z.boolean().optional() } }, async (input) => withToolErrors(() => branch_scan(input)));
+  server.registerTool('branch_scan', { title: 'Branch scan', inputSchema: { repo: z.string(), keywords: z.array(z.string()), issue_number: z.number().optional(), max_age_days: z.number().optional(), force_refresh: z.boolean().optional() } }, async (input) => withToolErrors(() => branch_scan(input)));
   server.registerTool('issue_vs_main', { title: 'Issue versus main', inputSchema: { repo: z.string(), issue_number: z.number() } }, async (input) => withToolErrors(() => issue_vs_main(input)));
   server.registerTool('release_gap', { title: 'Release gap', inputSchema: { repo: z.string(), npm_package: z.string(), probe: z.object({ file_glob: z.string().optional(), contains: z.string().optional() }).optional(), force_refresh: z.boolean().optional() } }, async (input) => withToolErrors(() => release_gap(input)));
   server.registerTool('dupe_cluster', { title: 'Duplicate cluster', inputSchema: { repo: z.string(), issue_number: z.number(), max_candidates: z.number().optional() } }, async (input) => withToolErrors(() => dupe_cluster(input)));

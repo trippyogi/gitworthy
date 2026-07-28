@@ -7,6 +7,7 @@ export const CONTRIB_POLICY_TTL = 24 * 60 * 60 * 1000;
 const FILES = ['CONTRIBUTING.md', '.github/CONTRIBUTING.md', 'AGENTS.md', 'AI_POLICY.md', 'CODE_OF_CONDUCT.md', '.github/PULL_REQUEST_TEMPLATE.md', 'SECURITY.md'];
 const CATEGORIES: Record<string, string[]> = {
   no_pr_path: ['mirror repo', 'mirror repository', 'pull requests are not accepted here', 'prs are not accepted here', "don't accept pull requests", 'do not accept pull requests', 'pull requests will be closed', 'pull requests will be automatically closed', 'prs will be closed', 'pull requests are automatically closed', 'pull requests are auto-closed', 'auto-close pull requests', 'do not open pull requests', 'do not submit pull requests'],
+  claim_required: ['must be assigned', 'request assignment', 'request to be assigned', 'please request assignment', 'assigned before opening', 'claim this issue', 'claim the issue', 'comment if you want to work', 'comment if you would like to work', 'leave a comment if you', 'let us know you want to work', 'volunteer by commenting', 'say you want to work on', 'please comment before', 'ask to be assigned'],
   evidence_requirements: ['test', 'tests', 'proof', 'evidence', 'screenshot', 'screenshots', 'logs'],
   ai_assistance_policy: ['ai', 'agent', 'llm', 'generated'],
   pr_caps_or_rate_limits: ['limit', 'cap', 'one pr', 'pull request'],
@@ -18,6 +19,7 @@ const CATEGORIES: Record<string, string[]> = {
 };
 const CATEGORY_PRIORITY: Record<string, number> = {
   no_pr_path: 6,
+  claim_required: 5,
   forbidden_pr_types: 5,
   cla_requirement: 4,
   evidence_requirements: 3,
@@ -112,7 +114,10 @@ export async function contrib_policy(input: Input): Promise<Envelope> {
   }
   if (evidence.length === 0) not_checked.push('no contribution policy excerpts were found in the checked files.');
   const signalLabel = evidence.length === 1 ? 'signal' : 'signals';
-  const signals = evidence.some((item) => item.category === 'no_pr_path') ? ['no_pr_path' as const] : [];
+  const signals = [
+    ...(evidence.some((item) => item.category === 'no_pr_path') ? ['no_pr_path' as const] : []),
+    ...(evidence.some((item) => item.category === 'claim_required') ? ['claim_required' as const] : [])
+  ];
   const envelope = createEnvelope({ verdict_summary: evidence.length > 0 ? `found ${evidence.length} contribution policy ${signalLabel}.` : 'no contribution policy signals found.', evidence, signals, checked, not_checked, cached: false, fetched_at });
   await writeCache('contrib_policy', cacheInput, envelope, fetched_at);
   return envelope;

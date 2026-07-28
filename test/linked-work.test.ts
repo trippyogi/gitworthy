@@ -31,7 +31,7 @@ describe('linked_work', () => {
     const result = await linked_work({ repo: 'o/r', issue_number: 101 });
     expect(result.signals).toContain('linked_pr_open');
     expect(result.evidence).toContainEqual(expect.objectContaining({ kind: 'linked_pr', number: 202, state: 'open', author: 'dev1', source: 'timeline' }));
-    expect(result.not_checked.join(' ')).toContain('PR linkage depends on GitHub cross-reference events');
+    expect(result.not_checked.join(' ')).toContain('PR linkage uses cross-references');
   });
 
   it('emits current assignees with assignment dates', async () => {
@@ -70,6 +70,6 @@ describe('linked_work', () => {
     expect(result.signals).toContain('linked_pr_closed');
     expect(result.signals).not.toContain('linked_pr_open');
     expect(result.signals).not.toContain('linked_pr_merged');
-    expect(result.evidence).toContainEqual(expect.objectContaining({ kind: 'linked_pr', number: 809, state: 'closed', merged: false, source: 'timeline' }));
+    expect(result.evidence).toContainEqual(expect.objectContaining({ kind: 'linked_pr', number: 809, state: 'closed', merged: false, source: 'timeline', prior_attempt: true }));
   });
 });

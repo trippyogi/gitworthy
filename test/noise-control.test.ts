@@ -30,6 +30,6 @@ describe('term extraction noise controls', () => {
     expect(result.verdict).toBe('VERIFY');
     expect(result.reasons).toContain('keyword-matched branches exist but no linked PR or assignee; read the matched branches.');
     expect(JSON.stringify(result)).toContain('recover-sleep-interrupted-turns');
-    expect(branchScanMock).toHaveBeenCalledWith({ repo: 'PostHog/code', keywords: ['laptop', 'sleep'] });
+    expect(branchScanMock).toHaveBeenCalledWith({ repo: 'PostHog/code', keywords: ['laptop', 'sleep'], issue_number: 2886 });
   });
 });

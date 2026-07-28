@@ -16,10 +16,10 @@ No telemetry is active by default. Optional PostHog telemetry requires both `GIT
 ## Quickstart
 
 ```sh
-npx -y gitworthy@0.3.3 check owner/repo#123
-npx -y gitworthy@0.3.3 check owner/repo#123 --npm-package package-name --json
-npx -y gitworthy@0.3.3 scan Shopify/cli --label "good first issue" --json
-npx -y gitworthy@0.3.3 mcp
+npx -y gitworthy@0.3.4 check owner/repo#123
+npx -y gitworthy@0.3.4 check owner/repo#123 --npm-package package-name --json
+npx -y gitworthy@0.3.4 scan Shopify/cli --label "good first issue" --json
+npx -y gitworthy@0.3.4 mcp
 ```
 
 ## CLI
@@ -50,7 +50,7 @@ Exit codes for `check`:
   "mcpServers": {
     "gitworthy": {
       "command": "npx",
-      "args": ["-y", "gitworthy@0.3.3", "mcp"],
+      "args": ["-y", "gitworthy@0.3.4", "mcp"],
       "env": { "GITHUB_TOKEN": "github_pat_..." }
     }
   }
@@ -90,15 +90,15 @@ Fetches the target issue, searches GitHub issues for distinctive title tokens, l
 
 ### linked_work
 
-Fetches issue timeline cross-references, explicit issue-number PR mentions, and current assignees. It emits `linked_pr_open` for open linked PRs, `linked_pr_merged` for merged linked PRs, `linked_pr_closed` for closed unmerged linked PRs, and `assigned` for maintainer assignment. PR linkage depends on GitHub cross-reference events or explicit issue-number mentions, so unrelated PRs remain invisible.
+Fetches issue timeline cross-references, explicit issue-number PR mentions, comment PR URLs, and high title-overlap open PRs (especially when someone claims they submitted a PR without linking it). It emits `linked_pr_open` for open linked PRs, `linked_pr_merged` for merged linked PRs, `linked_pr_closed` for closed unmerged linked PRs (with `prior_attempt` metadata), and `assigned` for maintainer assignment. Automation authors (Dependabot, Renovate, and other bots) are kept in evidence but ignored for verdict signals.
 
 ### contrib_policy
 
-Reads common contribution policy files from main or master and extracts deterministic policy signals with raw excerpts. If docs state that pull requests are not accepted or will be auto-closed, it emits `no_pr_path` and extracts the stated alternate feedback channel when present.
+Reads common contribution policy files from main or master and extracts deterministic policy signals with raw excerpts. If docs state that pull requests are not accepted or will be auto-closed, it emits `no_pr_path` and extracts the stated alternate feedback channel when present. If docs require claiming or requesting assignment before a PR, it emits `claim_required`.
 
 ### scan
 
-Tracker triage only: lists open issue tracker candidates, including candidate assignee logins from the issue API response. Scan does not vet issues and does not produce ACT, VERIFY, or SKIP verdicts. It appends a one-line cached contribution-policy hint when available, or reminds you to run policy before investing. Use it to find candidate issue numbers, then run `gitworthy check owner/repo#123` on specific targets.
+Tracker triage only: lists open issue tracker candidates ranked by `quality_score` (repro clarity, contributor-friendly labels, staleness, soft asks, assignees). Scan does not vet issues and does not produce ACT, VERIFY, or SKIP verdicts. It appends a one-line cached contribution-policy hint when available, or reminds you to run policy before investing. Use it to find candidate issue numbers, then run `gitworthy check owner/repo#123` on specific targets.
 
 Example composition:
 
@@ -109,7 +109,7 @@ gitworthy scan Shopify/cli --label "good first issue" --json
 
 ### worth_check
 
-Composes the checks into ACT, VERIFY, or SKIP. Any sub-check error forces VERIFY. `linked_pr_open` forces SKIP with the PR citation. `linked_pr_closed` and `linked_pr_merged` cap ACT at VERIFY with the PR citation so agents inspect abandoned or landed attempts before claiming. `assigned` caps ACT at VERIFY with the assignee and assignment date. The `no_pr_path` signal caps ACT at VERIFY with the alternate feedback channel, because a repo with no PR path has no direct contribution path. Sub-results remain visible in full. ACT is not the same as claimable: always read `linked_work` evidence and `reasons` before investing.
+Composes the checks into ACT, VERIFY, or SKIP. Any sub-check error forces VERIFY. `linked_pr_open` forces SKIP with the PR citation. `linked_pr_closed` and `linked_pr_merged` cap ACT at VERIFY with the PR citation so agents inspect abandoned or landed attempts before claiming. `assigned` and `claim_required` cap ACT at VERIFY so contributors claim/coordinate first. `needs_repro` caps ACT at VERIFY when a bug-shaped issue lacks reproduction steps. The `no_pr_path` signal caps ACT at VERIFY with the alternate feedback channel, because a repo with no PR path has no direct contribution path. Sub-results remain visible in full. ACT is not the same as claimable: always read `linked_work` evidence and `reasons` before investing.
 
 ## Output envelope
 

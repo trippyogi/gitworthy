@@ -2,7 +2,15 @@
 
 ## Unreleased
 
-- Emit `linked_pr_closed` for closed unmerged linked PRs; `worth_check` caps those issues at VERIFY with a PR citation so ACT is not treated as claimable when prior attempts exist.
+## 0.3.4
+
+- Emit `linked_pr_closed` for closed unmerged linked PRs; `worth_check` caps those at VERIFY with a prior-attempt citation.
+- Ignore automation-authored linked PRs (Dependabot/Renovate/etc.) so bot cross-references no longer force VERIFY/SKIP.
+- Detect unlinked in-flight PRs via title overlap and claim comments ("I've submitted a PR") when issue numbers are missing.
+- Enrich closed-unmerged linked PRs with `prior_attempt` / `days_closed` metadata.
+- Tighten `branch_scan`: expand broad-token denylist, require a specific token among multi-hits, and match branches that embed the issue number.
+- Add `needs_repro` (bug reports without reproduction steps) and `claim_required` (assignment/claim-first policies); both cap `worth_check` at VERIFY.
+- Rank `scan` candidates by `quality_score` (repro, labels, staleness, soft asks, assignees) instead of update time alone.
 
 ## 0.3.3
 

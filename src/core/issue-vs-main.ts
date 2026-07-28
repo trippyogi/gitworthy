@@ -2,6 +2,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { githubJson, GithubIssue } from '../lib/github.js';
 import { shallowClone } from '../lib/git.js';
+import { assessRepro, looksLikeBug } from './candidate-quality.js';
 import { createEnvelope, Envelope } from './envelope.js';
 import { distinctiveTerms, isGenericTerm } from './terms.js';
 
@@ -87,12 +88,34 @@ export async function issue_vs_main(input: Input): Promise<Envelope> {
       return typeof matchPath === 'string' && exactPathTerms.some((term) => pathMatchesIntent(matchPath, term));
     });
     const shippedSignal = inferredIntentMatched || (pathIntentMatched && contentIntentMatched);
-    const verdict_summary = shippedSignal ? 'ask appears shipped on main, verify intent.' : treeMatches.length > 0 || grepMatches.length > 0 ? 'partial overlap found.' : 'no evidence on main.';
+    const repro = assessRepro(issue.body);
+    const bugMissingRepro = looksLikeBug({ title: issue.title, body: issue.body, labels: issue.labels.map((label) => label.name) }) && repro === 'missing';
+    const signals = [
+      ...(shippedSignal ? ['shipped' as const] : []),
+      ...(bugMissingRepro ? ['needs_repro' as const] : [])
+    ];
+    const verdict_summary = shippedSignal
+      ? 'ask appears shipped on main, verify intent.'
+      : treeMatches.length > 0 || grepMatches.length > 0
+        ? 'partial overlap found.'
+        : bugMissingRepro
+          ? 'bug-shaped issue lacks reproduction steps; verify before investing.'
+          : 'no evidence on main.';
     return createEnvelope({
       verdict_summary,
-      evidence: [{ issue: issue.number, title: issue.title, state: issue.state, labels: issue.labels.map((label) => label.name), comments: issue.comments, url: issue.html_url }, { tree_matches: treeMatches }, { grep_matches: grepMatches }],
-      signals: shippedSignal ? ['shipped'] : [],
-      checked: [`fetched issue ${input.repo}#${input.issue_number}`, `shallow cloned ${input.repo}`, `searched candidate terms in tree and file contents`],
+      evidence: [{
+        issue: issue.number,
+        title: issue.title,
+        body: issue.body,
+        state: issue.state,
+        labels: issue.labels.map((label) => label.name),
+        comments: issue.comments,
+        url: issue.html_url,
+        repro,
+        needs_repro: bugMissingRepro
+      }, { tree_matches: treeMatches }, { grep_matches: grepMatches }],
+      signals,
+      checked: [`fetched issue ${input.repo}#${input.issue_number}`, `shallow cloned ${input.repo}`, `searched candidate terms in tree and file contents`, 'assessed reproduction-step signals in the issue body'],
       not_checked: [INTENT_LIMIT],
       cached: false
     });

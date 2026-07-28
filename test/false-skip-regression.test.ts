@@ -66,6 +66,24 @@ describe('false SKIP regressions', () => {
     expect(result.evidence[0]).toMatchObject({ branch: 'recover-sleep-interrupted-turns' });
   });
 
+  it('does not emit in_flight from a broad single-token match like proxy', async () => {
+    mocks.heads.mockResolvedValue([{ name: 'proxy-timeout-tuning', sha: 'abc' }]);
+
+    const result = await branch_scan({ repo: 'o/r', keywords: ['proxy', 'timeout'], force_refresh: true });
+
+    // timeout is specific (>=5) and present, so this should still match via specific hit among multi
+    expect(result.signals).toEqual(['in_flight']);
+  });
+
+  it('does not emit in_flight from only the broad token proxy', async () => {
+    mocks.heads.mockResolvedValue([{ name: 'proxy-timeout-tuning', sha: 'abc' }]);
+
+    const result = await branch_scan({ repo: 'o/r', keywords: ['proxy'], force_refresh: true });
+
+    expect(result.signals).toEqual([]);
+    expect(result.evidence).toEqual([]);
+  });
+
   it('does not emit duplicate for a weakly related closed issue', async () => {
     mocks.githubJson.mockImplementation(async (path: string) => {
       if (path.includes('/search/issues')) return { items: [issue(1391, 'Improve notification settings', 'closed', 'agent domain workspace configuration iframe issue')] };

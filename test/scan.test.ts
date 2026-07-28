@@ -23,8 +23,15 @@ describe('scan', () => {
     expect(mocks.githubJson).toHaveBeenCalledWith(expect.stringContaining('labels=good+first+issue'));
     expect(result.evidence).toHaveLength(1);
     expect(result.evidence[0]).toMatchObject({ number: 1, title: 'Add typed config', comments: 2, assignees: ['maintainer1'] });
+    expect(result.evidence[0]).toEqual(expect.objectContaining({
+      quality_score: expect.any(Number),
+      quality_reasons: expect.any(Array),
+      repro: expect.any(String),
+      soft_ask: expect.any(Boolean)
+    }));
     expect(JSON.stringify(result.evidence)).not.toContain('pull request');
     expect(result.checked).toContain('excluded pull requests');
+    expect(result.checked).toContain('ranked candidates by quality_score (repro, labels, staleness, soft-ask, assignees)');
     expect(result.signals).toEqual([]);
     expect(result.not_checked.join(' ')).toContain('scan reflects the issue tracker only');
     expect(result.not_checked.join(' ')).toContain('not vetted contribution targets');
