@@ -21,8 +21,11 @@ npx gitworthy check owner/repo#123 --npm-package package-name --json
 Interpretation:
 
 - ACT means the completed deterministic checks did not find a blocking signal.
-- VERIFY means a human must perform the named checks before investing or making any public claim. If `assigned` is present, coordinate before acting. If `no_pr_path` is present, do not plan a PR unless the stated feedback channel says otherwise.
+- VERIFY means a human must perform the named checks before investing or making any public claim. If `assigned` or `claim_required` is present, coordinate or claim before acting. If `needs_repro` is present, reproduce the failure first. If `linked_pr_closed` is present, read the prior attempt before retrying. If `no_pr_path` is present, do not plan a PR unless the stated feedback channel says otherwise.
 - SKIP means the tool found a strong signal that the work is already handled, in flight, linked to an open PR, released, or duplicated.
+- `disposition` refines hunt action without changing the verdict: `land_only` = review/land the open linked PR (do not open a parallel fix); `greenfield` = start work; `crowded` = dense prior attempts; `claim_first` / `blocked` / `review` as named.
+
+`scan` ranks tracker candidates by `quality_score` (repro clarity, labels, staleness, soft asks, assignees). Higher scores are better triage starts; scan still does not vet contribution targets—always follow with `worth_check`.
 
 Mandatory rule: never make a public claim from a VERIFY verdict without performing the named human checks.
 

@@ -2,7 +2,25 @@
 
 ## Unreleased
 
-- Emit `linked_pr_closed` for closed unmerged linked PRs; `worth_check` caps those issues at VERIFY with a PR citation so ACT is not treated as claimable when prior attempts exist.
+## 0.3.5
+
+- Match linked PRs by issue number in **title and body** (title-only `(#N)` no longer dropped).
+- Classify open PRs with `closes_issue` when Fixes/Closes/Resolves the target.
+- Collect timeline `referenced` commits as evidence (density only; does not force SKIP).
+- Warn in `not_checked` when the timeline has activity but no `cross-referenced` events (token visibility gap).
+- Add `worth_check.disposition`: `greenfield` | `land_only` | `claim_first` | `blocked` | `crowded` | `review` (verdicts unchanged).
+- Stamp every MCP tool response with `gitworthy_version`.
+- Perf: parallelize `worth_check` sub-checks; short-circuit after open linked PR (skip clone/branch/dupe); pool shallow clones and cache `ls-remote` heads per repo; cap `branch_scan` matches (15) and tip-commit fetches (8).
+
+## 0.3.4
+
+- Emit `linked_pr_closed` for closed unmerged linked PRs; `worth_check` caps those at VERIFY with a prior-attempt citation.
+- Ignore automation-authored linked PRs (Dependabot/Renovate/etc.) so bot cross-references no longer force VERIFY/SKIP.
+- Detect unlinked in-flight PRs via title overlap and claim comments ("I've submitted a PR") when issue numbers are missing.
+- Enrich closed-unmerged linked PRs with `prior_attempt` / `days_closed` metadata.
+- Tighten `branch_scan`: expand broad-token denylist, require a specific token among multi-hits, and match branches that embed the issue number.
+- Add `needs_repro` (bug reports without reproduction steps) and `claim_required` (assignment/claim-first policies); both cap `worth_check` at VERIFY.
+- Rank `scan` candidates by `quality_score` (repro, labels, staleness, soft asks, assignees) instead of update time alone.
 - When a labeled `scan` returns a thin candidate set or only assigned issues, append advisory `widen_hint` evidence with suggestions to broaden triage (no extra GitHub fetches).
 
 ## 0.3.3

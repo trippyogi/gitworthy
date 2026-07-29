@@ -40,6 +40,6 @@ describe('issue_vs_main path literal handling', () => {
     const result = await issue_vs_main({ repo: 'Shopify/dawn', issue_number: 3924 });
     expect(JSON.stringify(result.evidence)).toContain('snippets/price.liquid');
     expect(result.verdict_summary).toBe('partial overlap found.');
-    expect(result.signals).toEqual([]);
+    expect(result.signals).toEqual(['needs_repro']);
   });
 });

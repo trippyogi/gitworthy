@@ -66,6 +66,41 @@ describe('false SKIP regressions', () => {
     expect(result.evidence[0]).toMatchObject({ branch: 'recover-sleep-interrupted-turns' });
   });
 
+  it('does not emit in_flight from a broad single-token match like proxy', async () => {
+    mocks.heads.mockResolvedValue([{ name: 'proxy-timeout-tuning', sha: 'abc' }]);
+
+    const result = await branch_scan({ repo: 'o/r', keywords: ['proxy', 'timeout'], force_refresh: true });
+
+    // timeout is specific (>=5) and present, so this should still match via specific hit among multi
+    expect(result.signals).toEqual(['in_flight']);
+  });
+
+  it('does not emit in_flight from only the broad token proxy', async () => {
+    mocks.heads.mockResolvedValue([{ name: 'proxy-timeout-tuning', sha: 'abc' }]);
+
+    const result = await branch_scan({ repo: 'o/r', keywords: ['proxy'], force_refresh: true });
+
+    expect(result.signals).toEqual([]);
+    expect(result.evidence).toEqual([]);
+  });
+
+  it('caps lexical branch evidence and tip-commit fetches', async () => {
+    mocks.heads.mockResolvedValue(Array.from({ length: 40 }, (_, index) => ({ name: `recover-sleep-work-${index}`, sha: `sha${index}` })));
+    mocks.githubJson.mockImplementation(async (path: string) => {
+      if (path.includes('/commits/')) return { commit: { author: { date: new Date().toISOString() }, message: 'recent work' }, html_url: 'https://github.com/o/r/commit/abc' };
+      if (path.includes('/search/issues')) return { items: [] };
+      if (path.includes('/issues?')) return [];
+      return issue(1, 'target issue');
+    });
+
+    const result = await branch_scan({ repo: 'o/r', keywords: ['sleep'], force_refresh: true, max_matches: 10, max_commit_fetches: 3 });
+
+    expect(result.evidence).toHaveLength(10);
+    expect(result.evidence.filter((item) => typeof item.date === 'string')).toHaveLength(3);
+    expect(result.not_checked.join(' ')).toContain('capped branch evidence at 10 of 40');
+    expect(result.signals).toEqual(['in_flight']);
+  });
+
   it('does not emit duplicate for a weakly related closed issue', async () => {
     mocks.githubJson.mockImplementation(async (path: string) => {
       if (path.includes('/search/issues')) return { items: [issue(1391, 'Improve notification settings', 'closed', 'agent domain workspace configuration iframe issue')] };

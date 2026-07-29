@@ -1,5 +1,6 @@
 import { githubJson, GithubIssue } from '../lib/github.js';
 import { readCache } from '../lib/cache.js';
+import { assessIssueQuality } from './candidate-quality.js';
 import { createEnvelope, Envelope } from './envelope.js';
 
 type Input = { repo: string; label?: string; keywords?: string[]; since?: string; limit?: number };
@@ -14,9 +15,13 @@ type Candidate = {
   url: string;
   created_at: string;
   updated_at: string;
+  quality_score: number;
+  quality_reasons: string[];
+  repro: 'present' | 'weak' | 'missing';
+  soft_ask: boolean;
 };
 
-const TRACKER_LIMIT = 'scan reflects the issue tracker only; tracker state can lag branches, main, releases, duplicates, and maintainer intent, so scan results are not vetted contribution targets.';
+const TRACKER_LIMIT = 'scan reflects the issue tracker only; tracker state can lag branches, main, releases, duplicates, and maintainer intent, so scan results are not vetted contribution targets. quality_score ranks tracker attractiveness only.';
 const CONTRIB_POLICY_TTL = 24 * 60 * 60 * 1000;
 
 function sinceToDate(since?: string): Date | null {
@@ -45,6 +50,15 @@ function matchesLabel(issue: GithubIssue, label: string | undefined): boolean {
 }
 
 function candidate(issue: GithubIssue): Candidate {
+  const quality = assessIssueQuality({
+    title: issue.title,
+    body: issue.body,
+    labels: issue.labels.map((label) => label.name),
+    assignees: (issue.assignees ?? []).map((assignee) => assignee.login),
+    comments: issue.comments,
+    created_at: issue.created_at,
+    updated_at: issue.updated_at
+  });
   return {
     number: issue.number,
     title: issue.title,
@@ -54,17 +68,29 @@ function candidate(issue: GithubIssue): Candidate {
     comments: issue.comments,
     url: issue.html_url,
     created_at: issue.created_at,
-    updated_at: issue.updated_at
+    updated_at: issue.updated_at,
+    quality_score: quality.score,
+    quality_reasons: quality.reasons,
+    repro: quality.repro,
+    soft_ask: quality.soft_ask
   };
 }
 
 async function cachedPolicyHint(repo: string): Promise<{ checked: string[]; not_checked: string[] }> {
   const cached = await readCache<Envelope>('contrib_policy', { repo }, CONTRIB_POLICY_TTL);
   if (!cached.hit) return { checked: [], not_checked: [`policy hint unavailable: run gitworthy policy ${repo} before investing in an unfamiliar repo.`] };
-  if (!cached.value.signals.includes('no_pr_path')) return { checked: ['policy hint: cached contrib_policy found no no-PR path signal'], not_checked: [] };
-  const evidence = cached.value.evidence.find((item) => item.category === 'no_pr_path' && typeof item.feedback_channel === 'string');
-  const channel = typeof evidence?.feedback_channel === 'string' ? evidence.feedback_channel : 'not stated';
-  return { checked: [`policy hint: cached contrib_policy says repo accepts no pull requests; feedback channel: ${channel}`], not_checked: [] };
+  const checked: string[] = [];
+  if (cached.value.signals.includes('no_pr_path')) {
+    const evidence = cached.value.evidence.find((item) => item.category === 'no_pr_path' && typeof item.feedback_channel === 'string');
+    const channel = typeof evidence?.feedback_channel === 'string' ? evidence.feedback_channel : 'not stated';
+    checked.push(`policy hint: cached contrib_policy says repo accepts no pull requests; feedback channel: ${channel}`);
+  } else {
+    checked.push('policy hint: cached contrib_policy found no no-PR path signal');
+  }
+  if (cached.value.signals.includes('claim_required')) {
+    checked.push('policy hint: cached contrib_policy requires claiming/assignment before opening a PR');
+  }
+  return { checked, not_checked: [] };
 }
 
 type WidenHint = {
@@ -114,16 +140,25 @@ export async function scan(input: Input): Promise<Envelope> {
     .filter((issue) => matchesLabel(issue, input.label))
     .filter((issue) => matchesKeywords(issue, input.keywords))
     .filter((issue) => !sinceDate || Date.parse(issue.created_at) >= sinceDate.getTime())
-    .sort((left, right) => Date.parse(right.updated_at) - Date.parse(left.updated_at))
-    .slice(0, limit)
-    .map(candidate);
+    .map(candidate)
+    .sort((left, right) => right.quality_score - left.quality_score || Date.parse(right.updated_at) - Date.parse(left.updated_at))
+    .slice(0, limit);
   const policyHint = await cachedPolicyHint(input.repo);
   const widenHint = widenHintEvidence(input, candidates, limit);
   const evidence = widenHint ? [...candidates, widenHint] : candidates;
   return createEnvelope({
-    verdict_summary: `found ${candidates.length} open issue ${candidates.length === 1 ? 'candidate' : 'candidates'} for tracker triage; scan does not vet them.`,
+    verdict_summary: `found ${candidates.length} open issue ${candidates.length === 1 ? 'candidate' : 'candidates'} ranked by tracker quality; scan does not vet them.`,
     evidence,
-    checked: [`fetched open issues for ${input.repo}`, 'excluded pull requests', input.label ? `filtered by label: ${input.label}` : 'no label filter requested', input.keywords?.length ? `filtered titles by keywords: ${input.keywords.join(', ')}` : 'no keyword filter requested', input.since ? `filtered by created date since ${input.since}` : 'no age filter requested', ...policyHint.checked, ...(widenHint ? [`widen hint: ${widenHint.reason}`] : [])],
+    checked: [
+      `fetched open issues for ${input.repo}`,
+      'excluded pull requests',
+      'ranked candidates by quality_score (repro, labels, staleness, soft-ask, assignees)',
+      input.label ? `filtered by label: ${input.label}` : 'no label filter requested',
+      input.keywords?.length ? `filtered titles by keywords: ${input.keywords.join(', ')}` : 'no keyword filter requested',
+      input.since ? `filtered by created date since ${input.since}` : 'no age filter requested',
+      ...policyHint.checked,
+      ...(widenHint ? [`widen hint: ${widenHint.reason}`] : [])
+    ],
     not_checked: [TRACKER_LIMIT, ...policyHint.not_checked],
     cached: false
   });
