@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## 0.3.6
+
+- Hunt policy (SKILL): scan → filter → `worth_check` ≤3–5 survivors, serial per repo (concurrency 1–2).
+- Cache clone file lists on the shallow-clone lease so later issues reuse the walk.
+- Serialize concurrent shallow clones per repo (shared in-flight create) so parallel `worth_check` sub-checks cannot overwrite the pool.
+- Defer `issue_vs_main` tree/grep unless the issue has concrete path terms (`src/…`, `extensions/…`, ≥2 path-like tokens); otherwise assess repro only.
+- Add `timings_ms` and `perf` (`clone_cached`, `file_list_cached`, `branch_tip_fetches`, `issue_vs_main_mode`, short-circuit) on `worth_check`.
+- Tighten `branch_scan` defaults: 10 evidence matches, 3 tip-commit fetches (issue-number preferred).
+- Soft-cap `dupe_cluster` issue listing (1 page) and issue timeline pages (2).
+- Document token needs for timeline cross-references in README/SKILL.
+
 ## 0.3.5
 
 - Match linked PRs by issue number in **title and body** (title-only `(#N)` no longer dropped).

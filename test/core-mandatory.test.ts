@@ -6,7 +6,8 @@ import { worth_check } from '../src/core/worth-check.js';
 
 vi.mock('../src/lib/git.js', () => ({
   lsRemoteHeads: vi.fn(async () => []),
-  shallowClone: vi.fn(async () => ({ dir: process.cwd(), cleanup: async () => undefined }))
+  shallowClone: vi.fn(async () => ({ dir: process.cwd(), cleanup: async () => undefined, cached: false })),
+  listCloneFiles: vi.fn(async () => ({ files: [], cached: false, dir: process.cwd() }))
 }));
 
 vi.mock('../src/lib/github.js', () => ({

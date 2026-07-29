@@ -50,14 +50,18 @@ const TITLE_OVERLAP_MIN_SHARED = 2;
 const REFERENCED_COMMIT_CAP = 20;
 const CLAIM_COMMENT = /\b(i\s+('ve|have)\s+)?(submitted|opened|created|sent|made|raised)\s+(a\s+)?(pr|pull\s+request)\b|\b(pr|pull\s+request)\s+(is|was)\s+(up|ready|opened|submitted)\b|\bsee\s+(my\s+)?(pr|pull\s+request)\b/i;
 
-async function timeline(repo: string, issueNumber: number): Promise<TimelineEvent[]> {
+const MAX_TIMELINE_PAGES = 2;
+
+async function timeline(repo: string, issueNumber: number): Promise<{ events: TimelineEvent[]; truncated: boolean }> {
   const events: TimelineEvent[] = [];
-  for (let page = 1; page <= 5; page += 1) {
+  let truncated = false;
+  for (let page = 1; page <= MAX_TIMELINE_PAGES; page += 1) {
     const pageEvents = await githubJson<TimelineEvent[]>(`/repos/${repo}/issues/${issueNumber}/timeline?per_page=100&page=${page}`);
     events.push(...pageEvents);
-    if (pageEvents.length < 100) break;
+    if (pageEvents.length < 100) return { events, truncated };
+    if (page === MAX_TIMELINE_PAGES) truncated = true;
   }
-  return events;
+  return { events, truncated };
 }
 
 async function prDetails(repo: string, issueNumber: number): Promise<GithubPr> {
@@ -272,7 +276,7 @@ function partitionLinkedPrs(prs: LinkedPrEvidence[]): { active: LinkedPrEvidence
 export async function linked_work(input: Input): Promise<Envelope> {
   const resolved = await loadCanonicalRepo(input.repo);
   const issue = await githubJson<GithubIssue>(`/repos/${input.repo}/issues/${input.issue_number}`);
-  const events = await timeline(input.repo, input.issue_number);
+  const { events, truncated: timelineTruncated } = await timeline(input.repo, input.issue_number);
   const timelineNotes = timelineCapabilityNotes(events);
   const timelinePrs = await timelineLinkedPrs(input.repo, events, input.issue_number);
   const commits = referencedCommits(events);
@@ -298,6 +302,9 @@ export async function linked_work(input: Input): Promise<Envelope> {
   const assignedLabel = assignments.length === 1 ? 'assignee' : 'assignees';
   const checkedNotes = [...new Set([...resolved.checked, ...searchChecked, ...titleResult.checked, ...timelineNotes.checked])];
   const notCheckedNotes = [...new Set([...resolved.not_checked, ...searchNotChecked, ...titleResult.not_checked, ...timelineNotes.not_checked, LINKAGE_LIMIT])];
+  if (timelineTruncated) {
+    notCheckedNotes.push(`timeline soft-capped at ${MAX_TIMELINE_PAGES} pages; older cross-references may be missing.`);
+  }
   if (ignored.length > 0) {
     checkedNotes.push(`ignored ${ignored.length} automation-authored pull request${ignored.length === 1 ? '' : 's'} for verdict signals`);
   }

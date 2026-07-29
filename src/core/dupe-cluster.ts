@@ -7,8 +7,10 @@ const STOP = new Set(['the', 'and', 'for', 'with', 'from', 'that', 'this', 'shou
 const CLOSED_TITLE_THRESHOLD = 0.6;
 const EVIDENCE_THRESHOLD = 0.35;
 const BLOCKING_THRESHOLD = 0.65;
+const DEFAULT_LIST_PAGES = 1;
+const DEFAULT_PER_PAGE = 50;
 
-type Input = { repo: string; issue_number: number; max_candidates?: number };
+type Input = { repo: string; issue_number: number; max_candidates?: number; max_list_pages?: number };
 
 function tokens(text: string): Set<string> {
   return new Set((text.toLowerCase().match(/[a-z][a-z0-9_-]{3,}/g) ?? []).filter((token) => !STOP.has(token)));
@@ -33,13 +35,17 @@ export async function dupe_cluster(input: Input): Promise<Envelope> {
   const distinctive = Array.from(tokens(target.title)).slice(0, 5);
   const { result: searched, context } = await runSearchWithCanonicalRepo(input.repo, async (fullName) => {
     const query = encodeURIComponent(`repo:${fullName} is:issue ${distinctive.join(' ')}`);
-    return githubJson<{ items: GithubIssue[] }>(`/search/issues?q=${query}&per_page=${input.max_candidates ?? 50}`);
+    return githubJson<{ items: GithubIssue[] }>(`/search/issues?q=${query}&per_page=${input.max_candidates ?? DEFAULT_PER_PAGE}`);
   });
   const listed = [] as GithubIssue[];
-  const pages = input.max_candidates ? 1 : 3;
+  const perPage = input.max_candidates ?? DEFAULT_PER_PAGE;
+  const pages = input.max_list_pages ?? (input.max_candidates ? 1 : DEFAULT_LIST_PAGES);
   for (let page = 1; page <= pages; page += 1) {
-    listed.push(...await githubJson<GithubIssue[]>(`/repos/${input.repo}/issues?state=all&per_page=${input.max_candidates ?? 100}&page=${page}`));
+    listed.push(...await githubJson<GithubIssue[]>(`/repos/${input.repo}/issues?state=all&per_page=${perPage}&page=${page}`));
   }
+  const listCapNote = pages <= DEFAULT_LIST_PAGES
+    ? `listed at most ${pages} issue page(s) (soft cap; pass max_list_pages to widen).`
+    : `listed ${pages} issue page(s).`;
   const byNumber = new Map<number, GithubIssue>();
   for (const issue of [...searched.items, ...listed]) {
     if ('pull_request' in issue) continue;
@@ -67,7 +73,7 @@ export async function dupe_cluster(input: Input): Promise<Envelope> {
     verdict_summary: candidates.length > 0 ? `${candidates.length} lexical duplicate ${candidates.length === 1 ? 'candidate' : 'candidates'} found.` : 'no lexical duplicate candidates found.',
     evidence: candidates,
     signals: blocking ? ['duplicate'] : [],
-    checked: [`fetched target issue ${input.repo}#${input.issue_number}`, ...context.checked, 'searched GitHub issues by distinctive title tokens', 'scored open issues by lexical overlap'],
+    checked: [`fetched target issue ${input.repo}#${input.issue_number}`, ...context.checked, 'searched GitHub issues by distinctive title tokens', 'scored open issues by lexical overlap', listCapNote],
     not_checked: [...context.not_checked, DUPE_LIMIT],
     cached: false
   });

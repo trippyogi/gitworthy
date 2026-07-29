@@ -101,6 +101,37 @@ describe('false SKIP regressions', () => {
     expect(result.signals).toEqual(['in_flight']);
   });
 
+  it('prefers issue-number branches for tip-commit fetches', async () => {
+    mocks.heads.mockResolvedValue([
+      { name: 'recover-sleep-work-a', sha: 'sha-a' },
+      { name: 'fix-42-handler', sha: 'sha-42' },
+      { name: 'recover-sleep-work-b', sha: 'sha-b' },
+      { name: 'recover-sleep-work-c', sha: 'sha-c' }
+    ]);
+    const fetched: string[] = [];
+    mocks.githubJson.mockImplementation(async (path: string) => {
+      const match = path.match(/\/commits\/(sha-\w+)/);
+      if (match) {
+        fetched.push(match[1]);
+        return { commit: { author: { date: new Date().toISOString() }, message: 'tip' }, html_url: 'https://github.com/o/r/commit/x' };
+      }
+      return issue(42, 'target');
+    });
+
+    const result = await branch_scan({
+      repo: 'o/r',
+      keywords: ['sleep'],
+      issue_number: 42,
+      force_refresh: true,
+      max_matches: 10,
+      max_commit_fetches: 2
+    });
+
+    expect(fetched[0]).toBe('sha-42');
+    expect(fetched).toHaveLength(2);
+    expect(result.evidence.find((item) => item.branch === 'fix-42-handler')?.tip_fetched).toBe(true);
+  });
+
   it('does not emit duplicate for a weakly related closed issue', async () => {
     mocks.githubJson.mockImplementation(async (path: string) => {
       if (path.includes('/search/issues')) return { items: [issue(1391, 'Improve notification settings', 'closed', 'agent domain workspace configuration iframe issue')] };

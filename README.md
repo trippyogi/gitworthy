@@ -16,10 +16,10 @@ No telemetry is active by default. Optional PostHog telemetry requires both `GIT
 ## Quickstart
 
 ```sh
-npx -y gitworthy@0.3.5 check owner/repo#123
-npx -y gitworthy@0.3.5 check owner/repo#123 --npm-package package-name --json
-npx -y gitworthy@0.3.5 scan Shopify/cli --label "good first issue" --json
-npx -y gitworthy@0.3.5 mcp
+npx -y gitworthy@0.3.6 check owner/repo#123
+npx -y gitworthy@0.3.6 check owner/repo#123 --npm-package package-name --json
+npx -y gitworthy@0.3.6 scan Shopify/cli --label "good first issue" --json
+npx -y gitworthy@0.3.6 mcp
 ```
 
 ## CLI
@@ -50,18 +50,18 @@ Exit codes for `check`:
   "mcpServers": {
     "gitworthy": {
       "command": "npx",
-      "args": ["-y", "gitworthy@0.3.5", "mcp"],
+      "args": ["-y", "gitworthy@0.3.6", "mcp"],
       "env": { "GITHUB_TOKEN": "github_pat_..." }
     }
   }
 }
 ```
 
-The token needs only fine-grained, read-only access to public repositories.
+The token needs only fine-grained, read-only access to public repositories. For accurate `linked_work`, prefer a classic PAT or a fine-grained token with **Issues: Read** so the timeline includes **cross-referenced** events; weaker tokens omit those and under-count prior PRs (gitworthy falls back to title/body search and warns in `not_checked`).
 
 ## Configuration
 
-- `GITHUB_TOKEN` enables authenticated GitHub REST checks.
+- `GITHUB_TOKEN` / `GH_TOKEN` enables authenticated GitHub REST checks.
 - `GITWORTHY_CACHE_DIR` overrides the default cache at `~/.gitworthy/cache`.
 - `GITWORTHY_TELEMETRY=on` plus `GITWORTHY_POSTHOG_KEY` requests optional telemetry. Install `posthog-node` yourself if you want this path active. It is not part of the default install.
 
@@ -74,11 +74,11 @@ Node 22 or newer required.
 
 ### branch_scan
 
-Lists remote heads with `git ls-remote --heads`, filters branch names by lexical keyword matches, and reports matching branches. With a GitHub token, it also fetches tip commit date and subject.
+Lists remote heads with `git ls-remote --heads`, filters branch names by lexical keyword matches (issue-number tokens preferred), and reports matching branches. With a GitHub token, it fetches tip commit date/subject for a small budget (default 3, issue-number first).
 
 ### issue_vs_main
 
-Fetches issue metadata, shallow clones main, extracts deterministic candidate terms from the issue title and body, and searches paths plus file contents for overlap.
+Fetches issue metadata and reproduction signals. Tree/grep runs only when the issue names concrete paths (`src/…`, `extensions/…`, or ≥2 path-like tokens); otherwise clone is skipped and `not_checked` explains the gate. When cloning, file lists are cached on the shallow-clone lease.
 
 ### release_gap
 
@@ -86,11 +86,11 @@ Fetches npm metadata, reads package version from main, and compares it to npm la
 
 ### dupe_cluster
 
-Fetches the target issue, searches GitHub issues for distinctive title tokens, lists open issues, and scores lexical similarity.
+Fetches the target issue, searches GitHub issues for distinctive title tokens, lists a soft-capped page of issues, and scores lexical similarity.
 
 ### linked_work
 
-Fetches issue timeline cross-references, explicit issue-number PR mentions in **title and body**, comment PR URLs, referenced commits, and high title-overlap open PRs (especially when someone claims they submitted a PR without linking it). It emits `linked_pr_open` for open linked PRs (with `closes_issue` when Fixes/Closes/Resolves), `linked_pr_merged` for merged linked PRs, `linked_pr_closed` for closed unmerged linked PRs (with `prior_attempt` metadata), and `assigned` for maintainer assignment. Automation authors (Dependabot, Renovate, and other bots) are kept in evidence but ignored for verdict signals. Referenced commits are evidence-only and do not force SKIP.
+Fetches issue timeline cross-references (soft-capped pages), explicit issue-number PR mentions in **title and body**, comment PR URLs, referenced commits, and high title-overlap open PRs (especially when someone claims they submitted a PR without linking it). It emits `linked_pr_open` for open linked PRs (with `closes_issue` when Fixes/Closes/Resolves), `linked_pr_merged` for merged linked PRs, `linked_pr_closed` for closed unmerged linked PRs (with `prior_attempt` metadata), and `assigned` for maintainer assignment. Automation authors (Dependabot, Renovate, and other bots) are kept in evidence but ignored for verdict signals. Referenced commits are evidence-only and do not force SKIP.
 
 ### contrib_policy
 
@@ -109,7 +109,7 @@ gitworthy scan Shopify/cli --label "good first issue" --json
 
 ### worth_check
 
-Composes the checks into ACT, VERIFY, or SKIP, plus a hunt `disposition`: `greenfield` (safe to start), `land_only` (open linked PR — do not open a parallel fix), `claim_first`, `blocked`, `crowded` (dense prior attempts/commits), or `review`. Any sub-check error forces VERIFY. `linked_pr_open` forces SKIP with the PR citation and `land_only`. `linked_pr_closed` and `linked_pr_merged` cap ACT at VERIFY with the PR citation so agents inspect abandoned or landed attempts before claiming. `assigned` and `claim_required` cap ACT at VERIFY so contributors claim/coordinate first. `needs_repro` caps ACT at VERIFY when a bug-shaped issue lacks reproduction steps. The `no_pr_path` signal caps ACT at VERIFY with the alternate feedback channel, because a repo with no PR path has no direct contribution path. Sub-results remain visible in full. ACT is not the same as claimable: always read `linked_work` evidence, `disposition`, and `reasons` before investing.
+Composes the checks into ACT, VERIFY, or SKIP, plus a hunt `disposition`: `greenfield` (safe to start), `land_only` (open linked PR — do not open a parallel fix), `claim_first`, `blocked`, `crowded` (dense prior attempts/commits), or `review`. Any sub-check error forces VERIFY. `linked_pr_open` forces SKIP with the PR citation and `land_only`. `linked_pr_closed` and `linked_pr_merged` cap ACT at VERIFY with the PR citation so agents inspect abandoned or landed attempts before claiming. `assigned` and `claim_required` cap ACT at VERIFY so contributors claim/coordinate first. `needs_repro` caps ACT at VERIFY when a bug-shaped issue lacks reproduction steps. The `no_pr_path` signal caps ACT at VERIFY with the alternate feedback channel, because a repo with no PR path has no direct contribution path. Sub-results remain visible in full. Responses include `timings_ms` and `perf` (clone/file-list cache flags, tip-fetch count, short-circuit). ACT is not the same as claimable: always read `linked_work` evidence, `disposition`, and `reasons` before investing. For agent hunts, prefer `scan` → filter → ≤3–5 serial `worth_check`s (see [SKILL.md](./SKILL.md)).
 
 ## Output envelope
 
