@@ -20,6 +20,7 @@
 - Tighten `branch_scan`: expand broad-token denylist, require a specific token among multi-hits, and match branches that embed the issue number.
 - Add `needs_repro` (bug reports without reproduction steps) and `claim_required` (assignment/claim-first policies); both cap `worth_check` at VERIFY.
 - Rank `scan` candidates by `quality_score` (repro, labels, staleness, soft asks, assignees) instead of update time alone.
+- When a labeled `scan` returns a thin candidate set or only assigned issues, append advisory `widen_hint` evidence with suggestions to broaden triage (no extra GitHub fetches).
 
 ## 0.3.3
 
