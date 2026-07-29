@@ -6,6 +6,7 @@ import { release_gap } from './release-gap.js';
 import { contrib_policy } from './contrib-policy.js';
 import { createEnvelope, Envelope, GitworthyError, Signal } from './envelope.js';
 import { distinctiveTerms } from './terms.js';
+import { githubJson, GithubIssue } from '../lib/github.js';
 
 type Input = { repo: string; issue_number: number; npm_package?: string; probe?: { file_glob?: string; contains?: string } };
 type SubResult = { name: string; ok: true; result: Envelope } | { name: string; ok: false; error: { code: string; message: string; not_checked: string[] } };
@@ -71,6 +72,14 @@ function err(name: string, error: unknown): SubResult {
   return { name, ok: false, error: { code: 'unknown_error', message: error instanceof Error ? error.message : String(error), not_checked: ['sub-check failed with an unknown error.'] } };
 }
 
+async function runNamed(name: string, run: () => Promise<Envelope>): Promise<SubResult> {
+  try {
+    return { name, ok: true, result: await run() };
+  } catch (error) {
+    return err(name, error);
+  }
+}
+
 function hasCleanLinkedWork(subResults: SubResult[]): boolean {
   const linked = subResults.find((result) => result.name === 'linked_work');
   return Boolean(linked?.ok && (linked.result.signals ?? []).length === 0);
@@ -80,6 +89,11 @@ function isBranchOnlySkipSignal(signals: Signal[], subResults: SubResult[]): boo
   if (!hasCleanLinkedWork(subResults)) return false;
   const blocking = signals.filter((signal) => !['no_pr_path', 'linked_pr_merged', 'linked_pr_closed', 'assigned', 'needs_repro', 'claim_required'].includes(signal));
   return blocking.length === 1 && blocking[0] === 'in_flight';
+}
+
+function hasOpenLinkedPr(subResults: SubResult[]): boolean {
+  const linked = subResults.find((result) => result.ok && result.name === 'linked_work');
+  return Boolean(linked?.ok && linked.result.signals.includes('linked_pr_open'));
 }
 
 export function chooseDisposition(input: {
@@ -97,33 +111,7 @@ export function chooseDisposition(input: {
   return 'review';
 }
 
-export async function worth_check(input: Input): Promise<WorthEnvelope> {
-  const sub_results: SubResult[] = [];
-  let issueKeywords = [String(input.issue_number)];
-  try {
-    const issue = await issue_vs_main(input);
-    sub_results.push({ name: 'issue_vs_main', ok: true, result: issue });
-    const issueEvidence = issue.evidence[0] as { title?: string };
-    issueKeywords = distinctiveTerms(issueEvidence.title ?? issueKeywords.join(' '), 8);
-  } catch (error) {
-    sub_results.push(err('issue_vs_main', error));
-  }
-  try {
-    sub_results.push({
-      name: 'branch_scan',
-      ok: true,
-      result: await branch_scan({ repo: input.repo, keywords: issueKeywords, issue_number: input.issue_number })
-    });
-  } catch (error) {
-    sub_results.push(err('branch_scan', error));
-  }
-  try { sub_results.push({ name: 'linked_work', ok: true, result: await linked_work({ repo: input.repo, issue_number: input.issue_number }) }); } catch (error) { sub_results.push(err('linked_work', error)); }
-  if (input.npm_package) {
-    try { sub_results.push({ name: 'release_gap', ok: true, result: await release_gap({ repo: input.repo, npm_package: input.npm_package, probe: input.probe }) }); } catch (error) { sub_results.push(err('release_gap', error)); }
-  }
-  try { sub_results.push({ name: 'dupe_cluster', ok: true, result: await dupe_cluster({ repo: input.repo, issue_number: input.issue_number }) }); } catch (error) { sub_results.push(err('dupe_cluster', error)); }
-  try { sub_results.push({ name: 'contrib_policy', ok: true, result: await contrib_policy({ repo: input.repo }) }); } catch (error) { sub_results.push(err('contrib_policy', error)); }
-
+function finalize(sub_results: SubResult[], extraNotChecked: string[] = []): WorthEnvelope {
   const reasons: string[] = [];
   const errors = sub_results.filter((result) => !result.ok);
   const signals = [...new Set(sub_results.flatMap((result) => result.ok ? (result.result.signals ?? []) : []))] as Signal[];
@@ -173,14 +161,58 @@ export async function worth_check(input: Input): Promise<WorthEnvelope> {
   if (disposition === 'blocked') {
     reasons.push('disposition blocked: work appears already handled (shipped, released, or duplicate).');
   }
+  if (extraNotChecked.length > 0) {
+    reasons.push(`perf short-circuit: skipped ${extraNotChecked.length} expensive sub-check${extraNotChecked.length === 1 ? '' : 's'} after open linked PR.`);
+  }
 
   const base = createEnvelope({
     verdict_summary: verdict === 'ACT' ? 'no blocking evidence found by completed checks.' : verdict === 'SKIP' ? 'blocking evidence was found by completed checks.' : 'mixed signals or sub-check errors require human review.',
     evidence: [],
     signals,
     checked: sub_results.filter((result) => result.ok).map((result) => result.name),
-    not_checked: [...new Set(sub_results.flatMap((result) => result.ok ? result.result.not_checked : result.error.not_checked))],
+    not_checked: [...new Set([
+      ...sub_results.flatMap((result) => result.ok ? result.result.not_checked : result.error.not_checked),
+      ...extraNotChecked
+    ])],
     cached: false
   });
   return { ...base, verdict, disposition, reasons, sub_results };
+}
+
+export async function worth_check(input: Input): Promise<WorthEnvelope> {
+  // Cheap title fetch for branch keywords; overlaps with linked_work's issue fetch but avoids waiting on clone.
+  let issueKeywords = [String(input.issue_number)];
+  try {
+    const issue = await githubJson<GithubIssue>(`/repos/${input.repo}/issues/${input.issue_number}`);
+    issueKeywords = distinctiveTerms(issue.title, 8);
+  } catch {
+    // Fall back to issue-number-only keywords; branch_scan still matches fix-<n> branches.
+  }
+
+  // Phase 1: cheap blockers in parallel (no clone).
+  const phase1 = await Promise.all([
+    runNamed('linked_work', () => linked_work({ repo: input.repo, issue_number: input.issue_number })),
+    runNamed('contrib_policy', () => contrib_policy({ repo: input.repo }))
+  ]);
+  if (hasOpenLinkedPr(phase1)) {
+    const skipped = [
+      'issue_vs_main skipped after open linked PR (perf short-circuit).',
+      'branch_scan skipped after open linked PR (perf short-circuit).',
+      'dupe_cluster skipped after open linked PR (perf short-circuit).',
+      ...(input.npm_package ? ['release_gap skipped after open linked PR (perf short-circuit).'] : [])
+    ];
+    return finalize(phase1, skipped);
+  }
+
+  // Phase 2: expensive checks in parallel (shared clone pool helps issue_vs_main + release_gap).
+  const phase2 = await Promise.all([
+    runNamed('issue_vs_main', () => issue_vs_main(input)),
+    runNamed('branch_scan', () => branch_scan({ repo: input.repo, keywords: issueKeywords, issue_number: input.issue_number })),
+    runNamed('dupe_cluster', () => dupe_cluster({ repo: input.repo, issue_number: input.issue_number })),
+    ...(input.npm_package
+      ? [runNamed('release_gap', () => release_gap({ repo: input.repo, npm_package: input.npm_package!, probe: input.probe }))]
+      : [])
+  ]);
+
+  return finalize([...phase1, ...phase2]);
 }

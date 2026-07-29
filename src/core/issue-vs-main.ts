@@ -115,7 +115,12 @@ export async function issue_vs_main(input: Input): Promise<Envelope> {
         needs_repro: bugMissingRepro
       }, { tree_matches: treeMatches }, { grep_matches: grepMatches }],
       signals,
-      checked: [`fetched issue ${input.repo}#${input.issue_number}`, `shallow cloned ${input.repo}`, `searched candidate terms in tree and file contents`, 'assessed reproduction-step signals in the issue body'],
+      checked: [
+        `fetched issue ${input.repo}#${input.issue_number}`,
+        clone.cached ? `reused pooled shallow clone of ${input.repo}` : `shallow cloned ${input.repo}`,
+        `searched candidate terms in tree and file contents`,
+        'assessed reproduction-step signals in the issue body'
+      ],
       not_checked: [INTENT_LIMIT],
       cached: false
     });

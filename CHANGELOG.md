@@ -10,6 +10,7 @@
 - Warn in `not_checked` when the timeline has activity but no `cross-referenced` events (token visibility gap).
 - Add `worth_check.disposition`: `greenfield` | `land_only` | `claim_first` | `blocked` | `crowded` | `review` (verdicts unchanged).
 - Stamp every MCP tool response with `gitworthy_version`.
+- Perf: parallelize `worth_check` sub-checks; short-circuit after open linked PR (skip clone/branch/dupe); pool shallow clones and cache `ls-remote` heads per repo; cap `branch_scan` matches (15) and tip-commit fetches (8).
 
 ## 0.3.4
 
