@@ -7,8 +7,8 @@ import { isGenericTerm, normalizeTerm } from './terms.js';
 const TTL = 15 * 60 * 1000;
 const LIMIT_BRANCH = 'fork branches are invisible to this remote branch scan.';
 const LIMIT_MATCH = 'branch name matching is lexical and can miss renamed or differently named work.';
-const MAX_MATCHES = 15;
-const MAX_COMMIT_FETCHES = 8;
+const MAX_MATCHES = 10;
+const MAX_COMMIT_FETCHES = 3;
 const BROAD_BRANCH_TERMS = new Set([
   'agent', 'agents', 'domain', 'domains',
   'proxy', 'model', 'models', 'docs', 'doc', 'documentation',
@@ -97,9 +97,19 @@ export async function branch_scan(input: Input): Promise<Envelope> {
   if (totalMatches > matches.length) {
     not_checked.push(`capped branch evidence at ${maxMatches} of ${totalMatches} lexical matches (prefer issue-number and higher-score hits).`);
   }
-  for (const [index, match] of matches.entries()) {
+  // Tip-fetch budget: issue-number hits first, then top keyword matches — never all capped names.
+  const tipFetchNames = new Set<string>();
+  for (const match of matches) {
+    if (match.match_reason === 'issue_number' && tipFetchNames.size < maxCommitFetches) tipFetchNames.add(match.name);
+  }
+  for (const match of matches) {
+    if (match.match_reason === 'keyword' && tipFetchNames.size < maxCommitFetches) tipFetchNames.add(match.name);
+  }
+  let tipFetches = 0;
+  for (const match of matches) {
     let commit: CommitInfo = {};
-    if (index < maxCommitFetches) {
+    if (tipFetchNames.has(match.name)) {
+      tipFetches += 1;
       try {
         const data = await githubJson<{ commit: { author: { date: string }; message: string }; html_url: string }>(`/repos/${input.repo}/commits/${match.sha}`);
         commit = { date: data.commit.author.date, subject: data.commit.message.split('\n')[0], url: data.html_url };
@@ -117,11 +127,12 @@ export async function branch_scan(input: Input): Promise<Envelope> {
       url: `https://github.com/${input.repo}/tree/${encodeURIComponent(match.name)}`,
       match_reason: match.match_reason,
       match_score: match.score,
+      tip_fetched: tipFetchNames.has(match.name),
       ...commit
     });
   }
-  if (matches.length > maxCommitFetches) {
-    not_checked.push(`tip commit metadata fetched for ${maxCommitFetches} of ${matches.length} capped matches.`);
+  if (matches.length > tipFetches) {
+    not_checked.push(`tip commit metadata fetched for ${tipFetches} of ${matches.length} capped matches (issue-number preferred).`);
   }
   const maxAge = input.max_age_days ?? 45;
   const now = Date.now();

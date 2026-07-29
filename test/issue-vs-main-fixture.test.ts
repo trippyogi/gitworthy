@@ -1,10 +1,20 @@
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { issue_vs_main } from '../src/core/issue-vs-main.js';
 
 let fixtureDir: string;
+
+async function walkFiles(dir: string): Promise<string[]> {
+  const entries = await readdir(dir, { withFileTypes: true });
+  const nested = await Promise.all(entries.map(async (entry) => {
+    const full = path.join(dir, entry.name);
+    if (entry.name === '.git' || entry.name === 'node_modules') return [];
+    return entry.isDirectory() ? walkFiles(full) : [full];
+  }));
+  return nested.flat();
+}
 
 vi.mock('../src/lib/github.js', () => ({
   githubJson: vi.fn(async () => ({
@@ -22,7 +32,8 @@ vi.mock('../src/lib/github.js', () => ({
 }));
 
 vi.mock('../src/lib/git.js', () => ({
-  shallowClone: vi.fn(async () => ({ dir: fixtureDir, cleanup: async () => undefined }))
+  shallowClone: vi.fn(async () => ({ dir: fixtureDir, cleanup: async () => undefined, cached: false })),
+  listCloneFiles: vi.fn(async () => ({ files: await walkFiles(fixtureDir), cached: false, dir: fixtureDir }))
 }));
 
 describe('issue_vs_main local fixture tree', () => {

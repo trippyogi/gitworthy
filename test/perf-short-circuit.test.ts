@@ -88,6 +88,10 @@ describe('worth_check perf short-circuit', () => {
     expect(mocks.releaseGap).not.toHaveBeenCalled();
     expect(result.not_checked.join(' ')).toContain('perf short-circuit');
     expect(result.reasons.join(' ')).toContain('perf short-circuit');
+    expect(result.perf.short_circuited).toBe(true);
+    expect(result.perf.issue_vs_main_mode).toBe('skipped');
+    expect(result.timings_ms.total).toBeGreaterThanOrEqual(0);
+    expect(result.timings_ms.phase1).toBeGreaterThanOrEqual(0);
   });
 
   it('runs expensive checks when linked_work is clean', async () => {
@@ -97,10 +101,26 @@ describe('worth_check perf short-circuit', () => {
       checked: ['mock linked'],
       not_checked: ['mock']
     }));
+    mocks.issueVsMain.mockResolvedValueOnce(createEnvelope({
+      verdict_summary: 'no evidence on main.',
+      evidence: [{ kind: 'issue_vs_main_perf', mode: 'repro_only', clone_cached: null, file_list_cached: null }],
+      checked: ['mock issue'],
+      not_checked: ['mock']
+    }));
+    mocks.branchScan.mockResolvedValueOnce(createEnvelope({
+      verdict_summary: 'no matching remote branches found.',
+      evidence: [{ branch: 'fix-1', tip_fetched: true }],
+      checked: ['mock branch'],
+      not_checked: ['mock']
+    }));
     const result = await worth_check({ repo: 'o/r', issue_number: 1 });
     expect(result.verdict).toBe('ACT');
     expect(mocks.issueVsMain).toHaveBeenCalled();
     expect(mocks.branchScan).toHaveBeenCalled();
     expect(mocks.dupeCluster).toHaveBeenCalled();
+    expect(result.perf.short_circuited).toBe(false);
+    expect(result.perf.issue_vs_main_mode).toBe('repro_only');
+    expect(result.perf.branch_tip_fetches).toBe(1);
+    expect(result.timings_ms.phase2).toBeGreaterThanOrEqual(0);
   });
 });

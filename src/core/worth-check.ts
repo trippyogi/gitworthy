@@ -13,11 +13,21 @@ type SubResult = { name: string; ok: true; result: Envelope } | { name: string; 
 
 export type Disposition = 'greenfield' | 'land_only' | 'claim_first' | 'blocked' | 'crowded' | 'review';
 
+type WorthPerf = {
+  short_circuited: boolean;
+  clone_cached: boolean | null;
+  file_list_cached: boolean | null;
+  branch_tip_fetches: number | null;
+  issue_vs_main_mode: string | null;
+};
+
 type WorthEnvelope = Envelope & {
   verdict: 'ACT' | 'VERIFY' | 'SKIP';
   disposition: Disposition;
   reasons: string[];
   sub_results: SubResult[];
+  timings_ms: Record<string, number>;
+  perf: WorthPerf;
 };
 
 const CROWDED_PRIOR_ATTEMPTS = 2;
@@ -96,6 +106,24 @@ function hasOpenLinkedPr(subResults: SubResult[]): boolean {
   return Boolean(linked?.ok && linked.result.signals.includes('linked_pr_open'));
 }
 
+function extractPerf(subResults: SubResult[], shortCircuited: boolean): WorthPerf {
+  const issueMain = subResults.find((result) => result.ok && result.name === 'issue_vs_main');
+  const branch = subResults.find((result) => result.ok && result.name === 'branch_scan');
+  const perfEvidence = issueMain?.ok
+    ? issueMain.result.evidence.find((item) => item.kind === 'issue_vs_main_perf')
+    : undefined;
+  const tipFetches = branch?.ok
+    ? branch.result.evidence.filter((item) => item.tip_fetched === true).length
+    : null;
+  return {
+    short_circuited: shortCircuited,
+    clone_cached: typeof perfEvidence?.clone_cached === 'boolean' ? perfEvidence.clone_cached : null,
+    file_list_cached: typeof perfEvidence?.file_list_cached === 'boolean' ? perfEvidence.file_list_cached : null,
+    branch_tip_fetches: tipFetches,
+    issue_vs_main_mode: typeof perfEvidence?.mode === 'string' ? perfEvidence.mode : shortCircuited ? 'skipped' : null
+  };
+}
+
 export function chooseDisposition(input: {
   verdict: 'ACT' | 'VERIFY' | 'SKIP';
   signals: Signal[];
@@ -111,7 +139,12 @@ export function chooseDisposition(input: {
   return 'review';
 }
 
-function finalize(sub_results: SubResult[], extraNotChecked: string[] = []): WorthEnvelope {
+function finalize(
+  sub_results: SubResult[],
+  timings_ms: Record<string, number>,
+  shortCircuited: boolean,
+  extraNotChecked: string[] = []
+): WorthEnvelope {
   const reasons: string[] = [];
   const errors = sub_results.filter((result) => !result.ok);
   const signals = [...new Set(sub_results.flatMap((result) => result.ok ? (result.result.signals ?? []) : []))] as Signal[];
@@ -176,24 +209,46 @@ function finalize(sub_results: SubResult[], extraNotChecked: string[] = []): Wor
     ])],
     cached: false
   });
-  return { ...base, verdict, disposition, reasons, sub_results };
+  return {
+    ...base,
+    verdict,
+    disposition,
+    reasons,
+    sub_results,
+    timings_ms,
+    perf: extractPerf(sub_results, shortCircuited)
+  };
+}
+
+async function timed(name: string, timings: Record<string, number>, run: () => Promise<SubResult>): Promise<SubResult> {
+  const started = Date.now();
+  const result = await run();
+  timings[name] = Date.now() - started;
+  return result;
 }
 
 export async function worth_check(input: Input): Promise<WorthEnvelope> {
+  const timings_ms: Record<string, number> = {};
+  const totalStarted = Date.now();
+
   // Cheap title fetch for branch keywords; overlaps with linked_work's issue fetch but avoids waiting on clone.
   let issueKeywords = [String(input.issue_number)];
+  const keywordsStarted = Date.now();
   try {
     const issue = await githubJson<GithubIssue>(`/repos/${input.repo}/issues/${input.issue_number}`);
     issueKeywords = distinctiveTerms(issue.title, 8);
   } catch {
     // Fall back to issue-number-only keywords; branch_scan still matches fix-<n> branches.
   }
+  timings_ms.issue_keywords = Date.now() - keywordsStarted;
 
   // Phase 1: cheap blockers in parallel (no clone).
+  const phase1Started = Date.now();
   const phase1 = await Promise.all([
-    runNamed('linked_work', () => linked_work({ repo: input.repo, issue_number: input.issue_number })),
-    runNamed('contrib_policy', () => contrib_policy({ repo: input.repo }))
+    timed('linked_work', timings_ms, () => runNamed('linked_work', () => linked_work({ repo: input.repo, issue_number: input.issue_number }))),
+    timed('contrib_policy', timings_ms, () => runNamed('contrib_policy', () => contrib_policy({ repo: input.repo })))
   ]);
+  timings_ms.phase1 = Date.now() - phase1Started;
   if (hasOpenLinkedPr(phase1)) {
     const skipped = [
       'issue_vs_main skipped after open linked PR (perf short-circuit).',
@@ -201,18 +256,22 @@ export async function worth_check(input: Input): Promise<WorthEnvelope> {
       'dupe_cluster skipped after open linked PR (perf short-circuit).',
       ...(input.npm_package ? ['release_gap skipped after open linked PR (perf short-circuit).'] : [])
     ];
-    return finalize(phase1, skipped);
+    timings_ms.total = Date.now() - totalStarted;
+    return finalize(phase1, timings_ms, true, skipped);
   }
 
   // Phase 2: expensive checks in parallel (shared clone pool helps issue_vs_main + release_gap).
+  const phase2Started = Date.now();
   const phase2 = await Promise.all([
-    runNamed('issue_vs_main', () => issue_vs_main(input)),
-    runNamed('branch_scan', () => branch_scan({ repo: input.repo, keywords: issueKeywords, issue_number: input.issue_number })),
-    runNamed('dupe_cluster', () => dupe_cluster({ repo: input.repo, issue_number: input.issue_number })),
+    timed('issue_vs_main', timings_ms, () => runNamed('issue_vs_main', () => issue_vs_main(input))),
+    timed('branch_scan', timings_ms, () => runNamed('branch_scan', () => branch_scan({ repo: input.repo, keywords: issueKeywords, issue_number: input.issue_number }))),
+    timed('dupe_cluster', timings_ms, () => runNamed('dupe_cluster', () => dupe_cluster({ repo: input.repo, issue_number: input.issue_number }))),
     ...(input.npm_package
-      ? [runNamed('release_gap', () => release_gap({ repo: input.repo, npm_package: input.npm_package!, probe: input.probe }))]
+      ? [timed('release_gap', timings_ms, () => runNamed('release_gap', () => release_gap({ repo: input.repo, npm_package: input.npm_package!, probe: input.probe })))]
       : [])
   ]);
+  timings_ms.phase2 = Date.now() - phase2Started;
+  timings_ms.total = Date.now() - totalStarted;
 
-  return finalize([...phase1, ...phase2]);
+  return finalize([...phase1, ...phase2], timings_ms, false);
 }
