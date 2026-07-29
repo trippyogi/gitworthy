@@ -27,7 +27,10 @@ describe('adapters', () => {
     await Promise.all([server.connect(serverTransport), client.connect(clientTransport)]);
     const result = await client.callTool({ name: 'branch_scan', arguments: { repo: 'o/r', keywords: ['abc'], force_refresh: true } });
     const mcpText = (result.content as Array<{ type: string; text: string }>)[0].text;
-    expect(JSON.parse(cli)).toEqual(JSON.parse(mcpText));
+    const mcpPayload = JSON.parse(mcpText) as Record<string, unknown>;
+    const { gitworthy_version: version, ...mcpCore } = mcpPayload;
+    expect(version).toBe('0.3.5');
+    expect(JSON.parse(cli)).toEqual(mcpCore);
     await client.close();
     await server.close();
     vi.useRealTimers();

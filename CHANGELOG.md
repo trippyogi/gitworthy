@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 0.3.5
+
+- Match linked PRs by issue number in **title and body** (title-only `(#N)` no longer dropped).
+- Classify open PRs with `closes_issue` when Fixes/Closes/Resolves the target.
+- Collect timeline `referenced` commits as evidence (density only; does not force SKIP).
+- Warn in `not_checked` when the timeline has activity but no `cross-referenced` events (token visibility gap).
+- Add `worth_check.disposition`: `greenfield` | `land_only` | `claim_first` | `blocked` | `crowded` | `review` (verdicts unchanged).
+- Stamp every MCP tool response with `gitworthy_version`.
+
 ## 0.3.4
 
 - Emit `linked_pr_closed` for closed unmerged linked PRs; `worth_check` caps those at VERIFY with a prior-attempt citation.

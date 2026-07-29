@@ -61,6 +61,7 @@ describe('worth_check authority hierarchy', () => {
 
     expect(result.verdict).toBe('VERIFY');
     expect(result.signals).toEqual(['in_flight']);
+    expect(result.disposition).toBe('review');
     expect(result.reasons).toContain('keyword-matched branches exist but no linked PR or assignee; read the matched branches.');
   });
 
@@ -98,8 +99,12 @@ describe('worth_check authority hierarchy', () => {
 
     expect(result.verdict).toBe(expected);
     expect(result.signals).toContain(signal);
+    if (signal === 'linked_pr_open') expect(result.disposition).toBe('land_only');
+    if (signal === 'assigned' || signal === 'claim_required') expect(result.disposition).toBe('claim_first');
+    if (signal === 'shipped' || signal === 'released_fix' || signal === 'duplicate') expect(result.disposition).toBe('blocked');
     if (signal === 'claim_required') expect(result.reasons.join(' ')).toContain('requires claim/assignment');
     if (signal === 'needs_repro') expect(result.reasons.join(' ')).toContain('lacks reproduction steps');
+    if (signal === 'linked_pr_open') expect(result.reasons.join(' ')).toContain('do not open a parallel fix');
   });
 
   it('does not cap in_flight when another blocking signal is present', async () => {

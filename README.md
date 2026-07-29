@@ -16,10 +16,10 @@ No telemetry is active by default. Optional PostHog telemetry requires both `GIT
 ## Quickstart
 
 ```sh
-npx -y gitworthy@0.3.4 check owner/repo#123
-npx -y gitworthy@0.3.4 check owner/repo#123 --npm-package package-name --json
-npx -y gitworthy@0.3.4 scan Shopify/cli --label "good first issue" --json
-npx -y gitworthy@0.3.4 mcp
+npx -y gitworthy@0.3.5 check owner/repo#123
+npx -y gitworthy@0.3.5 check owner/repo#123 --npm-package package-name --json
+npx -y gitworthy@0.3.5 scan Shopify/cli --label "good first issue" --json
+npx -y gitworthy@0.3.5 mcp
 ```
 
 ## CLI
@@ -50,7 +50,7 @@ Exit codes for `check`:
   "mcpServers": {
     "gitworthy": {
       "command": "npx",
-      "args": ["-y", "gitworthy@0.3.4", "mcp"],
+      "args": ["-y", "gitworthy@0.3.5", "mcp"],
       "env": { "GITHUB_TOKEN": "github_pat_..." }
     }
   }
@@ -90,7 +90,7 @@ Fetches the target issue, searches GitHub issues for distinctive title tokens, l
 
 ### linked_work
 
-Fetches issue timeline cross-references, explicit issue-number PR mentions, comment PR URLs, and high title-overlap open PRs (especially when someone claims they submitted a PR without linking it). It emits `linked_pr_open` for open linked PRs, `linked_pr_merged` for merged linked PRs, `linked_pr_closed` for closed unmerged linked PRs (with `prior_attempt` metadata), and `assigned` for maintainer assignment. Automation authors (Dependabot, Renovate, and other bots) are kept in evidence but ignored for verdict signals.
+Fetches issue timeline cross-references, explicit issue-number PR mentions in **title and body**, comment PR URLs, referenced commits, and high title-overlap open PRs (especially when someone claims they submitted a PR without linking it). It emits `linked_pr_open` for open linked PRs (with `closes_issue` when Fixes/Closes/Resolves), `linked_pr_merged` for merged linked PRs, `linked_pr_closed` for closed unmerged linked PRs (with `prior_attempt` metadata), and `assigned` for maintainer assignment. Automation authors (Dependabot, Renovate, and other bots) are kept in evidence but ignored for verdict signals. Referenced commits are evidence-only and do not force SKIP.
 
 ### contrib_policy
 
@@ -109,7 +109,7 @@ gitworthy scan Shopify/cli --label "good first issue" --json
 
 ### worth_check
 
-Composes the checks into ACT, VERIFY, or SKIP. Any sub-check error forces VERIFY. `linked_pr_open` forces SKIP with the PR citation. `linked_pr_closed` and `linked_pr_merged` cap ACT at VERIFY with the PR citation so agents inspect abandoned or landed attempts before claiming. `assigned` and `claim_required` cap ACT at VERIFY so contributors claim/coordinate first. `needs_repro` caps ACT at VERIFY when a bug-shaped issue lacks reproduction steps. The `no_pr_path` signal caps ACT at VERIFY with the alternate feedback channel, because a repo with no PR path has no direct contribution path. Sub-results remain visible in full. ACT is not the same as claimable: always read `linked_work` evidence and `reasons` before investing.
+Composes the checks into ACT, VERIFY, or SKIP, plus a hunt `disposition`: `greenfield` (safe to start), `land_only` (open linked PR — do not open a parallel fix), `claim_first`, `blocked`, `crowded` (dense prior attempts/commits), or `review`. Any sub-check error forces VERIFY. `linked_pr_open` forces SKIP with the PR citation and `land_only`. `linked_pr_closed` and `linked_pr_merged` cap ACT at VERIFY with the PR citation so agents inspect abandoned or landed attempts before claiming. `assigned` and `claim_required` cap ACT at VERIFY so contributors claim/coordinate first. `needs_repro` caps ACT at VERIFY when a bug-shaped issue lacks reproduction steps. The `no_pr_path` signal caps ACT at VERIFY with the alternate feedback channel, because a repo with no PR path has no direct contribution path. Sub-results remain visible in full. ACT is not the same as claimable: always read `linked_work` evidence, `disposition`, and `reasons` before investing.
 
 ## Output envelope
 

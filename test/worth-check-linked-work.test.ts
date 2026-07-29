@@ -25,6 +25,8 @@ describe('worth_check linked work rubric', () => {
     const result = await worth_check({ repo: 'o/r', issue_number: 1 });
     expect(result.verdict).toBe('SKIP');
     expect(result.reasons).toContain('open linked PR found: #4499 https://github.com/modelcontextprotocol/servers/pull/4499');
+    expect(result.disposition).toBe('land_only');
+    expect(result.reasons.join(' ')).toContain('do not open a parallel fix');
   });
 
   it('caps ACT to VERIFY when the issue is assigned', async () => {

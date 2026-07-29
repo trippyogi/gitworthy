@@ -6,7 +6,10 @@ import { GitworthyError } from '../core/envelope.js';
 import { packageVersion } from '../lib/package-meta.js';
 
 function jsonText(value: unknown) {
-  return { content: [{ type: 'text' as const, text: JSON.stringify(value, null, 2) }] };
+  const stamped = value !== null && typeof value === 'object' && !Array.isArray(value)
+    ? { ...value as Record<string, unknown>, gitworthy_version: packageVersion() }
+    : { result: value, gitworthy_version: packageVersion() };
+  return { content: [{ type: 'text' as const, text: JSON.stringify(stamped, null, 2) }] };
 }
 
 async function withToolErrors<T>(run: () => Promise<T>) {

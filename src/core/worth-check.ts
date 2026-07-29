@@ -10,7 +10,17 @@ import { distinctiveTerms } from './terms.js';
 type Input = { repo: string; issue_number: number; npm_package?: string; probe?: { file_glob?: string; contains?: string } };
 type SubResult = { name: string; ok: true; result: Envelope } | { name: string; ok: false; error: { code: string; message: string; not_checked: string[] } };
 
-type WorthEnvelope = Envelope & { verdict: 'ACT' | 'VERIFY' | 'SKIP'; reasons: string[]; sub_results: SubResult[] };
+export type Disposition = 'greenfield' | 'land_only' | 'claim_first' | 'blocked' | 'crowded' | 'review';
+
+type WorthEnvelope = Envelope & {
+  verdict: 'ACT' | 'VERIFY' | 'SKIP';
+  disposition: Disposition;
+  reasons: string[];
+  sub_results: SubResult[];
+};
+
+const CROWDED_PRIOR_ATTEMPTS = 2;
+const CROWDED_COMMITS = 3;
 
 function noPrFeedbackChannel(subResults: SubResult[]): string {
   const policy = subResults.find((result) => result.ok && result.name === 'contrib_policy');
@@ -41,6 +51,21 @@ function assignmentCitation(subResults: SubResult[]): string | null {
   return `${evidence.assignee}${typeof evidence.assigned_at === 'string' ? ` at ${evidence.assigned_at}` : ''}`;
 }
 
+function linkedDensity(subResults: SubResult[]): { priorAttempts: number; referencedCommits: number; openCloser: string | null } {
+  const linked = subResults.find((result) => result.ok && result.name === 'linked_work');
+  if (!linked?.ok) return { priorAttempts: 0, referencedCommits: 0, openCloser: null };
+  const prs = linked.result.evidence.filter((item) => item.kind === 'linked_pr' && item.ignored_reason !== 'automation_author');
+  const priorAttempts = prs.filter((item) => item.prior_attempt === true || (item.state === 'closed' && item.merged !== true)).length;
+  const referencedCommits = linked.result.evidence.filter((item) => item.kind === 'referenced_commit').length;
+  const openWithCloses = prs.find((item) => item.state === 'open' && item.closes_issue === true);
+  const openAny = prs.find((item) => item.state === 'open');
+  const chosen = openWithCloses ?? openAny;
+  const openCloser = chosen && typeof chosen.number === 'number'
+    ? `#${chosen.number}${typeof chosen.url === 'string' ? ` ${chosen.url}` : ''}`
+    : null;
+  return { priorAttempts, referencedCommits, openCloser };
+}
+
 function err(name: string, error: unknown): SubResult {
   if (error instanceof GitworthyError) return { name, ok: false, error: { code: error.code, message: error.message, not_checked: error.not_checked } };
   return { name, ok: false, error: { code: 'unknown_error', message: error instanceof Error ? error.message : String(error), not_checked: ['sub-check failed with an unknown error.'] } };
@@ -55,6 +80,21 @@ function isBranchOnlySkipSignal(signals: Signal[], subResults: SubResult[]): boo
   if (!hasCleanLinkedWork(subResults)) return false;
   const blocking = signals.filter((signal) => !['no_pr_path', 'linked_pr_merged', 'linked_pr_closed', 'assigned', 'needs_repro', 'claim_required'].includes(signal));
   return blocking.length === 1 && blocking[0] === 'in_flight';
+}
+
+export function chooseDisposition(input: {
+  verdict: 'ACT' | 'VERIFY' | 'SKIP';
+  signals: Signal[];
+  priorAttempts: number;
+  referencedCommits: number;
+}): Disposition {
+  const { verdict, signals, priorAttempts, referencedCommits } = input;
+  if (signals.some((signal) => ['shipped', 'released_fix', 'duplicate'].includes(signal))) return 'blocked';
+  if (signals.includes('linked_pr_open')) return 'land_only';
+  if (signals.includes('assigned') || signals.includes('claim_required')) return 'claim_first';
+  if (priorAttempts >= CROWDED_PRIOR_ATTEMPTS || referencedCommits >= CROWDED_COMMITS) return 'crowded';
+  if (verdict === 'ACT') return 'greenfield';
+  return 'review';
 }
 
 export async function worth_check(input: Input): Promise<WorthEnvelope> {
@@ -90,6 +130,7 @@ export async function worth_check(input: Input): Promise<WorthEnvelope> {
   const verifySignals: Signal[] = ['no_pr_path', 'linked_pr_merged', 'linked_pr_closed', 'assigned', 'needs_repro', 'claim_required'];
   const skipSignals = signals.filter((signal) => !verifySignals.includes(signal));
   const branchOnlyInFlightWithCleanLinkedWork = isBranchOnlySkipSignal(signals, sub_results);
+  const density = linkedDensity(sub_results);
   for (const result of sub_results) {
     if (!result.ok) reasons.push(`${result.name} errored: ${result.error.message}`);
     if (result.ok && (result.result.signals ?? []).length > 0) reasons.push(`${result.name}: ${(result.result.signals ?? []).join(', ')}`);
@@ -103,10 +144,36 @@ export async function worth_check(input: Input): Promise<WorthEnvelope> {
   if (signals.includes('no_pr_path')) reasons.push(`repo accepts no pull requests; feedback channel: ${noPrFeedbackChannel(sub_results)}`);
   if (signals.includes('claim_required')) reasons.push(`repo requires claim/assignment before a PR: ${claimProtocolCitation(sub_results)}`);
   if (signals.includes('needs_repro')) reasons.push('bug-shaped issue lacks reproduction steps; confirm the failure before investing.');
-  if (signals.includes('linked_pr_open')) reasons.push(`open linked PR found: ${linkedPrCitation(sub_results, (item) => item.state === 'open') ?? 'citation unavailable'}`);
+  if (signals.includes('linked_pr_open')) {
+    const citation = density.openCloser
+      ?? linkedPrCitation(sub_results, (item) => item.state === 'open')
+      ?? 'citation unavailable';
+    reasons.push(`open linked PR found: ${citation}`);
+    reasons.push(`disposition land_only: do not open a parallel fix; review or land ${citation}.`);
+  }
   if (signals.includes('assigned')) reasons.push(`issue is assigned: ${assignmentCitation(sub_results) ?? 'assignee date unavailable'}`);
   if (signals.includes('linked_pr_merged')) reasons.push(`linked PR was merged: ${linkedPrCitation(sub_results, (item) => item.merged === true) ?? 'citation unavailable'}`);
   if (signals.includes('linked_pr_closed')) reasons.push(`closed unmerged linked PR found (prior attempt): ${linkedPrCitation(sub_results, (item) => item.state === 'closed' && item.merged !== true) ?? 'citation unavailable'}`);
+  if (density.priorAttempts > 0 || density.referencedCommits > 0) {
+    reasons.push(`lane density: ${density.priorAttempts} prior closed unmerged PR(s), ${density.referencedCommits} referenced commit(s).`);
+  }
+
+  const disposition = chooseDisposition({
+    verdict,
+    signals,
+    priorAttempts: density.priorAttempts,
+    referencedCommits: density.referencedCommits
+  });
+  if (disposition === 'crowded' && !signals.includes('linked_pr_open')) {
+    reasons.push('disposition crowded: multiple prior attempts or referenced commits — read linked_work evidence before investing.');
+  }
+  if (disposition === 'claim_first') {
+    reasons.push('disposition claim_first: coordinate or claim before opening a PR.');
+  }
+  if (disposition === 'blocked') {
+    reasons.push('disposition blocked: work appears already handled (shipped, released, or duplicate).');
+  }
+
   const base = createEnvelope({
     verdict_summary: verdict === 'ACT' ? 'no blocking evidence found by completed checks.' : verdict === 'SKIP' ? 'blocking evidence was found by completed checks.' : 'mixed signals or sub-check errors require human review.',
     evidence: [],
@@ -115,5 +182,5 @@ export async function worth_check(input: Input): Promise<WorthEnvelope> {
     not_checked: [...new Set(sub_results.flatMap((result) => result.ok ? result.result.not_checked : result.error.not_checked))],
     cached: false
   });
-  return { ...base, verdict, reasons, sub_results };
+  return { ...base, verdict, disposition, reasons, sub_results };
 }
