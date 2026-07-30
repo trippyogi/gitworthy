@@ -102,12 +102,13 @@ function findingsForSignal(signal: Signal, subResults: SubResult[]): Finding[] {
     case 'linked_pr_open': {
       const classified = classifyLinkedOpen(subResults);
       if (classified.length > 0) return classified;
+      // Without classified evidence, do not invent a definitive blocker.
       return [finding({
-        type: 'linked_pr_open',
-        strength: 'definitive',
-        effect: 'block',
+        type: 'linked_pr_open_unclassified',
+        strength: 'heuristic',
+        effect: 'verify',
         source: 'linked_work',
-        message: 'Open linked PR found.'
+        message: 'Open linked PR signal present without classified evidence; verify before investing.'
       })];
     }
     case 'duplicate':
@@ -248,10 +249,13 @@ export function decideFromSignals(input: PolicyInput): PolicyDecision {
   const hasVerify = findings.some((item) => item.effect === 'verify' || (item.effect === 'block' && item.strength !== 'definitive'));
 
   let verdict: DecisionVerdict = 'ACT';
-  if (hasDefinitiveBlock) verdict = 'SKIP';
-  else if (hasVerify || input.errors.length > 0) verdict = 'VERIFY';
+  // Mandatory failures always win over definitive blockers (invariant: failed check ⇒ VERIFY).
+  if (input.errors.length > 0) verdict = 'VERIFY';
+  else if (hasDefinitiveBlock) verdict = 'SKIP';
+  else if (hasVerify) verdict = 'VERIFY';
 
   if (verdict === 'SKIP' && !hasDefinitiveBlock) verdict = 'VERIFY';
+  if (verdict === 'SKIP' && input.errors.length > 0) verdict = 'VERIFY';
 
   const disposition = chooseDisposition({
     verdict,

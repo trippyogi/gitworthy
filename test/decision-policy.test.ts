@@ -99,4 +99,26 @@ describe('decideFromSignals', () => {
       expect.objectContaining({ type: 'mandatory_check_failed', strength: 'definitive', effect: 'verify' })
     ]));
   });
+
+  it('caps at VERIFY when a definitive blocker coexists with a provider error', () => {
+    const errors = [{
+      name: 'linked_work',
+      ok: false as const,
+      error: { code: 'github_error', message: 'API unavailable', not_checked: ['linked work'] }
+    }];
+    const decision = decide(['released_fix'], [{
+      name: 'release_gap',
+      ok: true,
+      result: { signals: ['released_fix'], evidence: [] }
+    }], errors);
+    expect(decision.verdict).toBe('VERIFY');
+  });
+
+  it('does not invent definitive SKIP without classified open-PR evidence', () => {
+    const decision = decide(['linked_pr_open']);
+    expect(decision.verdict).toBe('VERIFY');
+    expect(decision.findings).toEqual(expect.arrayContaining([
+      expect.objectContaining({ type: 'linked_pr_open_unclassified', strength: 'heuristic', effect: 'verify' })
+    ]));
+  });
 });

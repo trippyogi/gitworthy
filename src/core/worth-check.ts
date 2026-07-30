@@ -61,9 +61,16 @@ async function runNamed(name: string, run: () => Promise<Envelope>): Promise<Sub
   }
 }
 
-function hasOpenLinkedPr(subResults: SubResult[]): boolean {
+function hasDefinitiveClosingOpenPr(subResults: SubResult[]): boolean {
   const linked = subResults.find((result) => result.ok && result.name === 'linked_work');
-  return Boolean(linked?.ok && linked.result.signals.includes('linked_pr_open'));
+  if (!linked?.ok) return false;
+  return linked.result.evidence.some((item) =>
+    item.kind === 'linked_pr'
+    && item.state === 'open'
+    && item.closes_issue === true
+    && item.source !== 'title_overlap'
+    && item.ignored_reason !== 'automation_author'
+  );
 }
 
 function extractPerf(subResults: SubResult[], shortCircuited: boolean): WorthPerf {
@@ -198,12 +205,12 @@ export async function worth_check(input: Input): Promise<WorthEnvelope> {
     timed('contrib_policy', timings_ms, () => runNamed('contrib_policy', () => contrib_policy({ repo: input.repo })))
   ]);
   timings_ms.phase1 = Date.now() - phase1Started;
-  if (hasOpenLinkedPr(phase1)) {
+  if (hasDefinitiveClosingOpenPr(phase1)) {
     const skipped = [
-      'issue_vs_main skipped after open linked PR (perf short-circuit).',
-      'branch_scan skipped after open linked PR (perf short-circuit).',
-      'dupe_cluster skipped after open linked PR (perf short-circuit).',
-      ...(input.npm_package ? ['release_gap skipped after open linked PR (perf short-circuit).'] : [])
+      'issue_vs_main skipped after definitive open closing PR (perf short-circuit).',
+      'branch_scan skipped after definitive open closing PR (perf short-circuit).',
+      'dupe_cluster skipped after definitive open closing PR (perf short-circuit).',
+      ...(input.npm_package ? ['release_gap skipped after definitive open closing PR (perf short-circuit).'] : [])
     ];
     timings_ms.total = Date.now() - totalStarted;
     const shortCircuitResult = finalize(phase1, timings_ms, true, skipped);
