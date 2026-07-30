@@ -133,6 +133,23 @@ function mapTarballHttpError(error: unknown, tarballUrl: string): Error {
 }
 
 /**
+ * node-tar's Parser is a Minipass stream. Node's `finished()` reports a false
+ * `ERR_STREAM_PREMATURE_CLOSE` after a clean parse, so wait on Parser events.
+ */
+function waitForTarParser(parser: { once: (event: string, listener: () => void) => unknown }): Promise<void> {
+  return new Promise((resolve) => {
+    let settled = false;
+    const settle = () => {
+      if (settled) return;
+      settled = true;
+      resolve();
+    };
+    parser.once('end', settle);
+    parser.once('finish', settle);
+  });
+}
+
+/**
  * Streams and inspects an npm tarball without buffering the whole archive
  * or extracting it to disk (GW-013). Only entries that pass `matches()` and
  * are safe, regular files are ever read into memory, and every dimension of
@@ -237,15 +254,27 @@ export async function inspectTarball(tarballUrl: string, options: TarballInspect
   parser.on('error', (error: Error) => {
     parserError ??= error;
   });
+  // Subscribe before any writes/`end` so a synchronous finish cannot be missed.
+  const parserDrained = waitForTarParser(parser);
 
   const nodeStream = Readable.fromWeb(response.body as import('node:stream/web').ReadableStream<Uint8Array>);
   try {
     for await (const chunk of nodeStream) {
-      parser.write(chunk as Buffer);
+      if (!parser.write(chunk as Buffer)) {
+        await new Promise<void>((resolve) => {
+          parser.once('drain', resolve);
+        });
+      }
       if (budgetError || parserError) break;
     }
-    if (!budgetError && !parserError) parser.end();
+    // Content matches are appended in per-entry `end` handlers (and gzip
+    // decompression is asynchronous). Do not return until the parser has
+    // fully drained; otherwise release_gap can miss released_fix probes.
+    parser.end();
+    await parserDrained;
   } catch (error) {
+    parser.end();
+    await parserDrained.catch(() => undefined);
     throw mapTarballHttpError(error, tarballUrl);
   } finally {
     nodeStream.destroy();

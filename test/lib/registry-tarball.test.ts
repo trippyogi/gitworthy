@@ -83,6 +83,23 @@ describe('inspectTarball', () => {
     expect(result.entriesScanned).toBe(2);
   });
 
+  it('awaits gzip decompression so content matches are not dropped', async () => {
+    const { gzipSync } = await import('node:zlib');
+    const tar = buildTar([
+      tarEntry({ path: 'package/dist/add.js', content: 'spawn(command, args, { shell: true });\n' })
+    ]);
+    const tgz = gzipSync(tar);
+
+    const result = await inspectTarball('https://example.com/demo-1.0.0.tgz', {
+      matches: (relative) => relative === 'dist/add.js',
+      readContent: true,
+      httpClient: clientFor(tgz)
+    });
+
+    expect(result.matches).toHaveLength(1);
+    expect(result.matches[0]?.content).toContain('shell: true');
+  });
+
   it('never treats zip-slip (..) or absolute-path entries as content sources', async () => {
     const tar = buildTar([
       tarEntry({ path: '../evil.txt', content: 'shell: true payload outside the package root' }),
