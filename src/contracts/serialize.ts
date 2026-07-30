@@ -1,3 +1,4 @@
+import { ZodError } from 'zod';
 import { packageVersion } from '../lib/package-meta.js';
 import { GitworthyError } from '../core/envelope.js';
 import { CheckResult, CheckResultSchema } from './check.js';
@@ -132,10 +133,20 @@ export function toStampedLegacyResult(command: CommandName, legacy: Record<strin
 }
 
 function categorize(code: string, status?: number): ErrorDetail['category'] {
-  if (code.includes('auth') || status === 401 || status === 403) return 'auth';
-  if (code.includes('rate') || status === 429) return 'network';
-  if (code.includes('invalid') || code.includes('parse') || code.includes('input')) return 'input';
-  if (code.includes('budget') || code.includes('timeout')) return 'budget';
+  const normalized = code.toLowerCase();
+  if (
+    normalized.includes('auth')
+    || normalized.includes('token')
+    || normalized.includes('unauthorized')
+    || status === 401
+    || status === 403
+  ) {
+    return 'auth';
+  }
+  if (normalized.includes('rate') || status === 429) return 'network';
+  if (normalized.includes('invalid') || normalized.includes('parse') || normalized.includes('input')) return 'input';
+  if (normalized.includes('budget') || normalized.includes('timeout')) return 'budget';
+  if (normalized.includes('contract') || normalized.includes('schema')) return 'internal';
   if (status && status >= 500) return 'provider';
   if (status && status >= 400) return 'provider';
   return 'internal';
@@ -170,8 +181,32 @@ export function toErrorResult(input: {
       generated_at: new Date().toISOString()
     });
   }
+
+  if (input.error instanceof ZodError) {
+    return ErrorResultSchema.parse({
+      schema_version: SCHEMA_VERSION,
+      gitworthy_version: packageVersion(),
+      ok: false,
+      command: input.command,
+      run_id: runId,
+      error: {
+        code: 'contract_validation_failed',
+        category: 'internal',
+        message: 'Result failed contract validation.',
+        retryable: false,
+        status: null,
+        details: { issues: input.error.issues }
+      },
+      checked: ['parsed command name'],
+      not_checked: ['Result could not be validated against the versioned contract.'],
+      generated_at: new Date().toISOString()
+    });
+  }
+
   const message = input.error instanceof Error ? input.error.message : String(input.error);
-  const code = message.toLowerCase().includes('expected') ? 'invalid_issue_ref' : 'internal_error';
+  const lower = message.toLowerCase();
+  const looksLikeIssueRef = lower.includes('expected issue ref') || lower.includes('owner/repo#');
+  const code = looksLikeIssueRef ? 'invalid_issue_ref' : 'internal_error';
   return ErrorResultSchema.parse({
     schema_version: SCHEMA_VERSION,
     gitworthy_version: packageVersion(),

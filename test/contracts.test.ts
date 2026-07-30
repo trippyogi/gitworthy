@@ -61,4 +61,24 @@ describe('contracts', () => {
     expect(error.error.code).toBe('invalid_issue_ref');
     expect(error.error.category).toBe('input');
   });
+
+  it('classifies missing token codes as auth', () => {
+    const error = toErrorResult({
+      command: 'check',
+      error: new GitworthyError({ code: 'missing_github_token', message: 'GITHUB_TOKEN is required for this GitHub API check.' })
+    });
+    expect(error.error.category).toBe('auth');
+  });
+
+  it('classifies Zod contract failures as internal', () => {
+    let caught: unknown;
+    try {
+      CheckResultSchema.parse({});
+    } catch (error) {
+      caught = error;
+    }
+    const error = toErrorResult({ command: 'check', error: caught });
+    expect(error.error.code).toBe('contract_validation_failed');
+    expect(error.error.category).toBe('internal');
+  });
 });
