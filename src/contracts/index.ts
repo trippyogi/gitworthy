@@ -37,3 +37,33 @@ export { OutcomeEventNameSchema, OutcomeEventSchema } from './outcomes.js';
 export type { OutcomeEvent } from './outcomes.js';
 
 export { toCheckResult, toStampedLegacyResult, toErrorResult } from './serialize.js';
+
+export {
+  RepoRefSchema,
+  OrgOrUserLoginSchema,
+  IssueNumberSchema,
+  IssueNumberStringSchema,
+  IssueRefStringSchema,
+  ProbeSchema,
+  SkillProfileSchema,
+  DoctorInputSchema,
+  BranchScanInputSchema,
+  IssueVsMainInputSchema,
+  ReleaseGapInputSchema,
+  DupeClusterInputSchema,
+  RelatedClusterInputSchema,
+  LinkedWorkInputSchema,
+  ContribPolicyInputSchema,
+  WorthCheckInputSchema,
+  ScanInputSchema,
+  OrgScanInputSchema,
+  HuntInputSchema,
+  HuntInputObjectSchema,
+  LedgerLookupInputSchema,
+  LedgerRecordInputSchema,
+  LedgerListInputSchema,
+  parseToolInput,
+  parseArg,
+  parseIssueRef
+} from './inputs.js';
+export type { IssueRef } from './inputs.js';
