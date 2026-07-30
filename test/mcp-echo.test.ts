@@ -23,7 +23,9 @@ describe('MCP tools', () => {
       'ledger_lookup',
       'ledger_record',
       'linked_work',
+      'list_probe_templates',
       'org_scan',
+      'related_cluster',
       'release_gap',
       'scan',
       'worth_check'

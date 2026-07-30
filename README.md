@@ -16,14 +16,14 @@ No telemetry is active by default. Optional PostHog telemetry requires both `GIT
 ## Quickstart
 
 ```sh
-npx -y gitworthy@0.3.8 check owner/repo#123
-npx -y gitworthy@0.3.8 check owner/repo#123 --npm-package package-name --json
-npx -y gitworthy@0.3.8 hunt owner/repo --json
-npx -y gitworthy@0.3.8 hunt openclaw --max-checks 3 --json
-npx -y gitworthy@0.3.8 scan Shopify/cli --label "good first issue" --json
-npx -y gitworthy@0.3.8 org openclaw --json
-npx -y gitworthy@0.3.8 doctor --json
-npx -y gitworthy@0.3.8 mcp
+npx -y gitworthy@0.3.9 check owner/repo#123
+npx -y gitworthy@0.3.9 check owner/repo#123 --npm-package package-name --json
+npx -y gitworthy@0.3.9 hunt owner/repo --json
+npx -y gitworthy@0.3.9 hunt openclaw --max-checks 3 --json
+npx -y gitworthy@0.3.9 scan Shopify/cli --label "good first issue" --json
+npx -y gitworthy@0.3.9 org openclaw --json
+npx -y gitworthy@0.3.9 doctor --json
+npx -y gitworthy@0.3.9 mcp
 ```
 
 ## CLI
@@ -54,7 +54,7 @@ Exit codes for `check`:
   "mcpServers": {
     "gitworthy": {
       "command": "npx",
-      "args": ["-y", "gitworthy@0.3.8", "mcp"],
+      "args": ["-y", "gitworthy@0.3.9", "mcp"],
       "env": { "GITHUB_TOKEN": "github_pat_..." }
     }
   }
@@ -102,7 +102,7 @@ Reads common contribution policy files from main or master and extracts determin
 
 ### hunt
 
-One-shot triage orchestrator: `scan` or `org_scan` → drop likely land-only / soft-ask / assigned / ledger-SKIP rows → serial `worth_check` on up to `--max-checks` (default 3, max 5). Returns no ACT/SKIP signals of its own; read each `hunt_candidate.worth_check`. Prefer this over hand-rolling N× checks.
+One-shot triage orchestrator: `scan` or `org_scan` → hard policy gate (`no_pr_path` blocks checks for that repo; `claim_required` warns first; `--skip-policy-gate` to disable) → drop likely land-only / soft-ask / assigned / ledger-SKIP rows → serial `worth_check` on up to `--max-checks` (default 3, max 5). Optional `--skill-profile languages=ts,go;topics=mcp;avoid=swift` ranks by `fit_score` after `quality_score`. Returns no ACT/SKIP signals of its own; read each `hunt_candidate.worth_check`. Prefer this over hand-rolling N× checks.
 
 ### doctor
 
@@ -110,7 +110,7 @@ Reports hunt readiness: token present, GitHub auth login, rate-limit remaining, 
 
 ### scan
 
-Tracker triage only: lists open issue tracker candidates ranked by `quality_score` (repro clarity, contributor-friendly labels, staleness, soft asks, assignees). By default also sets `likely_land_only` / `land_hint` from assignees and one open-PR search so agents can skip land-only rows before `worth_check` (disable with `--no-land-hints`). Scan does not vet issues and does not produce ACT, VERIFY, or SKIP verdicts. It appends a one-line cached contribution-policy hint when available, or reminds you to run policy before investing. When a label filter yields a thin set (below `min(5, limit)` candidates) or every remaining candidate is assigned, scan appends a `widen_hint` evidence item with suggestions such as dropping the label, trying `help wanted`, or scanning without a label. Use it to find candidate issue numbers, then run `gitworthy check owner/repo#123` on specific targets.
+Tracker triage only: lists open issue tracker candidates ranked by `quality_score` (repro clarity, contributor-friendly labels, staleness, soft asks, assignees). With `--skill-profile`, also computes `fit_score` and sorts by quality then fit. By default also sets `likely_land_only` / `land_hint` from assignees and one open-PR search so agents can skip land-only rows before `worth_check` (disable with `--no-land-hints`). Scan does not vet issues and does not produce ACT, VERIFY, or SKIP verdicts. It appends a one-line cached contribution-policy hint when available, or reminds you to run policy before investing. When a label filter yields a thin set (below `min(5, limit)` candidates) or every remaining candidate is assigned, scan appends a `widen_hint` evidence item with suggestions such as dropping the label, trying `help wanted`, or scanning without a label. Use it to find candidate issue numbers, then run `gitworthy check owner/repo#123` on specific targets.
 
 Example composition:
 
@@ -122,7 +122,15 @@ gitworthy org openclaw --max-repos 8 --json
 
 ### org_scan
 
-Fans out `scan` across the top public non-fork repos for an org or user (default 8). Candidates are tagged with `repo`, merged, and re-ranked by `quality_score`. Still tracker-only — run per-repo `policy` / `worth_check` before investing.
+Fans out `scan` across the top public non-fork repos for an org or user (default 8). Candidates are tagged with `repo`, merged, and re-ranked by `quality_score` (then `fit_score` when a skill profile is set). Still tracker-only — run per-repo `policy` / `worth_check` before investing.
+
+### related_cluster
+
+Lexical connected-component clustering of related open issues (token overlap + shared error phrases). Advisory only — no embeddings. CLI: `gitworthy related owner/repo [issue]`.
+
+### probe templates
+
+Named release probes for `check` / `release`: `changelog`, `readme`, `package-exports`, `dist-index`, `src-index`. List with `gitworthy probes` or MCP `list_probe_templates`. Prefer `--probe-template changelog` over hand-rolled globs when one of these fits.
 
 ### ledger
 

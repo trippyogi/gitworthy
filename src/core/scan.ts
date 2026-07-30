@@ -5,8 +5,17 @@ import { isAutomationAuthor } from './bots.js';
 import { assessIssueQuality } from './candidate-quality.js';
 import { createEnvelope, Envelope } from './envelope.js';
 import { mentionsIssue } from './linkage.js';
+import { resolveSkillProfile, scoreSkillFit, SkillProfile } from './skill-fit.js';
 
-type Input = { repo: string; label?: string; keywords?: string[]; since?: string; limit?: number; land_hints?: boolean };
+type Input = {
+  repo: string;
+  label?: string;
+  keywords?: string[];
+  since?: string;
+  limit?: number;
+  land_hints?: boolean;
+  skill_profile?: SkillProfile | string;
+};
 
 export type Candidate = {
   number: number;
@@ -24,7 +33,13 @@ export type Candidate = {
   soft_ask: boolean;
   likely_land_only?: boolean;
   land_hint?: string;
+  fit_score?: number;
+  fit_reasons?: string[];
+  fit_matched?: string[];
+  fit_avoided?: string[];
 };
+
+type RepoHints = { language?: string | null; topics?: string[]; description?: string | null };
 
 type OpenPrSearchItem = {
   number: number;
@@ -90,6 +105,31 @@ function candidate(issue: GithubIssue): Candidate {
     repro: quality.repro,
     soft_ask: quality.soft_ask
   };
+}
+
+async function fetchRepoHints(repo: string): Promise<RepoHints | undefined> {
+  try {
+    const data = await githubJson<{ language?: string | null; topics?: string[]; description?: string | null }>(`/repos/${repo}`);
+    return { language: data.language ?? null, topics: data.topics ?? [], description: data.description ?? null };
+  } catch {
+    return undefined;
+  }
+}
+
+function applySkillFit(issues: GithubIssue[], candidates: Candidate[], profile: SkillProfile, repoHints: RepoHints | undefined): void {
+  issues.forEach((issue, index) => {
+    const item = candidates[index];
+    if (!item) return;
+    const fit = scoreSkillFit({
+      profile,
+      issue: { title: issue.title, body: issue.body, labels: item.labels },
+      repoHints
+    });
+    item.fit_score = fit.score;
+    item.fit_reasons = fit.reasons;
+    item.fit_matched = fit.matched;
+    item.fit_avoided = fit.avoided;
+  });
 }
 
 async function cachedPolicyHint(repo: string): Promise<{ checked: string[]; not_checked: string[] }> {
@@ -185,17 +225,31 @@ export async function scan(input: Input): Promise<Envelope> {
   if (input.label) query.set('labels', input.label);
   const issues = await githubJson<GithubIssue[]>(`/repos/${input.repo}/issues?${query.toString()}`);
   const sinceDate = sinceToDate(input.since);
-  const filteredCandidates = issues
+  const filteredIssues = issues
     .filter((issue) => !('pull_request' in issue))
     .filter((issue) => matchesLabel(issue, input.label))
     .filter((issue) => matchesKeywords(issue, input.keywords))
-    .filter((issue) => !sinceDate || Date.parse(issue.created_at) >= sinceDate.getTime())
-    .map(candidate);
+    .filter((issue) => !sinceDate || Date.parse(issue.created_at) >= sinceDate.getTime());
+  const filteredCandidates = filteredIssues.map(candidate);
+
+  const profile = resolveSkillProfile(input.skill_profile);
+  const skillFitChecked: string[] = [];
+  if (profile) {
+    const repoHints = await fetchRepoHints(input.repo);
+    applySkillFit(filteredIssues, filteredCandidates, profile, repoHints);
+    skillFitChecked.push(`skill_profile provided: computed fit_score for ${filteredCandidates.length} candidate${filteredCandidates.length === 1 ? '' : 's'}${repoHints ? ' using repo language/topics/description hints' : ' (repo hints unavailable; issue text/labels only)'}`);
+  } else if (input.skill_profile !== undefined) {
+    skillFitChecked.push('skill_profile provided but could not be parsed into any recognized languages/topics/avoid terms; fit_score not computed');
+  } else {
+    skillFitChecked.push('no skill_profile provided; fit_score not computed');
+  }
+
   const landHintsEnabled = input.land_hints !== false;
   const landHints = landHintsEnabled ? await applyLandHints(input.repo, filteredCandidates) : { checked: [], not_checked: [] };
   const candidates = filteredCandidates
     .sort((left, right) =>
       right.quality_score - left.quality_score ||
+      (profile ? (right.fit_score ?? 0) - (left.fit_score ?? 0) : 0) ||
       Number(Boolean(left.likely_land_only)) - Number(Boolean(right.likely_land_only)) ||
       Date.parse(right.updated_at) - Date.parse(left.updated_at)
     )
@@ -209,11 +263,12 @@ export async function scan(input: Input): Promise<Envelope> {
     checked: [
       `fetched open issues for ${input.repo}`,
       'excluded pull requests',
-      'ranked candidates by quality_score (repro, labels, staleness, soft-ask, assignees)',
+      profile ? 'ranked candidates by quality_score then fit_score (repro, labels, staleness, soft-ask, assignees, skill fit)' : 'ranked candidates by quality_score (repro, labels, staleness, soft-ask, assignees)',
       input.label ? `filtered by label: ${input.label}` : 'no label filter requested',
       input.keywords?.length ? `filtered titles and bodies by keywords: ${input.keywords.join(', ')}` : 'no keyword filter requested',
       input.since ? `filtered by created date since ${input.since}` : 'no age filter requested',
       landHintsEnabled ? 'land_hints enabled: flagged likely land-only candidates from assignees and open PR search' : 'land_hints disabled by request',
+      ...skillFitChecked,
       ...policyHint.checked,
       ...landHints.checked,
       ...(widenHint ? [`widen hint: ${widenHint.reason}`] : [])

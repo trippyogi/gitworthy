@@ -1,9 +1,9 @@
 import { githubJson, GithubIssue } from '../lib/github.js';
 import { runSearchWithCanonicalRepo } from '../lib/repo.js';
 import { createEnvelope, Envelope } from './envelope.js';
+import { jaccard, sharedErrorPhrase, tokens } from './text-sim.js';
 
 const DUPE_LIMIT = 'lexical similarity only; semantic duplicates with different vocabulary will be missed.';
-const STOP = new Set(['the', 'and', 'for', 'with', 'from', 'that', 'this', 'should', 'would', 'could', 'please', 'issue']);
 const CLOSED_TITLE_THRESHOLD = 0.6;
 const EVIDENCE_THRESHOLD = 0.35;
 const BLOCKING_THRESHOLD = 0.65;
@@ -11,23 +11,6 @@ const DEFAULT_LIST_PAGES = 1;
 const DEFAULT_PER_PAGE = 50;
 
 type Input = { repo: string; issue_number: number; max_candidates?: number; max_list_pages?: number };
-
-function tokens(text: string): Set<string> {
-  return new Set((text.toLowerCase().match(/[a-z][a-z0-9_-]{3,}/g) ?? []).filter((token) => !STOP.has(token)));
-}
-
-function jaccard(a: Set<string>, b: Set<string>): number {
-  const intersection = Array.from(a).filter((item) => b.has(item)).length;
-  const union = new Set([...a, ...b]).size;
-  return union === 0 ? 0 : intersection / union;
-}
-
-function sharedErrorPhrase(a: string, b: string): boolean {
-  const quoted = Array.from(a.matchAll(/"([^"]{8,})"/g)).map((match) => match[1].toLowerCase());
-  const lowerA = a.toLowerCase();
-  const lowerB = b.toLowerCase();
-  return quoted.some((phrase) => lowerB.includes(phrase)) || (lowerA.includes('npx is not available') && lowerB.includes('npx is not available'));
-}
 
 export async function dupe_cluster(input: Input): Promise<Envelope> {
   const target = await githubJson<GithubIssue>(`/repos/${input.repo}/issues/${input.issue_number}`);

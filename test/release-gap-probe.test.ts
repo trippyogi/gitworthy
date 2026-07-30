@@ -44,4 +44,68 @@ describe('release_gap probe signal', () => {
     expect(result.signals).toContain('released_fix');
     expect(JSON.stringify(result.evidence)).toContain('shell: true');
   });
+
+  it('resolves probe_template to a probe when no explicit probe is given', async () => {
+    const result = await release_gap({ repo: 'elevenlabs/cli', npm_package: '@elevenlabs/cli', probe_template: 'package-exports', force_refresh: true });
+    expect(result.checked.some((item) => item.includes('resolved probe_template "package-exports"'))).toBe(true);
+    const probeEvidence = result.evidence.find((item) => item.probe !== undefined) as { probe: { file_glob?: string; contains?: string } } | undefined;
+    expect(probeEvidence?.probe).toEqual({ file_glob: '**/package.json', contains: '"exports"' });
+  });
+
+  it('prefers an explicit probe over probe_template when both are provided', async () => {
+    const result = await release_gap({
+      repo: 'elevenlabs/cli',
+      npm_package: '@elevenlabs/cli',
+      probe: { file_glob: 'dist/**/add.js', contains: 'shell: true' },
+      probe_template: 'package-exports',
+      force_refresh: true
+    });
+    expect(result.signals).toContain('released_fix');
+    expect(result.checked.some((item) => item.includes('resolved probe_template'))).toBe(false);
+  });
+
+  it('notes an unknown probe_template id instead of applying a probe', async () => {
+    const result = await release_gap({ repo: 'elevenlabs/cli', npm_package: '@elevenlabs/cli', probe_template: 'not-a-template', force_refresh: true });
+    expect(result.not_checked.some((item) => item.includes('not-a-template') && item.includes('not a known template id'))).toBe(true);
+  });
+
+  it('runs an existence probe for file_glob-only templates like changelog', async () => {
+    await writeFile(path.join(tarballDir, 'package', 'CHANGELOG.md'), '# Changes\n');
+    const result = await release_gap({ repo: 'elevenlabs/cli', npm_package: '@elevenlabs/cli', probe_template: 'changelog', force_refresh: true });
+    expect(result.checked.some((item) => item.includes('resolved probe_template "changelog"'))).toBe(true);
+    expect(result.not_checked.some((item) => item.includes('no probe was provided'))).toBe(false);
+    const probeEvidence = result.evidence.find((item) => item.probe !== undefined) as { matched: boolean; matches: Array<{ path: string }> } | undefined;
+    expect(probeEvidence?.matched).toBe(true);
+    expect(probeEvidence?.matches.some((match) => match.path === 'CHANGELOG.md')).toBe(true);
+    expect(result.signals).not.toContain('released_fix');
+  });
+
+  it('merges probe_template file_glob with explicit probe contains', async () => {
+    await writeFile(path.join(tarballDir, 'package', 'CHANGELOG.md'), 'Fixed shell: true spawn\n');
+    const result = await release_gap({
+      repo: 'elevenlabs/cli',
+      npm_package: '@elevenlabs/cli',
+      probe_template: 'changelog',
+      probe: { contains: 'shell: true' },
+      force_refresh: true
+    });
+    expect(result.checked.some((item) => item.includes('resolved probe_template "changelog"'))).toBe(true);
+    expect(result.signals).toContain('released_fix');
+    const probeEvidence = result.evidence.find((item) => item.probe !== undefined) as { probe: { file_glob?: string; contains?: string } } | undefined;
+    expect(probeEvidence?.probe).toEqual({ file_glob: '**/CHANGELOG*', contains: 'shell: true' });
+  });
+});
+
+describe('globMatch', () => {
+  it('matches trailing * and .* patterns used by probe templates', async () => {
+    const { globMatch } = await import('../src/core/release-gap.js');
+    expect(globMatch('CHANGELOG.md', '**/CHANGELOG*')).toBe(true);
+    expect(globMatch('docs/CHANGELOG', '**/CHANGELOG*')).toBe(true);
+    expect(globMatch('README.md', '**/README*')).toBe(true);
+    expect(globMatch('dist/index.js', '**/dist/index.*')).toBe(true);
+    expect(globMatch('dist/index.d.ts', '**/dist/index.*')).toBe(true);
+    expect(globMatch('src/index.ts', '**/src/index.*')).toBe(true);
+    expect(globMatch('package.json', '**/package.json')).toBe(true);
+    expect(globMatch('lib/other.js', '**/dist/index.*')).toBe(false);
+  });
 });

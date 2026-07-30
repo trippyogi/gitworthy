@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.3.9
+
+- Add `related_cluster` (lexical connected-component clustering of related issues; advisory only).
+- Hunt hard policy gate: `no_pr_path` blocks worth_check for that repo; `claim_required` warns first (`skip_policy_gate` to disable).
+- Named `probe_template`s for `release_gap`/`worth_check` (`changelog`, `readme`, `package-exports`, `dist-index`, `src-index`); `gitworthy probes` / MCP `list_probe_templates`.
+- Optional `skill_profile` on scan/org/hunt for portfolio fit ranking (`fit_score`).
+
 ## 0.3.8
 
 - Coalesce identical in-flight GitHub GETs and cache successes for 30s (`GITWORTHY_GITHUB_CACHE_MS` to tune/disable TTL).

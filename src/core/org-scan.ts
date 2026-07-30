@@ -1,6 +1,7 @@
 import { githubJson } from '../lib/github.js';
 import { createEnvelope, Envelope, GitworthyError } from './envelope.js';
 import { scan } from './scan.js';
+import { resolveSkillProfile, SkillProfile } from './skill-fit.js';
 
 type Input = {
   org: string;
@@ -10,6 +11,7 @@ type Input = {
   limit?: number;
   max_repos?: number;
   land_hints?: boolean;
+  skill_profile?: SkillProfile | string;
 };
 
 type GithubRepoSummary = {
@@ -112,7 +114,8 @@ async function scanRepo(repoFullName: string, input: Input, perRepoLimit: number
       keywords: input.keywords,
       since: input.since,
       limit: perRepoLimit,
-      land_hints: input.land_hints
+      land_hints: input.land_hints,
+      skill_profile: input.skill_profile
     });
     const candidates = result.evidence
       .filter((item) => !('kind' in item && item.kind === 'widen_hint'))
@@ -133,9 +136,13 @@ export async function org_scan(input: Input): Promise<Envelope> {
   const selected = ranked.slice(0, maxRepos);
   const outcomes = await mapWithConcurrency(selected, CONCURRENCY, (repo) => scanRepo(repo.full_name, input, perRepoLimit));
 
+  const profile = resolveSkillProfile(input.skill_profile);
   const candidates = outcomes
     .flatMap((outcome) => outcome.candidates)
-    .sort((left, right) => Number(right.quality_score ?? 0) - Number(left.quality_score ?? 0))
+    .sort((left, right) =>
+      Number(right.quality_score ?? 0) - Number(left.quality_score ?? 0) ||
+      (profile ? Number(right.fit_score ?? 0) - Number(left.fit_score ?? 0) : 0)
+    )
     .slice(0, limit);
 
   const scannedNames = outcomes.filter((outcome) => !outcome.failed).map((outcome) => outcome.repo);

@@ -9,7 +9,7 @@ import { distinctiveTerms } from './terms.js';
 import { githubJson, GithubIssue } from '../lib/github.js';
 import { upsertLedgerEntry } from '../lib/ledger.js';
 
-type Input = { repo: string; issue_number: number; npm_package?: string; probe?: { file_glob?: string; contains?: string } };
+type Input = { repo: string; issue_number: number; npm_package?: string; probe?: { file_glob?: string; contains?: string }; probe_template?: string };
 type SubResult = { name: string; ok: true; result: Envelope } | { name: string; ok: false; error: { code: string; message: string; not_checked: string[] } };
 
 export type Disposition = 'greenfield' | 'land_only' | 'claim_first' | 'blocked' | 'crowded' | 'review';
@@ -288,7 +288,7 @@ export async function worth_check(input: Input): Promise<WorthEnvelope> {
     timed('branch_scan', timings_ms, () => runNamed('branch_scan', () => branch_scan({ repo: input.repo, keywords: issueKeywords, issue_number: input.issue_number }))),
     timed('dupe_cluster', timings_ms, () => runNamed('dupe_cluster', () => dupe_cluster({ repo: input.repo, issue_number: input.issue_number }))),
     ...(input.npm_package
-      ? [timed('release_gap', timings_ms, () => runNamed('release_gap', () => release_gap({ repo: input.repo, npm_package: input.npm_package!, probe: input.probe })))]
+      ? [timed('release_gap', timings_ms, () => runNamed('release_gap', () => release_gap({ repo: input.repo, npm_package: input.npm_package!, probe: input.probe, probe_template: input.probe_template })))]
       : [])
   ]);
   timings_ms.phase2 = Date.now() - phase2Started;

@@ -1,6 +1,6 @@
 {
   "name": "gitworthy",
-  "version": "0.3.8",
+  "version": "0.3.9",
   "mcpName": "io.github.trippyogi/gitworthy",
   "description": "is it worth your commit? A pre-flight tool for OSS contribution targets: checks whether an issue is already done, in flight, fixed but unreleased, duplicated, or genuinely open.",
   "type": "module",

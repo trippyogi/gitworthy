@@ -7,14 +7,15 @@ Use gitworthy before spending time on an external repository issue or feature re
 Wall time is usually **N × worth_check**, not one slow check. Prefer a narrow funnel:
 
 1. `npx gitworthy doctor --json` once per machine/session if auth or rate limits are unsure.
-2. Prefer **`npx gitworthy hunt owner/repo --json`** or **`npx gitworthy hunt openclaw --json`** (org) — scan → filter → ≤3 serial worth_checks in one call.
+2. Prefer **`npx gitworthy hunt owner/repo --json`** or **`npx gitworthy hunt openclaw --json`** (org) — policy gate → scan → filter → ≤3 serial worth_checks in one call.
 3. Or manual funnel: `policy` → `scan`/`org` → prefilter → ≤3–5 serial `worth_check`.
 4. **Prefilter** (also applied by `hunt` by default):
    - skip `likely_land_only: true` / assigned / `soft_ask: true` / thin descriptions unless hunting those
    - skip known linked-PR-open / land-only
-   - prefer higher `quality_score` and clear repro
+   - prefer higher `quality_score` (then `fit_score` if you pass `--skill-profile`) and clear repro
    - check `gitworthy ledger show owner/repo#N --json` to avoid re-checking recent hits
 5. If hunting manually: run **`worth_check` on at most 3–5** survivors, **serial per repo** (concurrency 1–2).
+6. Optional: `related` for lexical sibling clusters; `--probe-template changelog` (etc.) for release probes; `probes` to list templates.
 
 Do **not** worth_check every scan row. `worth_check` auto-records to the local scout ledger. `hunt` returns no ACT/SKIP signals of its own — read each `hunt_candidate.worth_check`.
 
@@ -32,7 +33,7 @@ If the project publishes an npm package, include it:
 npx gitworthy check owner/repo#123 --npm-package package-name --json
 ```
 
-`--npm-package` alone reports package release state; it does not prove an issue-specific fix shipped. For that, add `--probe-glob` and `--probe-contains` so `release_gap` can search the published tarball.
+`--npm-package` alone reports package release state; it does not prove an issue-specific fix shipped. For that, add `--probe-glob` / `--probe-contains`, or a named `--probe-template` (`changelog`, `readme`, `package-exports`, `dist-index`, `src-index`).
 
 ## Interpretation
 
