@@ -3,6 +3,7 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { describe, expect, it, vi } from 'vitest';
 import { runCli } from '../src/cli/index.js';
 import { createMcpServer } from '../src/mcp/server.js';
+import { SCHEMA_VERSION } from '../src/contracts/index.js';
 
 vi.mock('../src/lib/git.js', () => ({
   lsRemoteHeads: vi.fn(async () => []),
@@ -13,6 +14,13 @@ vi.mock('../src/lib/github.js', () => ({
   githubJson: vi.fn(async () => ({ number: 1, title: 'Add fastapi example', body: 'example-apps/fastapi', state: 'open', labels: [], comments: 0, html_url: 'https://github.com/o/r/issues/1', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z', closed_at: null })),
   fetchRaw: vi.fn(async () => null)
 }));
+
+function stableContract(value: Record<string, unknown>): Record<string, unknown> {
+  const clone = { ...value };
+  delete clone.run_id;
+  delete clone.decision_id;
+  return clone;
+}
 
 describe('adapters', () => {
   it('returns equivalent branch_scan payload through CLI and MCP', async () => {
@@ -28,9 +36,11 @@ describe('adapters', () => {
     const result = await client.callTool({ name: 'branch_scan', arguments: { repo: 'o/r', keywords: ['abc'], force_refresh: true } });
     const mcpText = (result.content as Array<{ type: string; text: string }>)[0].text;
     const mcpPayload = JSON.parse(mcpText) as Record<string, unknown>;
-    const { gitworthy_version: version, ...mcpCore } = mcpPayload;
-    expect(version).toBe('0.3.10');
-    expect(JSON.parse(cli)).toEqual(mcpCore);
+    const cliPayload = JSON.parse(cli) as Record<string, unknown>;
+    expect(mcpPayload.gitworthy_version).toBe('0.3.10');
+    expect(mcpPayload.schema_version).toBe(SCHEMA_VERSION);
+    expect(cliPayload.schema_version).toBe(SCHEMA_VERSION);
+    expect(stableContract(cliPayload)).toEqual(stableContract(mcpPayload));
     await client.close();
     await server.close();
     vi.useRealTimers();

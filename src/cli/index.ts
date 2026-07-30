@@ -21,6 +21,7 @@ import {
   worth_check
 } from '../core/index.js';
 import { packageVersion } from '../lib/package-meta.js';
+import { toCheckResult, toErrorResult, toStampedLegacyResult } from '../contracts/index.js';
 import { startMcpServer } from '../mcp/server.js';
 
 const help = `gitworthy
@@ -154,50 +155,52 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
   try {
     let output: unknown;
     if (command === 'doctor') {
-      output = await doctor();
+      output = toStampedLegacyResult('doctor', await doctor() as Record<string, unknown>);
     } else if (command === 'check') {
       if (!first) throw new Error('check requires owner/repo#123.');
-      output = await worth_check({
-        ...parseIssueRef(first),
+      const ref = parseIssueRef(first);
+      const legacy = await worth_check({
+        ...ref,
         npm_package: stringValue(parsed.values['npm-package']),
         probe: probe(parsed.values),
         probe_template: stringValue(parsed.values['probe-template'])
       });
+      output = toCheckResult(legacy as Record<string, unknown>, ref);
     } else if (command === 'branches') {
       if (!first || !second) throw new Error('branches requires owner/repo and keywords.');
       for (const keyword of second.split(',').filter(Boolean)) if (keyword.startsWith('-')) stderr(`Warning: branch keyword "${keyword}" starts with a dash. Use -- before positional arguments if your shell or parser treats it as an option.\n`);
-      output = await branch_scan({ repo: first, keywords: second.split(',').filter(Boolean), force_refresh: parsed.values['force-refresh'] === true });
+      output = toStampedLegacyResult('branch_scan', await branch_scan({ repo: first, keywords: second.split(',').filter(Boolean), force_refresh: parsed.values['force-refresh'] === true }) as Record<string, unknown>);
     } else if (command === 'issue') {
       if (!first || !second) throw new Error('issue requires owner/repo and issue number.');
-      output = await issue_vs_main({ repo: first, issue_number: Number(second) });
+      output = toStampedLegacyResult('issue_vs_main', await issue_vs_main({ repo: first, issue_number: Number(second) }) as Record<string, unknown>);
     } else if (command === 'release') {
       if (!first || !second) throw new Error('release requires owner/repo and package name.');
-      output = await release_gap({
+      output = toStampedLegacyResult('release_gap', await release_gap({
         repo: first,
         npm_package: second,
         probe: probe(parsed.values),
         probe_template: stringValue(parsed.values['probe-template']),
         force_refresh: parsed.values['force-refresh'] === true
-      });
+      }) as Record<string, unknown>);
     } else if (command === 'dupes') {
       if (!first || !second) throw new Error('dupes requires owner/repo and issue number.');
-      output = await dupe_cluster({ repo: first, issue_number: Number(second) });
+      output = toStampedLegacyResult('dupe_cluster', await dupe_cluster({ repo: first, issue_number: Number(second) }) as Record<string, unknown>);
     } else if (command === 'related') {
       if (!first) throw new Error('related requires owner/repo.');
       const filters = scanFilters(parsed.values);
-      output = await related_cluster({
+      output = toStampedLegacyResult('related_cluster', await related_cluster({
         repo: first,
         issue_number: second ? Number(second) : undefined,
         label: filters.label,
         keywords: filters.keywords,
         limit: filters.limit
-      });
+      }) as Record<string, unknown>);
     } else if (command === 'linked') {
       if (!first || !second) throw new Error('linked requires owner/repo and issue number.');
-      output = await linked_work({ repo: first, issue_number: Number(second) });
+      output = toStampedLegacyResult('linked_work', await linked_work({ repo: first, issue_number: Number(second) }) as Record<string, unknown>);
     } else if (command === 'policy') {
       if (!first) throw new Error('policy requires owner/repo.');
-      output = await contrib_policy({ repo: first, force_refresh: parsed.values['force-refresh'] === true });
+      output = toStampedLegacyResult('contrib_policy', await contrib_policy({ repo: first, force_refresh: parsed.values['force-refresh'] === true }) as Record<string, unknown>);
     } else if (command === 'hunt') {
       if (!first) throw new Error('hunt requires owner/repo or an org/user login.');
       const maxChecksRaw = stringValue(parsed.values['max-checks']);
@@ -216,7 +219,7 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
       if (parsed.values.org === true && first.includes('/')) {
         throw new Error('hunt --org expects an org or user login, not owner/repo. Omit --org for a single repo.');
       }
-      output = await hunt({
+      output = toStampedLegacyResult('hunt', await hunt({
         ...(asOrg ? { org: first } : { repo: first }),
         label: filters.label,
         keywords: filters.keywords,
@@ -228,21 +231,21 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
         max_repos: maxRepos,
         skip_policy_gate: parsed.values['skip-policy-gate'] === true,
         npm_package: stringValue(parsed.values['npm-package'])
-      });
+      }) as Record<string, unknown>);
     } else if (command === 'scan') {
       if (!first) throw new Error('scan requires owner/repo.');
-      output = await scan({ repo: first, ...scanFilters(parsed.values) });
+      output = toStampedLegacyResult('scan', await scan({ repo: first, ...scanFilters(parsed.values) }) as Record<string, unknown>);
     } else if (command === 'org') {
       if (!first) throw new Error('org requires an org or user login.');
       const maxRepos = stringValue(parsed.values['max-repos']);
-      output = await org_scan({
+      output = toStampedLegacyResult('org_scan', await org_scan({
         org: first,
         ...scanFilters(parsed.values),
         max_repos: maxRepos ? Number(maxRepos) : undefined
-      });
+      }) as Record<string, unknown>);
     } else if (command === 'probes') {
       const templates = listProbeTemplates();
-      output = {
+      output = toStampedLegacyResult('probes', {
         verdict_summary: `listed ${templates.length} probe templates.`,
         evidence: templates,
         checked: ['listed built-in probe templates'],
@@ -250,26 +253,26 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
         signals: [],
         cached: false,
         fetched_at: new Date().toISOString()
-      };
+      });
     } else if (command === 'ledger') {
       const action = first;
       if (action === 'list') {
-        output = await ledger_list({
+        output = toStampedLegacyResult('ledger_list', await ledger_list({
           repo: stringValue(parsed.values.repo),
           limit: stringValue(parsed.values.limit) ? Number(stringValue(parsed.values.limit)) : undefined
-        });
+        }) as Record<string, unknown>);
       } else if (action === 'show') {
         if (!second) throw new Error('ledger show requires owner/repo#123.');
-        output = await ledger_lookup(parseIssueRef(second));
+        output = toStampedLegacyResult('ledger_lookup', await ledger_lookup(parseIssueRef(second)) as Record<string, unknown>);
       } else if (action === 'record') {
         if (!second) throw new Error('ledger record requires owner/repo#123.');
-        output = await ledger_record({
+        output = toStampedLegacyResult('ledger_record', await ledger_record({
           ...parseIssueRef(second),
           verdict: stringValue(parsed.values.verdict),
           disposition: stringValue(parsed.values.disposition),
           notes: stringValue(parsed.values.notes),
           source: 'cli'
-        });
+        }) as Record<string, unknown>);
       } else {
         throw new Error('ledger requires list, show, or record.');
       }
@@ -279,8 +282,13 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
     print(output, asJson, stdout);
     return exitFor(output);
   } catch (error) {
-    stderr(`${error instanceof Error ? error.message : String(error)}\n`);
-    return 1;
+    const structured = toErrorResult({ command: command ?? 'unknown', error });
+    if (asJson) {
+      stdout(`${JSON.stringify(structured, null, 2)}\n`);
+    } else {
+      stderr(`${structured.error.message}\n`);
+    }
+    return structured.error.category === 'input' ? 2 : 1;
   }
 }
 

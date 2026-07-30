@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### 0.4.0 (in progress)
+
+- Add versioned output contracts (`schema_version: 1.0-draft.1`) under `src/contracts/` with generated JSON Schemas in `schemas/`.
+- CLI and MCP stamp/validate check results with `run_id` / `decision_id`, and return structured JSON errors (`ok: false`) while preserving legacy `verdict_summary` / `evidence` / `signals` fields.
+
 ## 0.3.10
 
 - Establish reproducible baseline documentation (`docs/BASELINE-0.3.10.md`): 203 unit tests, CI, package smoke, release verification.
