@@ -34,7 +34,7 @@ describe('structured signals and CLI polish', () => {
     const worth = await worth_check({ repo: 'o/r', issue_number: 1 });
     expect(worth.verdict).toBe('VERIFY');
     expect(worth.reasons.join(' ')).toContain('in_flight');
-    expect(worth.reasons).toContain('keyword-matched branches exist but no linked PR or assignee; read the matched branches.');
+    expect(worth.reasons.join(' ')).toContain('Matching branch names are heuristic');
   });
 
   it('dedupes human-readable verdict prefixes and warns for dash keywords', async () => {

@@ -22,9 +22,13 @@ describe('chooseDisposition', () => {
     })).toBe('land_only');
   });
 
-  it('maps shipped/duplicate to blocked', () => {
-    expect(chooseDisposition({ verdict: 'SKIP', signals: ['shipped'], priorAttempts: 0, referencedCommits: 0 })).toBe('blocked');
-    expect(chooseDisposition({ verdict: 'SKIP', signals: ['duplicate'], priorAttempts: 0, referencedCommits: 0 })).toBe('blocked');
+  it('maps shipped/duplicate to review', () => {
+    expect(chooseDisposition({ verdict: 'SKIP', signals: ['shipped'], priorAttempts: 0, referencedCommits: 0 })).toBe('review');
+    expect(chooseDisposition({ verdict: 'SKIP', signals: ['duplicate'], priorAttempts: 0, referencedCommits: 0 })).toBe('review');
+  });
+
+  it('maps released_fix to blocked', () => {
+    expect(chooseDisposition({ verdict: 'SKIP', signals: ['released_fix'], priorAttempts: 0, referencedCommits: 0 })).toBe('blocked');
   });
 
   it('maps assignment to claim_first', () => {

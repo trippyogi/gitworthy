@@ -62,10 +62,10 @@ describe('worth_check authority hierarchy', () => {
     expect(result.verdict).toBe('VERIFY');
     expect(result.signals).toEqual(['in_flight']);
     expect(result.disposition).toBe('review');
-    expect(result.reasons).toContain('keyword-matched branches exist but no linked PR or assignee; read the matched branches.');
+    expect(result.reasons.join(' ')).toContain('Matching branch names are heuristic');
   });
 
-  it('keeps in_flight blocking when linked_work cannot verify authority', async () => {
+  it('keeps VERIFY when linked_work cannot verify authority for in_flight', async () => {
     mocks.branchSignals = ['in_flight'];
     mocks.linkedError = new Error('GitHub API unavailable');
 
@@ -73,21 +73,21 @@ describe('worth_check authority hierarchy', () => {
 
     expect(result.verdict).toBe('VERIFY');
     expect(result.reasons.join(' ')).toContain('linked_work errored');
-    expect(result.reasons).not.toContain('keyword-matched branches exist but no linked PR or assignee; read the matched branches.');
+    expect(result.reasons.join(' ')).toContain('Matching branch names are heuristic');
   });
 
   it.each([
-    ['duplicate', 'SKIP'],
-    ['shipped', 'SKIP'],
-    ['released_fix', 'SKIP'],
-    ['linked_pr_open', 'SKIP'],
-    ['linked_pr_merged', 'VERIFY'],
-    ['linked_pr_closed', 'VERIFY'],
-    ['assigned', 'VERIFY'],
-    ['no_pr_path', 'VERIFY'],
-    ['needs_repro', 'VERIFY'],
-    ['claim_required', 'VERIFY']
-  ] as Array<[Signal, 'SKIP' | 'VERIFY']>)('maps %s to %s', async (signal, expected) => {
+    ['duplicate', 'VERIFY', 'review'],
+    ['shipped', 'VERIFY', 'review'],
+    ['released_fix', 'SKIP', 'blocked'],
+    ['linked_pr_open', 'VERIFY', 'review'],
+    ['linked_pr_merged', 'VERIFY', 'review'],
+    ['linked_pr_closed', 'VERIFY', 'review'],
+    ['assigned', 'VERIFY', 'claim_first'],
+    ['no_pr_path', 'VERIFY', 'blocked'],
+    ['needs_repro', 'VERIFY', 'review'],
+    ['claim_required', 'VERIFY', 'claim_first']
+  ] as Array<[Signal, 'SKIP' | 'VERIFY', string]>)('maps %s to %s / %s', async (signal, expected, disposition) => {
     if (signal === 'duplicate') mocks.dupeSignals = [signal];
     else if (signal === 'released_fix') mocks.releaseSignals = [signal];
     else if (signal === 'linked_pr_open' || signal === 'linked_pr_merged' || signal === 'linked_pr_closed' || signal === 'assigned') mocks.linkedSignals = [signal];
@@ -99,21 +99,38 @@ describe('worth_check authority hierarchy', () => {
 
     expect(result.verdict).toBe(expected);
     expect(result.signals).toContain(signal);
-    if (signal === 'linked_pr_open') expect(result.disposition).toBe('land_only');
-    if (signal === 'assigned' || signal === 'claim_required') expect(result.disposition).toBe('claim_first');
-    if (signal === 'shipped' || signal === 'released_fix' || signal === 'duplicate') expect(result.disposition).toBe('blocked');
-    if (signal === 'claim_required') expect(result.reasons.join(' ')).toContain('requires claim/assignment');
+    expect(result.disposition).toBe(disposition);
+    if (signal === 'claim_required') expect(result.reasons.join(' ')).toContain('claiming or assignment');
     if (signal === 'needs_repro') expect(result.reasons.join(' ')).toContain('lacks reproduction steps');
-    if (signal === 'linked_pr_open') expect(result.reasons.join(' ')).toContain('do not open a parallel fix');
+    if (signal === 'linked_pr_open') expect(result.reasons.join(' ')).toContain('mentions the issue');
   });
 
-  it('does not cap in_flight when another blocking signal is present', async () => {
+  it('keeps heuristics at VERIFY even when in_flight and duplicate coincide', async () => {
     mocks.branchSignals = ['in_flight'];
     mocks.dupeSignals = ['duplicate'];
 
     const result = await worth_check({ repo: 'o/r', issue_number: 1 });
 
-    expect(result.verdict).toBe('SKIP');
+    expect(result.verdict).toBe('VERIFY');
+    expect(result.disposition).toBe('review');
     expect(result.signals).toEqual(['in_flight', 'duplicate']);
+  });
+
+  it('maps explicit closing open PR evidence to SKIP / land_only', async () => {
+    mocks.linkedSignals = ['linked_pr_open'];
+    const { linked_work } = await import('../src/core/linked-work.js');
+    vi.mocked(linked_work).mockResolvedValueOnce(createEnvelope({
+      verdict_summary: 'found 1 linked pull request.',
+      evidence: [{ kind: 'linked_pr', number: 99, state: 'open', closes_issue: true, source: 'timeline', url: 'https://github.com/o/r/pull/99' }],
+      signals: ['linked_pr_open'],
+      checked: ['mock linked'],
+      not_checked: ['mock']
+    }));
+
+    const result = await worth_check({ repo: 'o/r', issue_number: 1 });
+
+    expect(result.verdict).toBe('SKIP');
+    expect(result.disposition).toBe('land_only');
+    expect(result.reasons.join(' ')).toContain('explicitly closes');
   });
 });
