@@ -1,5 +1,5 @@
 import { githubJson, GithubIssue } from '../lib/github.js';
-import { listCloneFiles, readClonedFilesBatch, shallowClone } from '../lib/git.js';
+import { DEFAULT_MAX_TREE_FILES, listCloneFiles, readClonedFilesBatch, shallowClone } from '../lib/git.js';
 import { assessRepro, looksLikeBug } from './candidate-quality.js';
 import { createEnvelope, Envelope } from './envelope.js';
 import { distinctiveTerms, isGenericTerm } from './terms.js';
@@ -142,6 +142,12 @@ export async function issue_vs_main(input: Input): Promise<Envelope> {
         : bugMissingRepro
           ? 'bug-shaped issue lacks reproduction steps; verify before investing.'
           : 'no evidence on main.';
+    const notChecked = [INTENT_LIMIT];
+    if (listed.truncated) {
+      notChecked.push(
+        `git tree listing was soft-capped at ${DEFAULT_MAX_TREE_FILES} files; matching paths beyond the cap may be missing.`
+      );
+    }
     return createEnvelope({
       verdict_summary,
       evidence: [
@@ -158,7 +164,7 @@ export async function issue_vs_main(input: Input): Promise<Envelope> {
         `searched candidate terms in tree and file contents`,
         'assessed reproduction-step signals in the issue body'
       ],
-      not_checked: [INTENT_LIMIT],
+      not_checked: notChecked,
       cached: false
     });
   } finally {

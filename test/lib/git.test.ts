@@ -13,7 +13,7 @@ describe('git.ts safe object reader', () => {
       await commitFixtureFiles(fixture.dir, { 'regular.txt': 'hello world\n' });
       await commitSymlinkBlob(fixture.dir, 'evil-link', '../../../etc/passwd');
 
-      const files = await listTreeFiles(fixture.dir);
+      const { files } = await listTreeFiles(fixture.dir);
       const regular = files.find((file) => file.path === 'regular.txt');
       const symlink = files.find((file) => file.path === 'evil-link');
       expect(regular?.symlink).toBe(false);
@@ -34,8 +34,9 @@ describe('git.ts safe object reader', () => {
       await commitFixtureFiles(fixture.dir, {
         'a.txt': 'a', 'b.txt': 'b', 'c.txt': 'c', 'd.txt': 'd'
       });
-      const files = await listTreeFiles(fixture.dir, { maxFiles: 2 });
-      expect(files).toHaveLength(2);
+      const listed = await listTreeFiles(fixture.dir, { maxFiles: 2 });
+      expect(listed.files).toHaveLength(2);
+      expect(listed.truncated).toBe(true);
     } finally {
       await fixture.cleanup();
     }
@@ -45,7 +46,7 @@ describe('git.ts safe object reader', () => {
     const fixture = await initGitFixture('gitworthy-git-bytecap-');
     try {
       await commitFixtureFiles(fixture.dir, { 'big.txt': 'x'.repeat(1000) });
-      const [file] = await listTreeFiles(fixture.dir);
+      const { files: [file] } = await listTreeFiles(fixture.dir);
       const oversized = await readTreeFile(fixture.dir, file, { maxBytes: 10 });
       expect(oversized).toBeNull();
       const withinBudget = await readTreeFile(fixture.dir, file, { maxBytes: 10_000 });
@@ -59,7 +60,7 @@ describe('git.ts safe object reader', () => {
     const fixture = await initGitFixture('gitworthy-git-binary-');
     try {
       await commitFixtureFiles(fixture.dir, { 'image.bin': 'PNG\u0000fake-binary-payload' });
-      const [file] = await listTreeFiles(fixture.dir);
+      const { files: [file] } = await listTreeFiles(fixture.dir);
       const content = await readTreeFile(fixture.dir, file);
       expect(content).toBeNull();
     } finally {
@@ -96,7 +97,7 @@ describe('git.ts safe object reader', () => {
         });
         await commitSymlinkBlob(fixture.dir, 'evil-link', '../../../etc/passwd');
 
-        const files = await listTreeFiles(fixture.dir);
+        const { files } = await listTreeFiles(fixture.dir);
         const results = await readTreeFilesBatch(fixture.dir, files, { maxBytes: 100 });
 
         expect(results.get('a.txt')).toBe('alpha\n');
@@ -117,7 +118,7 @@ describe('git.ts safe object reader', () => {
           'two.txt': 'y'.repeat(50),
           'three.txt': 'z'.repeat(50)
         });
-        const files = await listTreeFiles(fixture.dir);
+        const { files } = await listTreeFiles(fixture.dir);
         const results = await readTreeFilesBatch(fixture.dir, files, { maxTotalBytes: 60 });
         const readCount = [...results.values()].filter((value) => value != null).length;
         // Budget of 60 bytes cannot fit more than one 50-byte file.

@@ -26,6 +26,7 @@ type CloneLease = {
   idleTimer?: ReturnType<typeof setTimeout>;
   files?: ClonedFile[];
   pathIndex?: Map<string, ClonedFile>;
+  treeTruncated?: boolean;
 };
 const clonePool = new Map<string, CloneLease>();
 const cloneCreating = new Map<string, Promise<CloneLease>>();
@@ -122,8 +123,9 @@ export async function shallowClone(repo: string): Promise<{ dir: string; cleanup
   };
 }
 
-function parseLsTree(stdout: string, maxFiles: number): ClonedFile[] {
+function parseLsTree(stdout: string, maxFiles: number): { files: ClonedFile[]; truncated: boolean } {
   const entries: ClonedFile[] = [];
+  let truncated = false;
   for (const raw of stdout.split('\0')) {
     if (!raw) continue;
     const tabIndex = raw.indexOf('\t');
@@ -132,21 +134,28 @@ function parseLsTree(stdout: string, maxFiles: number): ClonedFile[] {
     const filePath = raw.slice(tabIndex + 1);
     const [mode, type, sha] = meta.split(' ');
     if (type !== 'blob' || !sha) continue;
+    if (entries.length >= maxFiles) {
+      truncated = true;
+      break;
+    }
     entries.push({ path: filePath.replace(/\\/g, '/'), sha, symlink: mode === '120000' });
-    if (entries.length >= maxFiles) break;
   }
-  return entries;
+  return { files: entries, truncated };
 }
 
 /**
  * List blob paths tracked at `ref` by reading git's own tree objects
  * (`git ls-tree`), never by walking a checked-out working tree.
  */
-export async function listTreeFiles(dir: string, opts: { ref?: string; maxFiles?: number; timeoutMs?: number } = {}): Promise<ClonedFile[]> {
+export async function listTreeFiles(
+  dir: string,
+  opts: { ref?: string; maxFiles?: number; timeoutMs?: number } = {}
+): Promise<{ files: ClonedFile[]; truncated: boolean }> {
   const ref = opts.ref ?? 'HEAD';
+  const maxFiles = opts.maxFiles ?? DEFAULT_MAX_TREE_FILES;
   try {
     const { stdout } = await execa('git', ['ls-tree', '-r', '-z', ref], { cwd: dir, timeout: opts.timeoutMs ?? GIT_SUBPROCESS_TIMEOUT_MS });
-    return parseLsTree(stdout, opts.maxFiles ?? DEFAULT_MAX_TREE_FILES);
+    return parseLsTree(stdout, maxFiles);
   } catch {
     throw new GitworthyError({ code: 'git_ls_tree_failed', message: `git ls-tree failed in ${dir}.`, not_checked: [`Repository tree was not checked in ${dir}.`] });
   }
@@ -265,6 +274,31 @@ export async function readTreeFilesBatch(
   const uniqueShas = [...new Set(candidates.map((file) => file.sha))];
   const sizes = await batchBlobSizes(dir, uniqueShas, timeout);
 
+  // If batch-check failed entirely, fall back to per-file reads so one bad
+  // subprocess does not zero out the whole grep (matches the old per-file
+  // degrade-to-null behavior).
+  if (sizes.size === 0 && uniqueShas.length > 0) {
+    let runningTotal = 0;
+    for (const file of candidates) {
+      if (results.has(file.path)) continue;
+      if (runningTotal >= maxTotalBytes) {
+        results.set(file.path, null);
+        continue;
+      }
+      const content = await readTreeFile(dir, file, { maxBytes, timeoutMs: timeout });
+      if (content != null) {
+        const bytes = Buffer.byteLength(content, 'utf8');
+        if (runningTotal + bytes > maxTotalBytes) {
+          results.set(file.path, null);
+          continue;
+        }
+        runningTotal += bytes;
+      }
+      results.set(file.path, content);
+    }
+    return results;
+  }
+
   let runningTotal = 0;
   const selectedShas: string[] = [];
   const selectedShaSet = new Set<string>();
@@ -282,7 +316,22 @@ export async function readTreeFilesBatch(
   }
   if (selectedShas.length === 0) return results;
 
-  const contentBySha = await batchBlobContents(dir, selectedShas, sizes, timeout);
+  let contentBySha = await batchBlobContents(dir, selectedShas, sizes, timeout);
+  if (contentBySha.size === 0) {
+    // Batch content read failed — recover with per-file cat-file for the
+    // already-selected (budget-approved) blobs only.
+    contentBySha = new Map();
+    for (const file of candidates) {
+      if (results.has(file.path)) continue;
+      if (!selectedShaSet.has(file.sha)) continue;
+      if (!contentBySha.has(file.sha)) {
+        contentBySha.set(file.sha, await readTreeFile(dir, file, { maxBytes, timeoutMs: timeout }));
+      }
+      results.set(file.path, contentBySha.get(file.sha) ?? null);
+    }
+    return results;
+  }
+
   for (const file of candidates) {
     if (results.has(file.path)) continue; // already resolved to null above
     results.set(file.path, contentBySha.get(file.sha) ?? null);
@@ -291,7 +340,7 @@ export async function readTreeFilesBatch(
 }
 
 /** List (or reuse) the tracked file set for a pooled clone. Call while holding a shallowClone lease. */
-export async function listCloneFiles(repo: string): Promise<{ files: ClonedFile[]; cached: boolean; dir: string }> {
+export async function listCloneFiles(repo: string): Promise<{ files: ClonedFile[]; cached: boolean; dir: string; truncated: boolean }> {
   const lease = clonePool.get(repo);
   if (!lease) {
     throw new GitworthyError({
@@ -300,11 +349,14 @@ export async function listCloneFiles(repo: string): Promise<{ files: ClonedFile[
       not_checked: [`File list was not checked for ${repo}.`]
     });
   }
-  if (lease.files) return { files: lease.files, cached: true, dir: lease.dir };
-  const files = await listTreeFiles(lease.dir);
-  lease.files = files;
-  lease.pathIndex = new Map(files.map((entry) => [entry.path, entry]));
-  return { files, cached: false, dir: lease.dir };
+  if (lease.files) {
+    return { files: lease.files, cached: true, dir: lease.dir, truncated: lease.treeTruncated === true };
+  }
+  const listed = await listTreeFiles(lease.dir);
+  lease.files = listed.files;
+  lease.treeTruncated = listed.truncated;
+  lease.pathIndex = new Map(listed.files.map((entry) => [entry.path, entry]));
+  return { files: listed.files, cached: false, dir: lease.dir, truncated: listed.truncated };
 }
 
 /**

@@ -39,7 +39,7 @@ export async function downloadAndExtractTarball(tarballUrl: string): Promise<{ d
  * (`git ls-tree` + `git cat-file`), never via a working-tree fs read.
  */
 export async function readPackageJsonFromClone(dir: string): Promise<{ version?: string; name?: string }> {
-  const files = await listTreeFiles(dir);
+  const { files } = await listTreeFiles(dir);
   const entry = files.find((file) => file.path === 'package.json');
   if (!entry) {
     throw new GitworthyError({

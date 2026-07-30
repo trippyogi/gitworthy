@@ -24,9 +24,12 @@ vi.mock('../src/lib/git.js', async () => {
   const actual = await vi.importActual<typeof import('../src/lib/git.js')>('../src/lib/git.js');
   return {
     shallowClone: vi.fn(async () => ({ dir: fixtureDir, cleanup: async () => undefined, cached: false })),
-    listCloneFiles: vi.fn(async () => ({ files: await actual.listTreeFiles(fixtureDir), cached: false, dir: fixtureDir })),
+    listCloneFiles: vi.fn(async () => {
+      const listed = await actual.listTreeFiles(fixtureDir);
+      return { files: listed.files, truncated: listed.truncated, cached: false, dir: fixtureDir };
+    }),
     readClonedFilesBatch: vi.fn(async (_repo: string, filePaths: string[]) => {
-      const files = await actual.listTreeFiles(fixtureDir);
+      const { files } = await actual.listTreeFiles(fixtureDir);
       const wanted = files.filter((entry) => filePaths.includes(entry.path));
       return actual.readTreeFilesBatch(fixtureDir, wanted);
     })
