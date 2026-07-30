@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "type": {
+      "type": "string",
+      "minLength": 1
+    },
+    "strength": {
+      "type": "string",
+      "enum": [
+        "definitive",
+        "corroborated",
+        "heuristic"
+      ]
+    },
+    "effect": {
+      "type": "string",
+      "enum": [
+        "block",
+        "verify",
+        "inform"
+      ]
+    },
+    "source": {
+      "type": "string",
+      "minLength": 1
+    },
+    "message": {
+      "type": "string",
+      "minLength": 1
+    },
+    "url": {
+      "type": "string"
+    },
+    "data": {
+      "default": {},
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {}
+    }
+  },
+  "required": [
+    "id",
+    "type",
+    "strength",
+    "effect",
+    "source",
+    "message",
+    "data"
+  ],
+  "additionalProperties": false
+}

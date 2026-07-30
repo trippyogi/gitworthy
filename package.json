@@ -16,7 +16,9 @@
     "test:unit": "vitest run",
     "test": "pnpm build && pnpm test:unit",
     "test:package": "tsx scripts/package-smoke.ts",
-    "check": "pnpm lint && pnpm typecheck && pnpm build && pnpm test:unit",
+    "schemas:generate": "tsx scripts/generate-schemas.ts",
+    "schemas:check": "tsx scripts/generate-schemas.ts --check",
+    "check": "pnpm lint && pnpm typecheck && pnpm build && pnpm test:unit && pnpm schemas:check",
     "release:verify": "tsx scripts/release-verify.ts",
     "dev": "tsx src/cli/index.ts",
     "eval": "tsx eval/run-eval.ts"
@@ -40,6 +42,7 @@
   },
   "files": [
     "dist",
+    "schemas",
     "README.md",
     "LICENSE",
     "SKILL.md",
