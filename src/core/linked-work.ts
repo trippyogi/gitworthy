@@ -284,19 +284,22 @@ function timelineCapabilityNotes(events: TimelineEvent[]): { checked: string[]; 
   return { checked, not_checked };
 }
 
-async function searchLinkedPrs(repo: string, apiRepo: string, issueNumber: number, existing: Set<string>): Promise<{ prs: LinkedPrEvidence[]; checked: string[]; not_checked: string[] }> {
+async function searchLinkedPrs(repo: string, issueNumber: number, existing: Set<string>): Promise<{ prs: LinkedPrEvidence[]; checked: string[]; not_checked: string[] }> {
   const { result, context } = await runSearchWithCanonicalRepo(repo, async (fullName) => {
     const query = encodeURIComponent(`repo:${fullName} is:pr ${issueNumber}`);
     return githubJson<SearchResult>(`/search/issues?q=${query}&per_page=20`);
   });
+  // Prefer URLs / Search canonical name over the caller alias so renamed repos share one identity key.
+  const homeRepo = context.full_name;
   const prs = [] as LinkedPrEvidence[];
   for (const item of result.items) {
-    const key = prIdentityKey(apiRepo, item.number);
+    const itemRepo = repoFromSearchItem(item) ?? repoFromPrRefs(item.pull_request) ?? homeRepo;
+    const key = prIdentityKey(itemRepo, item.number);
     if (!('pull_request' in item) || existing.has(key)) continue;
-    const pr = await prDetails(apiRepo, item.number);
+    const pr = await prDetails(itemRepo, item.number);
     const text = `${item.title ?? pr.title}\n${item.body ?? pr.body ?? ''}`;
     if (!mentionsIssue(text, issueNumber)) continue;
-    prs.push(linkedPrEvidence(pr, pr.created_at, 'search', issueNumber, { repo: apiRepo }));
+    prs.push(linkedPrEvidence(pr, pr.created_at, 'search', issueNumber, { repo: itemRepo }));
     existing.add(key);
   }
   return {
@@ -351,7 +354,6 @@ async function commentLinkedPrs(apiRepo: string, issueNumber: number, existing: 
 
 async function titleOverlapPrs(
   repo: string,
-  apiRepo: string,
   issue: GithubIssue,
   existing: Set<string>,
   force: boolean
@@ -373,18 +375,20 @@ async function titleOverlapPrs(
     const query = encodeURIComponent(`repo:${fullName} is:pr is:open ${searchTerms}`);
     return githubJson<SearchResult>(`/search/issues?q=${query}&per_page=20`);
   });
+  const homeRepo = context.full_name;
   const issueText = `${issue.title}\n${issue.body ?? ''}`;
   const prs = [] as LinkedPrEvidence[];
   const minScore = force ? Math.min(TITLE_OVERLAP_MIN, 0.32) : TITLE_OVERLAP_MIN;
   const minShared = TITLE_OVERLAP_MIN_SHARED;
   for (const item of result.items) {
-    const key = prIdentityKey(apiRepo, item.number);
+    const itemRepo = repoFromSearchItem(item) ?? repoFromPrRefs(item.pull_request) ?? homeRepo;
+    const key = prIdentityKey(itemRepo, item.number);
     if (!('pull_request' in item) || existing.has(key) || item.number === issue.number) continue;
-    const pr = await prDetails(apiRepo, item.number);
+    const pr = await prDetails(itemRepo, item.number);
     if (isAutomationAuthor(pr.user?.login)) continue;
     const { score, shared } = lexicalOverlapScore(issueText, `${pr.title}\n${pr.body ?? item.body ?? ''}`);
     if (score < minScore || shared.length < minShared) continue;
-    prs.push(linkedPrEvidence(pr, pr.created_at, 'title_overlap', issue.number, { overlap_score: Number(score.toFixed(3)), shared_terms: shared, repo: apiRepo }));
+    prs.push(linkedPrEvidence(pr, pr.created_at, 'title_overlap', issue.number, { overlap_score: Number(score.toFixed(3)), shared_terms: shared, repo: itemRepo }));
     existing.add(key);
   }
   return {
@@ -421,22 +425,25 @@ function partitionLinkedPrs(prs: LinkedPrEvidence[]): { active: LinkedPrEvidence
 
 export async function linked_work(input: Input): Promise<Envelope> {
   const resolved = await loadCanonicalRepo(input.repo);
+  // Prefer the resolved full_name for home-repo identity so alias inputs (renames) match
+  // timeline/search URL-derived keys instead of double-counting the same PR.
+  const homeRepo = resolved.full_name;
   const issue = await githubJson<GithubIssue>(`/repos/${input.repo}/issues/${input.issue_number}`);
   const { events, truncated: timelineTruncated } = await timeline(input.repo, input.issue_number);
   const timelineNotes = timelineCapabilityNotes(events);
-  const timelinePrs = await timelineLinkedPrs(input.repo, events, input.issue_number);
+  const timelinePrs = await timelineLinkedPrs(homeRepo, events, input.issue_number);
   const { commits, capped: commitsCapped } = referencedCommits(events);
-  const knownPrs = new Set(timelinePrs.map((pr) => prIdentityKey(pr.repo ?? input.repo, pr.number)));
-  const { prs: commentPrs, claimComments } = await commentLinkedPrs(input.repo, input.issue_number, knownPrs);
-  const { prs: searchPrs, checked: searchChecked, not_checked: searchNotChecked } = await searchLinkedPrs(input.repo, input.repo, input.issue_number, knownPrs);
+  const knownPrs = new Set(timelinePrs.map((pr) => prIdentityKey(pr.repo ?? homeRepo, pr.number)));
+  const { prs: commentPrs, claimComments } = await commentLinkedPrs(homeRepo, input.issue_number, knownPrs);
+  const { prs: searchPrs, checked: searchChecked, not_checked: searchNotChecked } = await searchLinkedPrs(input.repo, input.issue_number, knownPrs);
   const hasHumanLinked = [...timelinePrs, ...commentPrs, ...searchPrs].some((pr) => !isAutomationAuthor(pr.author));
   const shouldTitleSearch = claimComments || !hasHumanLinked;
   const titleResult = shouldTitleSearch
-    ? await titleOverlapPrs(input.repo, input.repo, issue, knownPrs, claimComments)
+    ? await titleOverlapPrs(input.repo, issue, knownPrs, claimComments)
     : { prs: [], checked: [], not_checked: ['title-overlap PR search skipped because explicit linkage already covered the issue.'] };
   // Soft secondary pass, always run (capped per_page) — surfaces fork/other-repo PRs as density
   // evidence only; never treated as a linked_pr and never forces a SKIP signal on its own.
-  const { prs: networkPrs, checked: networkChecked, not_checked: networkNotChecked } = await networkLinkedPrs(input.repo, input.issue_number);
+  const { prs: networkPrs, checked: networkChecked, not_checked: networkNotChecked } = await networkLinkedPrs(homeRepo, input.issue_number);
   const { active, ignored } = partitionLinkedPrs([...timelinePrs, ...commentPrs, ...searchPrs, ...titleResult.prs]);
   const linkedPrs = active.sort((left, right) => left.number - right.number);
   const assignments = assignmentEvidence(issue, events);

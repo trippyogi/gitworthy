@@ -190,4 +190,89 @@ describe('linked_work cross-repo identity', () => {
     }));
     expect(result.signals).toContain('linked_pr_open');
   });
+
+  it('dedupes the same PR when input repo is an alias of the canonical name', async () => {
+    mocks.githubJson.mockImplementation(async (path: string) => {
+      if (path === '/repos/legacy/old') {
+        return { full_name: 'canon/new', default_branch: 'main', html_url: 'https://github.com/canon/new' };
+      }
+      if (path.includes('/issues/1004/timeline')) {
+        return [
+          {
+            event: 'cross-referenced',
+            created_at: '2026-07-09T00:00:00Z',
+            source: {
+              type: 'issue',
+              issue: {
+                number: 42,
+                pull_request: {
+                  url: 'https://api.github.com/repos/canon/new/pulls/42',
+                  html_url: 'https://github.com/canon/new/pull/42'
+                }
+              }
+            }
+          }
+        ];
+      }
+      if (path.includes('/issues/1004/comments')) return [];
+      if (path.includes('/repos/canon/new/pulls/42')) {
+        return {
+          number: 42,
+          state: 'open',
+          draft: false,
+          merged: false,
+          title: 'Closes #1004',
+          body: 'Closes #1004',
+          html_url: 'https://github.com/canon/new/pull/42',
+          user: { login: 'dev5' },
+          created_at: '2026-07-08T00:00:00Z',
+          updated_at: '2026-07-09T00:00:00Z',
+          closed_at: null,
+          merged_at: null
+        };
+      }
+      if (path.includes('/repos/legacy/old/pulls/42')) {
+        throw new Error('alias input must not be used as PR identity/fetch once canonical is known');
+      }
+      if (path.includes('/issues/1004')) {
+        return {
+          number: 1004,
+          title: 'Alias repo issue',
+          body: null,
+          state: 'open',
+          labels: [],
+          assignees: [],
+          comments: 0,
+          html_url: 'https://github.com/legacy/old/issues/1004',
+          created_at: '2026-07-01T00:00:00Z',
+          updated_at: '2026-07-09T00:00:00Z',
+          closed_at: null
+        };
+      }
+      if (path.includes('/search/issues')) {
+        return {
+          items: [
+            {
+              number: 42,
+              title: 'Closes #1004',
+              body: 'Closes #1004',
+              pull_request: { url: 'https://api.github.com/repos/canon/new/pulls/42', html_url: 'https://github.com/canon/new/pull/42' },
+              repository_url: 'https://api.github.com/repos/canon/new',
+              html_url: 'https://github.com/canon/new/pull/42'
+            }
+          ]
+        };
+      }
+      return { items: [] };
+    });
+    const result = await linked_work({ repo: 'legacy/old', issue_number: 1004 });
+    const linked = result.evidence.filter((item) => (item as { kind?: string }).kind === 'linked_pr');
+    expect(linked).toHaveLength(1);
+    expect(linked[0]).toEqual(expect.objectContaining({
+      kind: 'linked_pr',
+      number: 42,
+      repo: 'canon/new',
+      source: 'timeline'
+    }));
+  });
 });
