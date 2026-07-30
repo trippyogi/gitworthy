@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+## 0.3.10
+
+- Establish reproducible baseline documentation (`docs/BASELINE-0.3.10.md`): 203 unit tests, CI, package smoke, release verification.
+- Add `gitworthy --version` / `-V` and document it in `--help`.
+- Add `pnpm check`, `pnpm test:package`, `pnpm release:verify`, and exact `packageManager` (`pnpm@10.27.0`).
+- Add GitHub Actions CI (quality + packed-package smoke).
+- Add `CONTRIBUTING.md`, `SECURITY.md`, `ROADMAP.md`, and issue templates (bug, calibration, security redirect).
+- Capture legacy pre-1.0 contract notes under `test/contracts/fixtures/`.
+- Port missing OSS contribution-loop gates into `SKILL.md` (path matrix, apply-lane revalidation, scout→execute bridge).
+- Remove tracked `mcp-publisher.exe` binary from the repository (OSS hygiene).
+- No decision-policy or verdict-behavior changes.
+
 ## 0.3.9
 
 - Add `related_cluster` (lexical connected-component clustering of related issues; advisory only).

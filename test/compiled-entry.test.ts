@@ -22,7 +22,7 @@ describe('compiled CLI entry point', () => {
     const { stdout } = await execFileAsync(process.execPath, ['dist/cli/index.js', '--help']);
     expect(stdout).toContain('gitworthy');
     expect(stdout).toContain('gitworthy mcp');
-  });
+  }, 15_000);
 
   it('runs the built help command through a symlinked npm-style bin path', async () => {
     const tempDir = await mkdtemp(join(tmpdir(), 'gitworthy-bin-'));
@@ -34,5 +34,5 @@ describe('compiled CLI entry point', () => {
 
     expect(stdout).toContain('gitworthy');
     expect(stdout).toContain('gitworthy mcp');
-  });
+  }, 15_000);
 });

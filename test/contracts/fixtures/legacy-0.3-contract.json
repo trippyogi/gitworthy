@@ -1,0 +1,57 @@
+{
+  "schema_note": "Legacy pre-1.0 contract fixtures. Not the frozen 1.0 schemas. Captured for regression during 0.4 contract migration.",
+  "gitworthy_version_at_capture": "0.3.10",
+  "envelope": {
+    "verdict_summary": "string",
+    "evidence": [{ "url": "optional string", "ref": "optional string" }],
+    "signals": [
+      "in_flight",
+      "shipped",
+      "released_fix",
+      "duplicate",
+      "no_pr_path",
+      "linked_pr_open",
+      "linked_pr_merged",
+      "linked_pr_closed",
+      "assigned",
+      "needs_repro",
+      "claim_required"
+    ],
+    "checked": ["non-empty string array"],
+    "not_checked": ["non-empty string array"],
+    "cached": false,
+    "fetched_at": "ISO-8601 datetime"
+  },
+  "worth_check_extensions": {
+    "verdict": ["ACT", "VERIFY", "SKIP"],
+    "disposition": ["greenfield", "land_only", "claim_first", "blocked", "crowded", "review"],
+    "reasons": "array",
+    "sub_results": "array of check envelopes",
+    "timings_ms": "object",
+    "perf": "object"
+  },
+  "error_shape_today": {
+    "note": "CLI errors are unstructured stderr text; MCP wraps GitworthyError fields into tool content. 0.4 replaces both with versioned error objects."
+  },
+  "mcp": {
+    "gitworthy_version": "stamped on tool responses",
+    "tools": [
+      "doctor",
+      "worth_check",
+      "hunt",
+      "branch_scan",
+      "issue_vs_main",
+      "release_gap",
+      "dupe_cluster",
+      "related_cluster",
+      "linked_work",
+      "contrib_policy",
+      "scan",
+      "org_scan",
+      "list_probe_templates",
+      "ledger_lookup",
+      "ledger_record",
+      "ledger_list"
+    ]
+  }
+}
