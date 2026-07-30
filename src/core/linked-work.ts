@@ -31,6 +31,7 @@ type LinkedPrEvidence = {
   title: string;
   url: string;
   source: LinkedPrSource;
+  repo?: string;
   referrer?: string;
   automation?: boolean;
   ignored_reason?: string;
@@ -124,12 +125,16 @@ function linkedPrEvidence(pr: GithubPr, date: string, source: LinkedPrSource, is
   };
 }
 
-async function timelineLinkedPrs(repo: string, events: TimelineEvent[], issueNumber: number): Promise<LinkedPrEvidence[]> {
-  const prs = new Map<number, LinkedPrEvidence>();
+async function timelineLinkedPrs(homeRepo: string, events: TimelineEvent[], issueNumber: number): Promise<LinkedPrEvidence[]> {
+  const prs = new Map<string, LinkedPrEvidence>();
   for (const event of events) {
     if (event.event !== 'cross-referenced' || event.source?.type !== 'issue' || !isPullRequestIssue(event.source.issue)) continue;
-    const pr = await prDetails(repo, event.source.issue.number);
-    prs.set(pr.number, linkedPrEvidence(pr, event.created_at ?? pr.created_at, 'timeline', issueNumber));
+    // The cross-referenced PR may live in a different repo (fork/sibling); resolve its true home
+    // from the timeline's own pull_request url/html_url instead of assuming homeRepo.
+    const prRepo = repoFromPrRefs(event.source.issue.pull_request) ?? homeRepo;
+    const pr = await prDetails(prRepo, event.source.issue.number);
+    const key = prIdentityKey(prRepo, pr.number);
+    prs.set(key, linkedPrEvidence(pr, event.created_at ?? pr.created_at, 'timeline', issueNumber, { repo: prRepo }));
   }
   return [...prs.values()].sort((left, right) => left.number - right.number);
 }
@@ -168,6 +173,25 @@ function repoFromSearchItem(item: { repository_url?: string; html_url?: string }
     if (match) return match[1];
   }
   return null;
+}
+
+/** Extracts an "owner/repo" full name from a pull request reference's API `url` (pulls) or `html_url`. */
+function repoFromPrRefs(pr: { url?: string; html_url?: string } | null | undefined): string | null {
+  if (!pr) return null;
+  if (pr.url) {
+    const match = pr.url.match(/\/repos\/([^/]+\/[^/]+)\/pulls\/\d+$/);
+    if (match) return match[1];
+  }
+  if (pr.html_url) {
+    const match = pr.html_url.match(/github\.com\/([^/]+\/[^/]+)\/pull\/\d+/i);
+    if (match) return match[1];
+  }
+  return null;
+}
+
+/** Case-insensitive "repo#number" identity key used to dedupe linked PR evidence across repos. */
+function prIdentityKey(repo: string, number: number): string {
+  return `${repo.toLowerCase()}#${number}`;
 }
 
 /**
@@ -260,19 +284,20 @@ function timelineCapabilityNotes(events: TimelineEvent[]): { checked: string[]; 
   return { checked, not_checked };
 }
 
-async function searchLinkedPrs(repo: string, apiRepo: string, issueNumber: number, existing: Set<number>): Promise<{ prs: LinkedPrEvidence[]; checked: string[]; not_checked: string[] }> {
+async function searchLinkedPrs(repo: string, apiRepo: string, issueNumber: number, existing: Set<string>): Promise<{ prs: LinkedPrEvidence[]; checked: string[]; not_checked: string[] }> {
   const { result, context } = await runSearchWithCanonicalRepo(repo, async (fullName) => {
     const query = encodeURIComponent(`repo:${fullName} is:pr ${issueNumber}`);
     return githubJson<SearchResult>(`/search/issues?q=${query}&per_page=20`);
   });
   const prs = [] as LinkedPrEvidence[];
   for (const item of result.items) {
-    if (!('pull_request' in item) || existing.has(item.number)) continue;
+    const key = prIdentityKey(apiRepo, item.number);
+    if (!('pull_request' in item) || existing.has(key)) continue;
     const pr = await prDetails(apiRepo, item.number);
     const text = `${item.title ?? pr.title}\n${item.body ?? pr.body ?? ''}`;
     if (!mentionsIssue(text, issueNumber)) continue;
-    prs.push(linkedPrEvidence(pr, pr.created_at, 'search', issueNumber));
-    existing.add(item.number);
+    prs.push(linkedPrEvidence(pr, pr.created_at, 'search', issueNumber, { repo: apiRepo }));
+    existing.add(key);
   }
   return {
     prs: prs.sort((left, right) => left.number - right.number),
@@ -281,29 +306,44 @@ async function searchLinkedPrs(repo: string, apiRepo: string, issueNumber: numbe
   };
 }
 
-function commentPrNumbers(repos: string[], body: string): number[] {
-  const numbers = new Set<number>();
-  for (const repo of new Set(repos.filter(Boolean))) {
-    const escapedRepo = repo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    for (const match of body.matchAll(new RegExp(`github\\.com/${escapedRepo}/pull/(\\d+)`, 'gi'))) numbers.add(Number(match[1]));
+type CommentPrRef = { repo: string; number: number };
+
+/**
+ * Finds pull request references in a comment body. Explicit "github.com/owner/repo/pull/N" links
+ * carry their own repo identity (which may differ from the home repo, e.g. a fork PR). Bare
+ * "PR #N" / "pull #N" mentions are ambiguous and default to the home repo.
+ */
+function commentPrRefs(homeRepo: string, body: string): CommentPrRef[] {
+  const refs = new Map<string, CommentPrRef>();
+  for (const match of body.matchAll(/github\.com\/([^/\s]+\/[^/\s]+)\/pull\/(\d+)/gi)) {
+    const number = Number(match[2]);
+    if (!Number.isInteger(number)) continue;
+    const repo = match[1];
+    refs.set(prIdentityKey(repo, number), { repo, number });
   }
-  for (const match of body.matchAll(/(?:pull request|pull|pr)\s*#(\d+)/gi)) numbers.add(Number(match[1]));
-  return [...numbers].filter((number) => Number.isInteger(number));
+  for (const match of body.matchAll(/(?:pull request|pull|pr)\s*#(\d+)/gi)) {
+    const number = Number(match[1]);
+    if (!Number.isInteger(number)) continue;
+    const key = prIdentityKey(homeRepo, number);
+    if (!refs.has(key)) refs.set(key, { repo: homeRepo, number });
+  }
+  return [...refs.values()];
 }
 
-async function commentLinkedPrs(canonicalRepo: string, apiRepo: string, issueNumber: number, existing: Set<number>): Promise<{ prs: LinkedPrEvidence[]; claimComments: boolean }> {
+async function commentLinkedPrs(apiRepo: string, issueNumber: number, existing: Set<string>): Promise<{ prs: LinkedPrEvidence[]; claimComments: boolean }> {
   const comments = await githubJson<IssueComment[]>(`/repos/${apiRepo}/issues/${issueNumber}/comments?per_page=100`);
   const prs = [] as LinkedPrEvidence[];
   let claimComments = false;
   for (const comment of comments) {
     const body = comment.body ?? '';
     if (CLAIM_COMMENT.test(body)) claimComments = true;
-    for (const number of commentPrNumbers([canonicalRepo, apiRepo], body)) {
-      if (existing.has(number)) continue;
-      const pr = await maybePrDetails(apiRepo, number);
+    for (const ref of commentPrRefs(apiRepo, body)) {
+      const key = prIdentityKey(ref.repo, ref.number);
+      if (existing.has(key)) continue;
+      const pr = await maybePrDetails(ref.repo, ref.number);
       if (!pr) continue;
-      existing.add(number);
-      prs.push(linkedPrEvidence(pr, comment.created_at, 'comment', issueNumber, { referrer: comment.html_url }));
+      existing.add(key);
+      prs.push(linkedPrEvidence(pr, comment.created_at, 'comment', issueNumber, { referrer: comment.html_url, repo: ref.repo }));
     }
   }
   return { prs: prs.sort((left, right) => left.number - right.number), claimComments };
@@ -313,7 +353,7 @@ async function titleOverlapPrs(
   repo: string,
   apiRepo: string,
   issue: GithubIssue,
-  existing: Set<number>,
+  existing: Set<string>,
   force: boolean
 ): Promise<{ prs: LinkedPrEvidence[]; checked: string[]; not_checked: string[] }> {
   const terms = overlapTerms(issue.title, 5);
@@ -338,13 +378,14 @@ async function titleOverlapPrs(
   const minScore = force ? Math.min(TITLE_OVERLAP_MIN, 0.32) : TITLE_OVERLAP_MIN;
   const minShared = TITLE_OVERLAP_MIN_SHARED;
   for (const item of result.items) {
-    if (!('pull_request' in item) || existing.has(item.number) || item.number === issue.number) continue;
+    const key = prIdentityKey(apiRepo, item.number);
+    if (!('pull_request' in item) || existing.has(key) || item.number === issue.number) continue;
     const pr = await prDetails(apiRepo, item.number);
     if (isAutomationAuthor(pr.user?.login)) continue;
     const { score, shared } = lexicalOverlapScore(issueText, `${pr.title}\n${pr.body ?? item.body ?? ''}`);
     if (score < minScore || shared.length < minShared) continue;
-    prs.push(linkedPrEvidence(pr, pr.created_at, 'title_overlap', issue.number, { overlap_score: Number(score.toFixed(3)), shared_terms: shared }));
-    existing.add(item.number);
+    prs.push(linkedPrEvidence(pr, pr.created_at, 'title_overlap', issue.number, { overlap_score: Number(score.toFixed(3)), shared_terms: shared, repo: apiRepo }));
+    existing.add(key);
   }
   return {
     prs: prs.sort((left, right) => left.number - right.number),
@@ -385,8 +426,8 @@ export async function linked_work(input: Input): Promise<Envelope> {
   const timelineNotes = timelineCapabilityNotes(events);
   const timelinePrs = await timelineLinkedPrs(input.repo, events, input.issue_number);
   const { commits, capped: commitsCapped } = referencedCommits(events);
-  const knownPrs = new Set(timelinePrs.map((pr) => pr.number));
-  const { prs: commentPrs, claimComments } = await commentLinkedPrs(resolved.full_name, input.repo, input.issue_number, knownPrs);
+  const knownPrs = new Set(timelinePrs.map((pr) => prIdentityKey(pr.repo ?? input.repo, pr.number)));
+  const { prs: commentPrs, claimComments } = await commentLinkedPrs(input.repo, input.issue_number, knownPrs);
   const { prs: searchPrs, checked: searchChecked, not_checked: searchNotChecked } = await searchLinkedPrs(input.repo, input.repo, input.issue_number, knownPrs);
   const hasHumanLinked = [...timelinePrs, ...commentPrs, ...searchPrs].some((pr) => !isAutomationAuthor(pr.author));
   const shouldTitleSearch = claimComments || !hasHumanLinked;
