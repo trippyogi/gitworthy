@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/trippyogi/gitworthy/security/advisories/new
+    about: Private disclosure only — do not file public issues for security reports.
+  - name: Roadmap
+    url: https://github.com/trippyogi/gitworthy/blob/main/ROADMAP.md
+    about: Release ladder and what is in / out of 1.0 scope.

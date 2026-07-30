@@ -20,12 +20,14 @@ import {
   scan,
   worth_check
 } from '../core/index.js';
+import { packageVersion } from '../lib/package-meta.js';
 import { startMcpServer } from '../mcp/server.js';
 
 const help = `gitworthy
 
 Usage:
   gitworthy --help
+  gitworthy --version
   gitworthy doctor [--json]
   gitworthy check owner/repo#123 [--npm-package name] [--probe-glob glob] [--probe-contains text] [--probe-template id] [--json]
   gitworthy hunt owner/repo|org [--max-checks 3] [--label ...] [--keywords ...] [--since 90d] [--limit 25] [--max-repos 8] [--skill-profile ...] [--skip-policy-gate] [--no-land-hints] [--json]
@@ -112,6 +114,7 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
     strict: false,
     options: {
       help: { type: 'boolean', short: 'h' },
+      version: { type: 'boolean', short: 'V' },
       json: { type: 'boolean' },
       'npm-package': { type: 'string' },
       'probe-glob': { type: 'string' },
@@ -135,6 +138,10 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
     }
   });
   const [command, first, second] = parsed.positionals;
+  if (parsed.values.version || command === 'version') {
+    stdout(`${packageVersion()}\n`);
+    return 0;
+  }
   if (parsed.values.help || !command) {
     stdout(help);
     return 0;

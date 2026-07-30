@@ -13,17 +13,19 @@ It ships as one package with a shared TypeScript core and two thin adapters:
 
 No telemetry is active by default. Optional PostHog telemetry requires both `GITWORTHY_TELEMETRY=on` and `GITWORTHY_POSTHOG_KEY`, plus a user-installed `posthog-node` package. If telemetry is requested but `posthog-node` is missing, gitworthy prints one warning and continues with telemetry disabled. The MCP server path emits no telemetry at all.
 
+See `ROADMAP.md` for the path to 1.0, `CONTRIBUTING.md` to develop, and `SECURITY.md` to report vulnerabilities privately.
+
 ## Quickstart
 
 ```sh
-npx -y gitworthy@0.3.9 check owner/repo#123
-npx -y gitworthy@0.3.9 check owner/repo#123 --npm-package package-name --json
-npx -y gitworthy@0.3.9 hunt owner/repo --json
-npx -y gitworthy@0.3.9 hunt openclaw --max-checks 3 --json
-npx -y gitworthy@0.3.9 scan Shopify/cli --label "good first issue" --json
-npx -y gitworthy@0.3.9 org openclaw --json
-npx -y gitworthy@0.3.9 doctor --json
-npx -y gitworthy@0.3.9 mcp
+npx -y gitworthy@0.3.10 check owner/repo#123
+npx -y gitworthy@0.3.10 check owner/repo#123 --npm-package package-name --json
+npx -y gitworthy@0.3.10 hunt owner/repo --json
+npx -y gitworthy@0.3.10 hunt openclaw --max-checks 3 --json
+npx -y gitworthy@0.3.10 scan Shopify/cli --label "good first issue" --json
+npx -y gitworthy@0.3.10 org openclaw --json
+npx -y gitworthy@0.3.10 doctor --json
+npx -y gitworthy@0.3.10 mcp
 ```
 
 ## CLI
@@ -54,7 +56,7 @@ Exit codes for `check`:
   "mcpServers": {
     "gitworthy": {
       "command": "npx",
-      "args": ["-y", "gitworthy@0.3.9", "mcp"],
+      "args": ["-y", "gitworthy@0.3.10", "mcp"],
       "env": { "GITHUB_TOKEN": "github_pat_..." }
     }
   }

@@ -4,7 +4,14 @@ coverage/
 .gitworthy-cache-test/
 .cursor/
 .env
+.env.*
+!.env.example
 *.log
 gw-*.json
 response.json
 scan-*.json
+mcp-publisher.exe
+*.tgz
+eval/private/
+eval/reports/
+docs/private/
