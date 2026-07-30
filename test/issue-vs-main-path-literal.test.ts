@@ -1,20 +1,9 @@
-import { mkdir, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { issue_vs_main } from '../src/core/issue-vs-main.js';
+import { commitFixtureFiles, initGitFixture } from './helpers/git-fixture.js';
 
 let fixtureDir: string;
-
-async function walkFiles(dir: string): Promise<string[]> {
-  const entries = await readdir(dir, { withFileTypes: true });
-  const nested = await Promise.all(entries.map(async (entry) => {
-    const full = path.join(dir, entry.name);
-    if (entry.name === '.git' || entry.name === 'node_modules') return [];
-    return entry.isDirectory() ? walkFiles(full) : [full];
-  }));
-  return nested.flat();
-}
+let cleanupFixture: () => Promise<void>;
 
 vi.mock('../src/lib/github.js', () => ({
   githubJson: vi.fn(async () => ({
@@ -31,20 +20,31 @@ vi.mock('../src/lib/github.js', () => ({
   }))
 }));
 
-vi.mock('../src/lib/git.js', () => ({
-  shallowClone: vi.fn(async () => ({ dir: fixtureDir, cleanup: async () => undefined, cached: false })),
-  listCloneFiles: vi.fn(async () => ({ files: await walkFiles(fixtureDir), cached: false, dir: fixtureDir }))
-}));
+vi.mock('../src/lib/git.js', async () => {
+  const actual = await vi.importActual<typeof import('../src/lib/git.js')>('../src/lib/git.js');
+  return {
+    shallowClone: vi.fn(async () => ({ dir: fixtureDir, cleanup: async () => undefined, cached: false })),
+    listCloneFiles: vi.fn(async () => ({ files: await actual.listTreeFiles(fixtureDir), cached: false, dir: fixtureDir })),
+    readClonedFilesBatch: vi.fn(async (_repo: string, filePaths: string[]) => {
+      const files = await actual.listTreeFiles(fixtureDir);
+      const wanted = files.filter((entry) => filePaths.includes(entry.path));
+      return actual.readTreeFilesBatch(fixtureDir, wanted);
+    })
+  };
+});
 
 describe('issue_vs_main path literal handling', () => {
   beforeEach(async () => {
-    fixtureDir = await mkdtemp(path.join(tmpdir(), 'gitworthy-path-literal-'));
-    await mkdir(path.join(fixtureDir, 'snippets'), { recursive: true });
-    await writeFile(path.join(fixtureDir, 'snippets', 'price.liquid'), '{{ price }}\n');
+    const fixture = await initGitFixture('gitworthy-path-literal-');
+    fixtureDir = fixture.dir;
+    cleanupFixture = fixture.cleanup;
+    await commitFixtureFiles(fixtureDir, {
+      'snippets/price.liquid': '{{ price }}\n'
+    });
   });
 
   afterEach(async () => {
-    await rm(fixtureDir, { recursive: true, force: true });
+    await cleanupFixture();
   });
 
   it('does not emit shipped when an issue merely names an existing path', async () => {

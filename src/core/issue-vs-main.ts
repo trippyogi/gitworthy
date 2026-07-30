@@ -1,13 +1,14 @@
-import { readFile } from 'node:fs/promises';
-import path from 'node:path';
 import { githubJson, GithubIssue } from '../lib/github.js';
-import { listCloneFiles, shallowClone } from '../lib/git.js';
+import { listCloneFiles, readClonedFilesBatch, shallowClone } from '../lib/git.js';
 import { assessRepro, looksLikeBug } from './candidate-quality.js';
 import { createEnvelope, Envelope } from './envelope.js';
 import { distinctiveTerms, isGenericTerm } from './terms.js';
 
 const INTENT_LIMIT = "directory or string existence does not prove the issue's intent is satisfied; read both before making any public claim.";
 const FUZZY_SKIP = 'issue_vs_main tree/grep skipped: no concrete path terms (src/…, extensions/…, or ≥2 path-like tokens); assessed repro signals only.';
+/** Budgets bound how much of a hostile tree we ever grep in one scan. */
+const MAX_GREP_FILES = 2000;
+const MAX_GREP_TOTAL_BYTES = 20_000_000;
 type Input = { repo: string; issue_number: number };
 
 function explicitPathTerms(issue: GithubIssue): string[] {
@@ -105,14 +106,16 @@ export async function issue_vs_main(input: Input): Promise<Envelope> {
   const clone = await shallowClone(input.repo);
   try {
     const listed = await listCloneFiles(input.repo);
-    const root = listed.dir;
     const files = listed.files;
-    const allTreeMatches = files.map((file) => normalizePath(path.relative(root, file))).filter((relative) => candidates.some((term) => relative.toLowerCase().includes(term.toLowerCase())));
+    const allTreeMatches = files.map((file) => file.path).filter((relative) => candidates.some((term) => relative.toLowerCase().includes(term.toLowerCase())));
     const treeMatches = allTreeMatches.sort((left, right) => Number(exactPathTerms.some((term) => right.toLowerCase().includes(term.toLowerCase()))) - Number(exactPathTerms.some((term) => left.toLowerCase().includes(term.toLowerCase())))).slice(0, 50);
     const grepMatches = [] as Array<Record<string, unknown>>;
-    for (const file of files.slice(0, 2000)) {
-      const relative = normalizePath(path.relative(root, file));
-      const text = await readFile(file, 'utf8').catch(() => '');
+    const grepFileSlice = files.slice(0, MAX_GREP_FILES);
+    const contentsByPath = await readClonedFilesBatch(input.repo, grepFileSlice.map((file) => file.path), { maxTotalBytes: MAX_GREP_TOTAL_BYTES });
+    for (const file of grepFileSlice) {
+      const text = contentsByPath.get(file.path);
+      if (text == null) continue; // symlink, binary, missing, oversized, or over the aggregate budget
+      const relative = file.path;
       const lines = text.split('\n');
       for (let index = 0; index < lines.length; index += 1) {
         const term = grepCandidates.find((candidate) => lines[index].toLowerCase().includes(candidate.toLowerCase()));
@@ -150,8 +153,8 @@ export async function issue_vs_main(input: Input): Promise<Envelope> {
       signals,
       checked: [
         `fetched issue ${input.repo}#${input.issue_number}`,
-        clone.cached ? `reused pooled shallow clone of ${input.repo}` : `shallow cloned ${input.repo}`,
-        listed.cached ? `reused cached file list for ${input.repo}` : `walked file list for ${input.repo}`,
+        clone.cached ? `reused pooled bare clone of ${input.repo}` : `bare cloned ${input.repo}`,
+        listed.cached ? `reused cached tree listing for ${input.repo}` : `listed git tree for ${input.repo}`,
         `searched candidate terms in tree and file contents`,
         'assessed reproduction-step signals in the issue body'
       ],

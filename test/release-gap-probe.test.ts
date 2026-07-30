@@ -3,13 +3,19 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { release_gap } from '../src/core/release-gap.js';
+import { commitFixtureFiles, initGitFixture } from './helpers/git-fixture.js';
 
 let cloneDir: string;
+let cleanupClone: () => Promise<void>;
 let tarballDir: string;
 
-vi.mock('../src/lib/git.js', () => ({
-  shallowClone: vi.fn(async () => ({ dir: cloneDir, cleanup: async () => undefined }))
-}));
+vi.mock('../src/lib/git.js', async () => {
+  const actual = await vi.importActual<typeof import('../src/lib/git.js')>('../src/lib/git.js');
+  return {
+    ...actual,
+    shallowClone: vi.fn(async () => ({ dir: cloneDir, cleanup: async () => undefined }))
+  };
+});
 
 vi.mock('../src/lib/registry.js', async () => {
   const actual = await vi.importActual<typeof import('../src/lib/registry.js')>('../src/lib/registry.js');
@@ -27,15 +33,19 @@ vi.mock('../src/lib/registry.js', async () => {
 
 describe('release_gap probe signal', () => {
   beforeEach(async () => {
-    cloneDir = await mkdtemp(path.join(tmpdir(), 'gitworthy-release-clone-'));
+    const clone = await initGitFixture('gitworthy-release-clone-');
+    cloneDir = clone.dir;
+    cleanupClone = clone.cleanup;
+    await commitFixtureFiles(cloneDir, {
+      'package.json': JSON.stringify({ name: '@elevenlabs/cli', version: '0.5.5' })
+    });
     tarballDir = await mkdtemp(path.join(tmpdir(), 'gitworthy-release-tarball-'));
-    await writeFile(path.join(cloneDir, 'package.json'), JSON.stringify({ name: '@elevenlabs/cli', version: '0.5.5' }));
     await mkdir(path.join(tarballDir, 'package', 'dist', 'commands'), { recursive: true });
     await writeFile(path.join(tarballDir, 'package', 'dist', 'commands', 'add.js'), 'spawn(command, args, { shell: true });\n');
   });
 
   afterEach(async () => {
-    await rm(cloneDir, { recursive: true, force: true });
+    await cleanupClone();
     await rm(tarballDir, { recursive: true, force: true });
   });
 
