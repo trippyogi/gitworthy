@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { clearGithubCachesForTests, githubJson } from '../../src/lib/github.js';
+import { clearGithubCachesForTests, configureGithubHttpForTests, githubJson } from '../../src/lib/github.js';
 
 let originalGithubToken: string | undefined;
 let originalCacheMs: string | undefined;
@@ -11,6 +11,7 @@ describe('github client caching', () => {
     process.env.GITHUB_TOKEN = 'token';
     delete process.env.GITWORTHY_GITHUB_CACHE_MS;
     clearGithubCachesForTests();
+    configureGithubHttpForTests({ sleep: async () => undefined });
   });
 
   afterEach(() => {
@@ -21,6 +22,7 @@ describe('github client caching', () => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
     clearGithubCachesForTests();
+    configureGithubHttpForTests(null);
   });
 
   it('coalesces two parallel identical GET calls into a single fetch (singleflight)', async () => {
@@ -54,14 +56,17 @@ describe('github client caching', () => {
   });
 
   it('does not permanently cache a failed request; a later call refetches', async () => {
+    // Default HTTP client retries selected 5xx twice (3 attempts total) before surfacing failure.
     const fetchMock = vi
       .fn()
+      .mockResolvedValueOnce(new Response('{}', { status: 500 }))
+      .mockResolvedValueOnce(new Response('{}', { status: 500 }))
       .mockResolvedValueOnce(new Response('{}', { status: 500 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), { status: 200, headers: { 'content-type': 'application/json' } }));
     vi.stubGlobal('fetch', fetchMock);
     await expect(githubJson('/repos/a/b')).rejects.toMatchObject({ code: 'github_api_error' });
     const result = await githubJson('/repos/a/b');
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenCalledTimes(4);
     expect(result).toEqual({ ok: true });
   });
 
