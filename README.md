@@ -16,10 +16,12 @@ No telemetry is active by default. Optional PostHog telemetry requires both `GIT
 ## Quickstart
 
 ```sh
-npx -y gitworthy@0.3.6 check owner/repo#123
-npx -y gitworthy@0.3.6 check owner/repo#123 --npm-package package-name --json
-npx -y gitworthy@0.3.6 scan Shopify/cli --label "good first issue" --json
-npx -y gitworthy@0.3.6 mcp
+npx -y gitworthy@0.3.7 check owner/repo#123
+npx -y gitworthy@0.3.7 check owner/repo#123 --npm-package package-name --json
+npx -y gitworthy@0.3.7 scan Shopify/cli --label "good first issue" --json
+npx -y gitworthy@0.3.7 org openclaw --json
+npx -y gitworthy@0.3.7 doctor --json
+npx -y gitworthy@0.3.7 mcp
 ```
 
 ## CLI
@@ -50,7 +52,7 @@ Exit codes for `check`:
   "mcpServers": {
     "gitworthy": {
       "command": "npx",
-      "args": ["-y", "gitworthy@0.3.6", "mcp"],
+      "args": ["-y", "gitworthy@0.3.7", "mcp"],
       "env": { "GITHUB_TOKEN": "github_pat_..." }
     }
   }
@@ -96,16 +98,29 @@ Fetches issue timeline cross-references (soft-capped pages), explicit issue-numb
 
 Reads common contribution policy files from main or master and extracts deterministic policy signals with raw excerpts. If docs state that pull requests are not accepted or will be auto-closed, it emits `no_pr_path` and extracts the stated alternate feedback channel when present. If docs require claiming or requesting assignment before a PR, it emits `claim_required`.
 
+### doctor
+
+Reports hunt readiness: token present, GitHub auth login, rate-limit remaining, timeline cross-reference visibility probe, cache directory writability, and local package version vs npm latest. Does not emit ACT/VERIFY/SKIP signals.
+
 ### scan
 
-Tracker triage only: lists open issue tracker candidates ranked by `quality_score` (repro clarity, contributor-friendly labels, staleness, soft asks, assignees). Scan does not vet issues and does not produce ACT, VERIFY, or SKIP verdicts. It appends a one-line cached contribution-policy hint when available, or reminds you to run policy before investing. When a label filter yields a thin set (below `min(5, limit)` candidates) or every remaining candidate is assigned, scan appends a `widen_hint` evidence item with suggestions such as dropping the label, trying `help wanted`, or scanning without a label. Use it to find candidate issue numbers, then run `gitworthy check owner/repo#123` on specific targets.
+Tracker triage only: lists open issue tracker candidates ranked by `quality_score` (repro clarity, contributor-friendly labels, staleness, soft asks, assignees). By default also sets `likely_land_only` / `land_hint` from assignees and one open-PR search so agents can skip land-only rows before `worth_check` (disable with `--no-land-hints`). Scan does not vet issues and does not produce ACT, VERIFY, or SKIP verdicts. It appends a one-line cached contribution-policy hint when available, or reminds you to run policy before investing. When a label filter yields a thin set (below `min(5, limit)` candidates) or every remaining candidate is assigned, scan appends a `widen_hint` evidence item with suggestions such as dropping the label, trying `help wanted`, or scanning without a label. Use it to find candidate issue numbers, then run `gitworthy check owner/repo#123` on specific targets.
 
 Example composition:
 
 ```sh
 gitworthy scan Shopify/cli --label "good first issue" --json
+gitworthy org openclaw --max-repos 8 --json
 # then pass selected issue numbers to gitworthy check
 ```
+
+### org_scan
+
+Fans out `scan` across the top public non-fork repos for an org or user (default 8). Candidates are tagged with `repo`, merged, and re-ranked by `quality_score`. Still tracker-only — run per-repo `policy` / `worth_check` before investing.
+
+### ledger
+
+Local scout memory under `~/.gitworthy/ledger` (override with `GITWORTHY_LEDGER_DIR`). `worth_check` auto-records verdict/disposition best-effort. Use `ledger show` / `ledger list` to avoid re-checking the same issues across chats.
 
 ### worth_check
 

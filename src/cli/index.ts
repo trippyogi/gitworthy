@@ -2,13 +2,28 @@
 import { realpathSync } from 'node:fs';
 import { parseArgs } from 'node:util';
 import { pathToFileURL } from 'node:url';
-import { branch_scan, contrib_policy, dupe_cluster, issue_vs_main, linked_work, release_gap, scan, worth_check } from '../core/index.js';
+import {
+  branch_scan,
+  contrib_policy,
+  doctor,
+  dupe_cluster,
+  issue_vs_main,
+  ledger_list,
+  ledger_lookup,
+  ledger_record,
+  linked_work,
+  org_scan,
+  release_gap,
+  scan,
+  worth_check
+} from '../core/index.js';
 import { startMcpServer } from '../mcp/server.js';
 
 const help = `gitworthy
 
 Usage:
   gitworthy --help
+  gitworthy doctor [--json]
   gitworthy check owner/repo#123 [--npm-package name] [--probe-glob glob] [--probe-contains text] [--json]
   gitworthy branches owner/repo keyword[,keyword] [--json] [--force-refresh]
   gitworthy issue owner/repo 123 [--json]
@@ -16,7 +31,11 @@ Usage:
   gitworthy dupes owner/repo 123 [--json]
   gitworthy linked owner/repo 123 [--json]
   gitworthy policy owner/repo [--json]
-  gitworthy scan owner/repo [--label "good first issue"] [--keywords term,term] [--since 90d] [--limit 25] [--json]
+  gitworthy scan owner/repo [--label "good first issue"] [--keywords term,term] [--since 90d] [--limit 25] [--no-land-hints] [--json]
+  gitworthy org org-or-user [--label ...] [--keywords ...] [--since 90d] [--limit 25] [--max-repos 8] [--no-land-hints] [--json]
+  gitworthy ledger list [--repo owner/repo] [--limit 50] [--json]
+  gitworthy ledger show owner/repo#123 [--json]
+  gitworthy ledger record owner/repo#123 [--verdict ACT] [--disposition greenfield] [--notes text] [--json]
   gitworthy mcp
 `;
 
@@ -57,6 +76,16 @@ function exitFor(output: unknown): number {
   return 0;
 }
 
+function scanFilters(values: Record<string, unknown>) {
+  return {
+    label: stringValue(values.label),
+    keywords: stringValue(values.keywords)?.split(',').filter(Boolean),
+    since: stringValue(values.since),
+    limit: stringValue(values.limit) ? Number(stringValue(values.limit)) : undefined,
+    land_hints: values['no-land-hints'] === true ? false : undefined
+  };
+}
+
 export async function runCli(argv = process.argv.slice(2), stdout: Write = (text) => process.stdout.write(text), stderr: Write = (text) => process.stderr.write(text)): Promise<number> {
   if (argv[0] === 'branches' && argv[2]?.startsWith('-')) {
     const first = argv[1];
@@ -70,7 +99,29 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
     print(output, argv.includes('--json'), stdout);
     return 0;
   }
-  const parsed = parseArgs({ args: argv, allowPositionals: true, strict: false, options: { help: { type: 'boolean', short: 'h' }, json: { type: 'boolean' }, 'npm-package': { type: 'string' }, 'probe-glob': { type: 'string' }, 'probe-contains': { type: 'string' }, 'force-refresh': { type: 'boolean' }, label: { type: 'string' }, keywords: { type: 'string' }, since: { type: 'string' }, limit: { type: 'string' } } });
+  const parsed = parseArgs({
+    args: argv,
+    allowPositionals: true,
+    strict: false,
+    options: {
+      help: { type: 'boolean', short: 'h' },
+      json: { type: 'boolean' },
+      'npm-package': { type: 'string' },
+      'probe-glob': { type: 'string' },
+      'probe-contains': { type: 'string' },
+      'force-refresh': { type: 'boolean' },
+      label: { type: 'string' },
+      keywords: { type: 'string' },
+      since: { type: 'string' },
+      limit: { type: 'string' },
+      'max-repos': { type: 'string' },
+      'no-land-hints': { type: 'boolean' },
+      repo: { type: 'string' },
+      verdict: { type: 'string' },
+      disposition: { type: 'string' },
+      notes: { type: 'string' }
+    }
+  });
   const [command, first, second] = parsed.positionals;
   if (parsed.values.help || !command) {
     stdout(help);
@@ -83,7 +134,9 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
   const asJson = parsed.values.json === true;
   try {
     let output: unknown;
-    if (command === 'check') {
+    if (command === 'doctor') {
+      output = await doctor();
+    } else if (command === 'check') {
       if (!first) throw new Error('check requires owner/repo#123.');
       output = await worth_check({ ...parseIssueRef(first), npm_package: stringValue(parsed.values['npm-package']), probe: probe(parsed.values) });
     } else if (command === 'branches') {
@@ -107,7 +160,37 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
       output = await contrib_policy({ repo: first, force_refresh: parsed.values['force-refresh'] === true });
     } else if (command === 'scan') {
       if (!first) throw new Error('scan requires owner/repo.');
-      output = await scan({ repo: first, label: stringValue(parsed.values.label), keywords: stringValue(parsed.values.keywords)?.split(',').filter(Boolean), since: stringValue(parsed.values.since), limit: stringValue(parsed.values.limit) ? Number(stringValue(parsed.values.limit)) : undefined });
+      output = await scan({ repo: first, ...scanFilters(parsed.values) });
+    } else if (command === 'org') {
+      if (!first) throw new Error('org requires an org or user login.');
+      const maxRepos = stringValue(parsed.values['max-repos']);
+      output = await org_scan({
+        org: first,
+        ...scanFilters(parsed.values),
+        max_repos: maxRepos ? Number(maxRepos) : undefined
+      });
+    } else if (command === 'ledger') {
+      const action = first;
+      if (action === 'list') {
+        output = await ledger_list({
+          repo: stringValue(parsed.values.repo),
+          limit: stringValue(parsed.values.limit) ? Number(stringValue(parsed.values.limit)) : undefined
+        });
+      } else if (action === 'show') {
+        if (!second) throw new Error('ledger show requires owner/repo#123.');
+        output = await ledger_lookup(parseIssueRef(second));
+      } else if (action === 'record') {
+        if (!second) throw new Error('ledger record requires owner/repo#123.');
+        output = await ledger_record({
+          ...parseIssueRef(second),
+          verdict: stringValue(parsed.values.verdict),
+          disposition: stringValue(parsed.values.disposition),
+          notes: stringValue(parsed.values.notes),
+          source: 'cli'
+        });
+      } else {
+        throw new Error('ledger requires list, show, or record.');
+      }
     } else {
       throw new Error(`Unknown subcommand ${command}.`);
     }

@@ -1,11 +1,14 @@
 import { githubJson, GithubIssue } from '../lib/github.js';
 import { readCache } from '../lib/cache.js';
+import { runSearchWithCanonicalRepo } from '../lib/repo.js';
+import { isAutomationAuthor } from './bots.js';
 import { assessIssueQuality } from './candidate-quality.js';
 import { createEnvelope, Envelope } from './envelope.js';
+import { mentionsIssue } from './linkage.js';
 
-type Input = { repo: string; label?: string; keywords?: string[]; since?: string; limit?: number };
+type Input = { repo: string; label?: string; keywords?: string[]; since?: string; limit?: number; land_hints?: boolean };
 
-type Candidate = {
+export type Candidate = {
   number: number;
   title: string;
   labels: string[];
@@ -19,10 +22,23 @@ type Candidate = {
   quality_reasons: string[];
   repro: 'present' | 'weak' | 'missing';
   soft_ask: boolean;
+  likely_land_only?: boolean;
+  land_hint?: string;
 };
+
+type OpenPrSearchItem = {
+  number: number;
+  title?: string;
+  body?: string | null;
+  html_url: string;
+  user?: { login?: string } | null;
+  pull_request?: { url?: string; html_url?: string };
+};
+type OpenPrSearchResult = { items: OpenPrSearchItem[] };
 
 const TRACKER_LIMIT = 'scan reflects the issue tracker only; tracker state can lag branches, main, releases, duplicates, and maintainer intent, so scan results are not vetted contribution targets. quality_score ranks tracker attractiveness only.';
 const CONTRIB_POLICY_TTL = 24 * 60 * 60 * 1000;
+const OPEN_PR_SEARCH_PER_PAGE = 30;
 
 function sinceToDate(since?: string): Date | null {
   if (!since) return null;
@@ -129,19 +145,60 @@ function widenHintEvidence(input: Input, candidates: Candidate[], limit: number)
   };
 }
 
+async function applyLandHints(repo: string, candidates: Candidate[]): Promise<{ checked: string[]; not_checked: string[] }> {
+  for (const item of candidates) {
+    if (item.assignees.length > 0) {
+      item.likely_land_only = true;
+      item.land_hint = `assigned: ${item.assignees[0]}`;
+    }
+  }
+  if (candidates.length === 0) return { checked: [], not_checked: [] };
+  if (candidates.every((item) => item.likely_land_only)) {
+    return { checked: ['all candidates already assigned; skipped open PR search for land-only hints'], not_checked: [] };
+  }
+  const byNumber = new Map(candidates.map((item) => [item.number, item]));
+  try {
+    const { result, context } = await runSearchWithCanonicalRepo(repo, async (fullName) => {
+      const query = encodeURIComponent(`repo:${fullName} is:pr is:open`);
+      return githubJson<OpenPrSearchResult>(`/search/issues?q=${query}&per_page=${OPEN_PR_SEARCH_PER_PAGE}`);
+    });
+    for (const pr of result.items) {
+      if (isAutomationAuthor(pr.user?.login)) continue;
+      const text = `${pr.title ?? ''}\n${pr.body ?? ''}`;
+      for (const [number, item] of byNumber) {
+        if (item.likely_land_only) continue;
+        if (mentionsIssue(text, number)) {
+          item.likely_land_only = true;
+          item.land_hint = `open PR #${pr.number} ${pr.html_url}`;
+        }
+      }
+    }
+    return { checked: [...context.checked, 'checked open pull requests for land-only hints (assignees + human PR title/body issue references)'], not_checked: context.not_checked };
+  } catch {
+    return { checked: [], not_checked: [`land-only hints via open PR search were not checked for ${repo} because the search request failed.`] };
+  }
+}
+
 export async function scan(input: Input): Promise<Envelope> {
   const limit = Math.min(Math.max(input.limit ?? 25, 1), 100);
   const query = new URLSearchParams({ state: 'open', per_page: '100', sort: 'updated', direction: 'desc' });
   if (input.label) query.set('labels', input.label);
   const issues = await githubJson<GithubIssue[]>(`/repos/${input.repo}/issues?${query.toString()}`);
   const sinceDate = sinceToDate(input.since);
-  const candidates = issues
+  const filteredCandidates = issues
     .filter((issue) => !('pull_request' in issue))
     .filter((issue) => matchesLabel(issue, input.label))
     .filter((issue) => matchesKeywords(issue, input.keywords))
     .filter((issue) => !sinceDate || Date.parse(issue.created_at) >= sinceDate.getTime())
-    .map(candidate)
-    .sort((left, right) => right.quality_score - left.quality_score || Date.parse(right.updated_at) - Date.parse(left.updated_at))
+    .map(candidate);
+  const landHintsEnabled = input.land_hints !== false;
+  const landHints = landHintsEnabled ? await applyLandHints(input.repo, filteredCandidates) : { checked: [], not_checked: [] };
+  const candidates = filteredCandidates
+    .sort((left, right) =>
+      right.quality_score - left.quality_score ||
+      Number(Boolean(left.likely_land_only)) - Number(Boolean(right.likely_land_only)) ||
+      Date.parse(right.updated_at) - Date.parse(left.updated_at)
+    )
     .slice(0, limit);
   const policyHint = await cachedPolicyHint(input.repo);
   const widenHint = widenHintEvidence(input, candidates, limit);
@@ -156,10 +213,12 @@ export async function scan(input: Input): Promise<Envelope> {
       input.label ? `filtered by label: ${input.label}` : 'no label filter requested',
       input.keywords?.length ? `filtered titles by keywords: ${input.keywords.join(', ')}` : 'no keyword filter requested',
       input.since ? `filtered by created date since ${input.since}` : 'no age filter requested',
+      landHintsEnabled ? 'land_hints enabled: flagged likely land-only candidates from assignees and open PR search' : 'land_hints disabled by request',
       ...policyHint.checked,
+      ...landHints.checked,
       ...(widenHint ? [`widen hint: ${widenHint.reason}`] : [])
     ],
-    not_checked: [TRACKER_LIMIT, ...policyHint.not_checked],
+    not_checked: [TRACKER_LIMIT, ...policyHint.not_checked, ...landHints.not_checked],
     cached: false
   });
 }
