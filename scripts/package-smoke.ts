@@ -53,8 +53,24 @@ try {
     throw new Error(`invalid issue ref output unexpected: ${invalid.stderr}${invalid.stdout}`);
   }
 
-  const doctor = runNode([cliJs, 'doctor', '--json'], tempRoot).stdout;
-  JSON.parse(doctor);
+  // doctor may attempt a public npm latest lookup; failure is recorded in not_checked, not a crash.
+  const doctorEnv = {
+    ...process.env,
+    GITWORTHY_CACHE_DIR: join(tempRoot, 'cache'),
+    GITHUB_TOKEN: '',
+    GH_TOKEN: ''
+  };
+  const doctorStdout = execFileSync(process.execPath, [cliJs, 'doctor', '--json'], {
+    cwd: tempRoot,
+    encoding: 'utf8',
+    env: doctorEnv,
+    stdio: ['ignore', 'pipe', 'pipe'],
+    timeout: 60_000
+  });
+  const doctorJson = JSON.parse(doctorStdout) as { checked?: unknown[]; not_checked?: unknown[] };
+  if (!Array.isArray(doctorJson.checked) || !Array.isArray(doctorJson.not_checked)) {
+    throw new Error('doctor --json missing checked/not_checked arrays');
+  }
 
   const installedPkg = JSON.parse(readFileSync(join(tempRoot, 'node_modules', 'gitworthy', 'package.json'), 'utf8')) as { version: string };
   if (installedPkg.version !== packageJson.version) {

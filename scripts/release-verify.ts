@@ -24,9 +24,9 @@ for (const pkg of serverJson.packages) {
   }
 }
 
-const versionHeading = `## ${packageJson.version}`;
-if (!changelog.includes(versionHeading)) {
-  failures.push(`CHANGELOG.md missing heading ${versionHeading}`);
+const versionHeading = new RegExp(`^## ${packageJson.version.replace(/\./g, '\\.')}(?:\\s|$)`, 'm');
+if (!versionHeading.test(changelog)) {
+  failures.push(`CHANGELOG.md missing heading ## ${packageJson.version}`);
 }
 
 if (requireCleanTree) {
