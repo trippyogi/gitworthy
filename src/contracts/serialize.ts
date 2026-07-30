@@ -134,17 +134,29 @@ export function toStampedLegacyResult(command: CommandName, legacy: Record<strin
 
 function categorize(code: string, status?: number): ErrorDetail['category'] {
   const normalized = code.toLowerCase();
+  if (normalized.includes('rate') || status === 429) return 'network';
   if (
     normalized.includes('auth')
     || normalized.includes('token')
     || normalized.includes('unauthorized')
     || status === 401
-    || status === 403
   ) {
     return 'auth';
   }
-  if (normalized.includes('rate') || status === 429) return 'network';
-  if (normalized.includes('invalid') || normalized.includes('parse') || normalized.includes('input')) return 'input';
+  // GitHub uses 403 for both auth failures and secondary/primary rate limits.
+  if (status === 403) {
+    return normalized.includes('rate') ? 'network' : 'auth';
+  }
+  if (
+    normalized.includes('invalid')
+    || normalized.includes('parse')
+    || normalized.includes('input')
+    || normalized.includes('requires')
+    || normalized.includes('unknown subcommand')
+    || normalized.includes('expected')
+  ) {
+    return 'input';
+  }
   if (normalized.includes('budget') || normalized.includes('timeout')) return 'budget';
   if (normalized.includes('contract') || normalized.includes('schema')) return 'internal';
   if (status && status >= 500) return 'provider';
@@ -206,7 +218,8 @@ export function toErrorResult(input: {
   const message = input.error instanceof Error ? input.error.message : String(input.error);
   const lower = message.toLowerCase();
   const looksLikeIssueRef = lower.includes('expected issue ref') || lower.includes('owner/repo#');
-  const code = looksLikeIssueRef ? 'invalid_issue_ref' : 'internal_error';
+  const looksLikeUsage = lower.includes('requires') || lower.includes('unknown subcommand') || lower.includes('must be');
+  const code = looksLikeIssueRef ? 'invalid_issue_ref' : looksLikeUsage ? 'invalid_usage' : 'internal_error';
   return ErrorResultSchema.parse({
     schema_version: SCHEMA_VERSION,
     gitworthy_version: packageVersion(),
@@ -215,7 +228,7 @@ export function toErrorResult(input: {
     run_id: runId,
     error: {
       code,
-      category: categorize(code),
+      category: categorize(code === 'internal_error' ? message : code),
       message,
       retryable: false,
       status: null,

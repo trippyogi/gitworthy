@@ -81,4 +81,18 @@ describe('contracts', () => {
     expect(error.error.code).toBe('contract_validation_failed');
     expect(error.error.category).toBe('internal');
   });
+
+  it('classifies rate-limit exhausted 403 as network', () => {
+    const error = toErrorResult({
+      command: 'check',
+      error: new GitworthyError({ code: 'github_rate_limit_exhausted', message: 'rate limited', status: 403 })
+    });
+    expect(error.error.category).toBe('network');
+  });
+
+  it('classifies CLI usage errors as input', () => {
+    const error = toErrorResult({ command: 'branch_scan', error: new Error('branches requires owner/repo and keywords.') });
+    expect(error.error.code).toBe('invalid_usage');
+    expect(error.error.category).toBe('input');
+  });
 });
