@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.3.7
+
+- Add `doctor` (CLI/MCP): token, rate limit, auth, timeline cross-ref probe, cache writability, local vs npm version.
+- Add `org_scan` / `gitworthy org`: fan out across top public org/user repos with concurrency 2.
+- Add scan `likely_land_only` / `land_hint` from assignees + one open-PR search (disable with `--no-land-hints` / `land_hints: false`).
+- Add scout ledger (JSON under `~/.gitworthy/ledger`): `ledger_lookup` / `ledger_record` / `ledger_list`; `worth_check` auto-records best-effort.
+
 ## 0.3.6
 
 - Hunt policy (SKILL): scan → filter → `worth_check` ≤3–5 survivors, serial per repo (concurrency 1–2).

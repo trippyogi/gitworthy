@@ -7,6 +7,7 @@ import { contrib_policy } from './contrib-policy.js';
 import { createEnvelope, Envelope, GitworthyError, Signal } from './envelope.js';
 import { distinctiveTerms } from './terms.js';
 import { githubJson, GithubIssue } from '../lib/github.js';
+import { upsertLedgerEntry } from '../lib/ledger.js';
 
 type Input = { repo: string; issue_number: number; npm_package?: string; probe?: { file_glob?: string; contains?: string } };
 type SubResult = { name: string; ok: true; result: Envelope } | { name: string; ok: false; error: { code: string; message: string; not_checked: string[] } };
@@ -220,6 +221,20 @@ function finalize(
   };
 }
 
+async function recordLedgerBestEffort(input: Input, result: WorthEnvelope): Promise<void> {
+  try {
+    await upsertLedgerEntry({
+      repo: input.repo,
+      issue_number: input.issue_number,
+      verdict: result.verdict,
+      disposition: result.disposition,
+      source: 'worth_check'
+    });
+  } catch {
+    // ledger persistence is best-effort local memory; it must never fail a worth_check run.
+  }
+}
+
 async function timed(name: string, timings: Record<string, number>, run: () => Promise<SubResult>): Promise<SubResult> {
   const started = Date.now();
   const result = await run();
@@ -257,7 +272,9 @@ export async function worth_check(input: Input): Promise<WorthEnvelope> {
       ...(input.npm_package ? ['release_gap skipped after open linked PR (perf short-circuit).'] : [])
     ];
     timings_ms.total = Date.now() - totalStarted;
-    return finalize(phase1, timings_ms, true, skipped);
+    const shortCircuitResult = finalize(phase1, timings_ms, true, skipped);
+    await recordLedgerBestEffort(input, shortCircuitResult);
+    return shortCircuitResult;
   }
 
   // Phase 2: expensive checks in parallel (shared clone pool helps issue_vs_main + release_gap).
@@ -273,5 +290,7 @@ export async function worth_check(input: Input): Promise<WorthEnvelope> {
   timings_ms.phase2 = Date.now() - phase2Started;
   timings_ms.total = Date.now() - totalStarted;
 
-  return finalize([...phase1, ...phase2], timings_ms, false);
+  const result = finalize([...phase1, ...phase2], timings_ms, false);
+  await recordLedgerBestEffort(input, result);
+  return result;
 }

@@ -12,7 +12,21 @@ describe('MCP tools', () => {
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
     await Promise.all([server.connect(serverTransport), client.connect(clientTransport)]);
     const listed = await client.listTools();
-    expect(listed.tools.map((tool) => tool.name).sort()).toEqual(['branch_scan', 'contrib_policy', 'dupe_cluster', 'issue_vs_main', 'linked_work', 'release_gap', 'scan', 'worth_check'].sort());
+    expect(listed.tools.map((tool) => tool.name).sort()).toEqual([
+      'branch_scan',
+      'contrib_policy',
+      'doctor',
+      'dupe_cluster',
+      'issue_vs_main',
+      'ledger_list',
+      'ledger_lookup',
+      'ledger_record',
+      'linked_work',
+      'org_scan',
+      'release_gap',
+      'scan',
+      'worth_check'
+    ].sort());
     await client.close();
     await server.close();
   });
