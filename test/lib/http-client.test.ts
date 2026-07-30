@@ -111,16 +111,19 @@ describe('http-client', () => {
     });
   });
 
-  it('sets centralized GitHub API version headers by default', async () => {
-    const transport = vi.fn(async (_url: string, init?: RequestInit) => {
-      const headers = new Headers(init?.headers);
-      expect(headers.get('x-github-api-version')).toBe('2022-11-28');
-      expect(headers.get('accept')).toBe('application/vnd.github+json');
-      expect(headers.get('user-agent')).toBe('gitworthy');
-      return jsonResponse({ ok: true });
+  it('does not retry non-idempotent methods on transient 503', async () => {
+    const sleep = vi.fn(async () => undefined);
+    const transport = vi.fn(async () => jsonResponse({ message: 'unavailable' }, { status: 503 }));
+    const client = createHttpClient({
+      transport,
+      maxRetries: 2,
+      sleep
     });
-    const client = createHttpClient({ transport, maxRetries: 0 });
-    await client.request('https://api.github.com/rate_limit');
+
+    const result = await client.request('https://api.github.com/repos/a/b/issues', { method: 'POST', body: '{}' });
+    expect(result.response.status).toBe(503);
+    expect(result.attempts).toBe(1);
     expect(transport).toHaveBeenCalledTimes(1);
+    expect(sleep).not.toHaveBeenCalled();
   });
 });

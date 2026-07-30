@@ -6,6 +6,7 @@ export const DEFAULT_GITHUB_API_VERSION = '2022-11-28';
 export const DEFAULT_USER_AGENT = 'gitworthy';
 
 const RETRYABLE_5XX = new Set([500, 502, 503, 504]);
+const IDEMPOTENT_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 const SENSITIVE_HEADER = /^(authorization|proxy-authorization|cookie|set-cookie|x-api-key)$/i;
 
 export type HttpTransport = (input: string | URL, init?: RequestInit) => Promise<Response>;
@@ -198,7 +199,7 @@ export class HttpClient {
         return { response, rateLimit, attempts: attempt };
       }
 
-      const retryable = await this.isRetryable(response, attempt, maxRetries);
+      const retryable = await this.isRetryable(method, response, attempt, maxRetries);
       if (!retryable) {
         return { response, rateLimit, attempts: attempt };
       }
@@ -258,8 +259,10 @@ export class HttpClient {
     return headers;
   }
 
-  private async isRetryable(response: Response, attempt: number, maxRetries: number): Promise<boolean> {
+  private async isRetryable(method: string, response: Response, attempt: number, maxRetries: number): Promise<boolean> {
     if (attempt > maxRetries) return false;
+    // Never automatically retry non-idempotent methods — mutations must not be duplicated.
+    if (!IDEMPOTENT_METHODS.has(method.toUpperCase())) return false;
     const status = response.status;
     if (status === 401 || status === 404 || status === 422) return false;
     if (status === 429) return true;
