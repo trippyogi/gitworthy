@@ -6,6 +6,7 @@ import {
   contrib_policy,
   doctor,
   dupe_cluster,
+  hunt,
   issue_vs_main,
   ledger_list,
   ledger_lookup,
@@ -55,6 +56,25 @@ export function createMcpServer(): McpServer {
   server.registerTool('worth_check', { title: 'Worth check', inputSchema: { repo: z.string(), issue_number: z.number(), npm_package: z.string().optional(), probe: z.object({ file_glob: z.string().optional(), contains: z.string().optional() }).optional() } }, async (input) => withToolErrors(() => worth_check(input)));
   server.registerTool('scan', { title: 'Scan issues', inputSchema: { repo: z.string(), label: z.string().optional(), keywords: z.array(z.string()).optional(), since: z.string().optional(), limit: z.number().optional(), land_hints: z.boolean().optional() } }, async (input) => withToolErrors(() => scan(input)));
   server.registerTool('org_scan', { title: 'Org scan', inputSchema: { org: z.string(), label: z.string().optional(), keywords: z.array(z.string()).optional(), since: z.string().optional(), limit: z.number().optional(), max_repos: z.number().optional(), land_hints: z.boolean().optional() } }, async (input) => withToolErrors(() => org_scan(input)));
+  server.registerTool('hunt', {
+    title: 'Hunt',
+    inputSchema: {
+      repo: z.string().optional(),
+      org: z.string().optional(),
+      label: z.string().optional(),
+      keywords: z.array(z.string()).optional(),
+      since: z.string().optional(),
+      scan_limit: z.number().optional(),
+      max_repos: z.number().optional(),
+      max_checks: z.number().optional(),
+      land_hints: z.boolean().optional(),
+      skip_likely_land_only: z.boolean().optional(),
+      skip_soft_ask: z.boolean().optional(),
+      skip_assigned: z.boolean().optional(),
+      skip_ledger_skip: z.boolean().optional(),
+      npm_package: z.string().optional()
+    }
+  }, async (input) => withToolErrors(() => hunt(input)));
   server.registerTool('ledger_lookup', { title: 'Ledger lookup', inputSchema: { repo: z.string(), issue_number: z.number() } }, async (input) => withToolErrors(() => ledger_lookup(input)));
   server.registerTool('ledger_record', { title: 'Ledger record', inputSchema: { repo: z.string(), issue_number: z.number(), verdict: z.string().optional(), disposition: z.string().optional(), quality_score: z.number().optional(), notes: z.string().optional(), source: z.string().optional() } }, async (input) => withToolErrors(() => ledger_record(input)));
   server.registerTool('ledger_list', { title: 'Ledger list', inputSchema: { repo: z.string().optional(), limit: z.number().optional() } }, async (input) => withToolErrors(() => ledger_list(input)));

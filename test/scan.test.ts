@@ -53,6 +53,20 @@ describe('scan', () => {
     expect(result.not_checked.join(' ')).toContain('run gitworthy policy o/r before investing');
   });
 
+  it('matches keywords found only in the issue body, not the title', async () => {
+    mocks.githubJson.mockImplementation(async (path: string) => {
+      if (path.startsWith('/repos/o/r/issues?')) return [
+        { number: 115339, title: 'OpenClaw class rendering is inconsistent', body: 'Steps to reproduce...\nResult: the app crashes with a TypeError.', state: 'open', labels: [], comments: 0, html_url: 'https://github.com/o/r/issues/115339', created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-02T00:00:00Z', closed_at: null }
+      ];
+      return defaultGithubJson(path);
+    });
+    const result = await scan({ repo: 'o/r', keywords: ['crash'], limit: 10 });
+    const candidates = result.evidence.filter((item) => !('kind' in item && item.kind === 'widen_hint'));
+    expect(candidates).toHaveLength(1);
+    expect(candidates[0]).toMatchObject({ number: 115339 });
+    expect(result.checked).toContain('filtered titles and bodies by keywords: crash');
+  });
+
   it('adds a cached no-PR policy hint before issue titles need review', async () => {
     mocks.readCache.mockImplementation(async (scope: string) => {
       if (scope === 'contrib_policy') {

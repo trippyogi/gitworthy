@@ -63,19 +63,20 @@ function assignmentCitation(subResults: SubResult[]): string | null {
   return `${evidence.assignee}${typeof evidence.assigned_at === 'string' ? ` at ${evidence.assigned_at}` : ''}`;
 }
 
-function linkedDensity(subResults: SubResult[]): { priorAttempts: number; referencedCommits: number; openCloser: string | null } {
+function linkedDensity(subResults: SubResult[]): { priorAttempts: number; referencedCommits: number; networkPrs: number; openCloser: string | null } {
   const linked = subResults.find((result) => result.ok && result.name === 'linked_work');
-  if (!linked?.ok) return { priorAttempts: 0, referencedCommits: 0, openCloser: null };
+  if (!linked?.ok) return { priorAttempts: 0, referencedCommits: 0, networkPrs: 0, openCloser: null };
   const prs = linked.result.evidence.filter((item) => item.kind === 'linked_pr' && item.ignored_reason !== 'automation_author');
   const priorAttempts = prs.filter((item) => item.prior_attempt === true || (item.state === 'closed' && item.merged !== true)).length;
   const referencedCommits = linked.result.evidence.filter((item) => item.kind === 'referenced_commit').length;
+  const networkPrs = linked.result.evidence.filter((item) => item.kind === 'network_pr').length;
   const openWithCloses = prs.find((item) => item.state === 'open' && item.closes_issue === true);
   const openAny = prs.find((item) => item.state === 'open');
   const chosen = openWithCloses ?? openAny;
   const openCloser = chosen && typeof chosen.number === 'number'
     ? `#${chosen.number}${typeof chosen.url === 'string' ? ` ${chosen.url}` : ''}`
     : null;
-  return { priorAttempts, referencedCommits, openCloser };
+  return { priorAttempts, referencedCommits, networkPrs, openCloser };
 }
 
 function err(name: string, error: unknown): SubResult {
@@ -130,12 +131,14 @@ export function chooseDisposition(input: {
   signals: Signal[];
   priorAttempts: number;
   referencedCommits: number;
+  networkPrs?: number;
 }): Disposition {
   const { verdict, signals, priorAttempts, referencedCommits } = input;
+  const networkPrs = input.networkPrs ?? 0;
   if (signals.some((signal) => ['shipped', 'released_fix', 'duplicate'].includes(signal))) return 'blocked';
   if (signals.includes('linked_pr_open')) return 'land_only';
   if (signals.includes('assigned') || signals.includes('claim_required')) return 'claim_first';
-  if (priorAttempts >= CROWDED_PRIOR_ATTEMPTS || referencedCommits >= CROWDED_COMMITS) return 'crowded';
+  if (priorAttempts >= CROWDED_PRIOR_ATTEMPTS || referencedCommits + networkPrs >= CROWDED_COMMITS) return 'crowded';
   if (verdict === 'ACT') return 'greenfield';
   return 'review';
 }
@@ -176,15 +179,16 @@ function finalize(
   if (signals.includes('assigned')) reasons.push(`issue is assigned: ${assignmentCitation(sub_results) ?? 'assignee date unavailable'}`);
   if (signals.includes('linked_pr_merged')) reasons.push(`linked PR was merged: ${linkedPrCitation(sub_results, (item) => item.merged === true) ?? 'citation unavailable'}`);
   if (signals.includes('linked_pr_closed')) reasons.push(`closed unmerged linked PR found (prior attempt): ${linkedPrCitation(sub_results, (item) => item.state === 'closed' && item.merged !== true) ?? 'citation unavailable'}`);
-  if (density.priorAttempts > 0 || density.referencedCommits > 0) {
-    reasons.push(`lane density: ${density.priorAttempts} prior closed unmerged PR(s), ${density.referencedCommits} referenced commit(s).`);
+  if (density.priorAttempts > 0 || density.referencedCommits > 0 || density.networkPrs > 0) {
+    reasons.push(`lane density: ${density.priorAttempts} prior closed unmerged PR(s), ${density.referencedCommits} referenced commit(s), ${density.networkPrs} network/fork PR(s).`);
   }
 
   const disposition = chooseDisposition({
     verdict,
     signals,
     priorAttempts: density.priorAttempts,
-    referencedCommits: density.referencedCommits
+    referencedCommits: density.referencedCommits,
+    networkPrs: density.networkPrs
   });
   if (disposition === 'crowded' && !signals.includes('linked_pr_open')) {
     reasons.push('disposition crowded: multiple prior attempts or referenced commits — read linked_work evidence before investing.');

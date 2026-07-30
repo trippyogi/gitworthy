@@ -16,12 +16,14 @@ No telemetry is active by default. Optional PostHog telemetry requires both `GIT
 ## Quickstart
 
 ```sh
-npx -y gitworthy@0.3.7 check owner/repo#123
-npx -y gitworthy@0.3.7 check owner/repo#123 --npm-package package-name --json
-npx -y gitworthy@0.3.7 scan Shopify/cli --label "good first issue" --json
-npx -y gitworthy@0.3.7 org openclaw --json
-npx -y gitworthy@0.3.7 doctor --json
-npx -y gitworthy@0.3.7 mcp
+npx -y gitworthy@0.3.8 check owner/repo#123
+npx -y gitworthy@0.3.8 check owner/repo#123 --npm-package package-name --json
+npx -y gitworthy@0.3.8 hunt owner/repo --json
+npx -y gitworthy@0.3.8 hunt openclaw --max-checks 3 --json
+npx -y gitworthy@0.3.8 scan Shopify/cli --label "good first issue" --json
+npx -y gitworthy@0.3.8 org openclaw --json
+npx -y gitworthy@0.3.8 doctor --json
+npx -y gitworthy@0.3.8 mcp
 ```
 
 ## CLI
@@ -52,7 +54,7 @@ Exit codes for `check`:
   "mcpServers": {
     "gitworthy": {
       "command": "npx",
-      "args": ["-y", "gitworthy@0.3.7", "mcp"],
+      "args": ["-y", "gitworthy@0.3.8", "mcp"],
       "env": { "GITHUB_TOKEN": "github_pat_..." }
     }
   }
@@ -97,6 +99,10 @@ Fetches issue timeline cross-references (soft-capped pages), explicit issue-numb
 ### contrib_policy
 
 Reads common contribution policy files from main or master and extracts deterministic policy signals with raw excerpts. If docs state that pull requests are not accepted or will be auto-closed, it emits `no_pr_path` and extracts the stated alternate feedback channel when present. If docs require claiming or requesting assignment before a PR, it emits `claim_required`.
+
+### hunt
+
+One-shot triage orchestrator: `scan` or `org_scan` → drop likely land-only / soft-ask / assigned / ledger-SKIP rows → serial `worth_check` on up to `--max-checks` (default 3, max 5). Returns no ACT/SKIP signals of its own; read each `hunt_candidate.worth_check`. Prefer this over hand-rolling N× checks.
 
 ### doctor
 

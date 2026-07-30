@@ -7,6 +7,7 @@ import {
   contrib_policy,
   doctor,
   dupe_cluster,
+  hunt,
   issue_vs_main,
   ledger_list,
   ledger_lookup,
@@ -25,6 +26,7 @@ Usage:
   gitworthy --help
   gitworthy doctor [--json]
   gitworthy check owner/repo#123 [--npm-package name] [--probe-glob glob] [--probe-contains text] [--json]
+  gitworthy hunt owner/repo|org [--max-checks 3] [--label ...] [--keywords ...] [--since 90d] [--limit 25] [--max-repos 8] [--no-land-hints] [--json]
   gitworthy branches owner/repo keyword[,keyword] [--json] [--force-refresh]
   gitworthy issue owner/repo 123 [--json]
   gitworthy release owner/repo package-name [--probe-glob glob] [--probe-contains text] [--json]
@@ -115,8 +117,10 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
       since: { type: 'string' },
       limit: { type: 'string' },
       'max-repos': { type: 'string' },
+      'max-checks': { type: 'string' },
       'no-land-hints': { type: 'boolean' },
       repo: { type: 'string' },
+      org: { type: 'boolean' },
       verdict: { type: 'string' },
       disposition: { type: 'string' },
       notes: { type: 'string' }
@@ -158,6 +162,35 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
     } else if (command === 'policy') {
       if (!first) throw new Error('policy requires owner/repo.');
       output = await contrib_policy({ repo: first, force_refresh: parsed.values['force-refresh'] === true });
+    } else if (command === 'hunt') {
+      if (!first) throw new Error('hunt requires owner/repo or an org/user login.');
+      const maxChecksRaw = stringValue(parsed.values['max-checks']);
+      const maxChecks = maxChecksRaw ? Number(maxChecksRaw) : undefined;
+      if (maxChecksRaw && (!Number.isFinite(maxChecks) || (maxChecks as number) < 1)) {
+        throw new Error('--max-checks must be a positive number.');
+      }
+      const maxReposRaw = stringValue(parsed.values['max-repos']);
+      const maxRepos = maxReposRaw ? Number(maxReposRaw) : undefined;
+      if (maxReposRaw && (!Number.isFinite(maxRepos) || (maxRepos as number) < 1)) {
+        throw new Error('--max-repos must be a positive number.');
+      }
+      const filters = scanFilters(parsed.values);
+      // --org forces org mode; otherwise slash ⇒ repo, no slash ⇒ org/user.
+      const asOrg = parsed.values.org === true || !first.includes('/');
+      if (parsed.values.org === true && first.includes('/')) {
+        throw new Error('hunt --org expects an org or user login, not owner/repo. Omit --org for a single repo.');
+      }
+      output = await hunt({
+        ...(asOrg ? { org: first } : { repo: first }),
+        label: filters.label,
+        keywords: filters.keywords,
+        since: filters.since,
+        scan_limit: filters.limit,
+        land_hints: filters.land_hints,
+        max_checks: maxChecks,
+        max_repos: maxRepos,
+        npm_package: stringValue(parsed.values['npm-package'])
+      });
     } else if (command === 'scan') {
       if (!first) throw new Error('scan requires owner/repo.');
       output = await scan({ repo: first, ...scanFilters(parsed.values) });
