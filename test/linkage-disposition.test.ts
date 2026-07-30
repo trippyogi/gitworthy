@@ -13,18 +13,22 @@ describe('linkage helpers', () => {
 });
 
 describe('chooseDisposition', () => {
-  it('maps open linked PRs to land_only ahead of crowded', () => {
+  it('does not force land_only without classified open-PR evidence (density can still be crowded)', () => {
     expect(chooseDisposition({
-      verdict: 'SKIP',
+      verdict: 'VERIFY',
       signals: ['linked_pr_open'],
       priorAttempts: 5,
       referencedCommits: 8
-    })).toBe('land_only');
+    })).toBe('crowded');
   });
 
-  it('maps shipped/duplicate to blocked', () => {
-    expect(chooseDisposition({ verdict: 'SKIP', signals: ['shipped'], priorAttempts: 0, referencedCommits: 0 })).toBe('blocked');
-    expect(chooseDisposition({ verdict: 'SKIP', signals: ['duplicate'], priorAttempts: 0, referencedCommits: 0 })).toBe('blocked');
+  it('maps shipped/duplicate to review', () => {
+    expect(chooseDisposition({ verdict: 'SKIP', signals: ['shipped'], priorAttempts: 0, referencedCommits: 0 })).toBe('review');
+    expect(chooseDisposition({ verdict: 'SKIP', signals: ['duplicate'], priorAttempts: 0, referencedCommits: 0 })).toBe('review');
+  });
+
+  it('maps released_fix to blocked', () => {
+    expect(chooseDisposition({ verdict: 'SKIP', signals: ['released_fix'], priorAttempts: 0, referencedCommits: 0 })).toBe('blocked');
   });
 
   it('maps assignment to claim_first', () => {

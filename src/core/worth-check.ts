@@ -8,11 +8,12 @@ import { createEnvelope, Envelope, GitworthyError, Signal } from './envelope.js'
 import { distinctiveTerms } from './terms.js';
 import { githubJson, GithubIssue } from '../lib/github.js';
 import { upsertLedgerEntry } from '../lib/ledger.js';
+import { decideFromSignals, type Disposition } from '../decision/policy.js';
 
 type Input = { repo: string; issue_number: number; npm_package?: string; probe?: { file_glob?: string; contains?: string }; probe_template?: string };
 type SubResult = { name: string; ok: true; result: Envelope } | { name: string; ok: false; error: { code: string; message: string; not_checked: string[] } };
 
-export type Disposition = 'greenfield' | 'land_only' | 'claim_first' | 'blocked' | 'crowded' | 'review';
+export type { Disposition };
 
 type WorthPerf = {
   short_circuited: boolean;
@@ -30,38 +31,6 @@ type WorthEnvelope = Envelope & {
   timings_ms: Record<string, number>;
   perf: WorthPerf;
 };
-
-const CROWDED_PRIOR_ATTEMPTS = 2;
-const CROWDED_COMMITS = 3;
-
-function noPrFeedbackChannel(subResults: SubResult[]): string {
-  const policy = subResults.find((result) => result.ok && result.name === 'contrib_policy');
-  if (!policy?.ok) return 'not stated';
-  const evidence = policy.result.evidence.find((item) => item.category === 'no_pr_path' && typeof item.feedback_channel === 'string');
-  return typeof evidence?.feedback_channel === 'string' ? evidence.feedback_channel : 'not stated';
-}
-
-function claimProtocolCitation(subResults: SubResult[]): string {
-  const policy = subResults.find((result) => result.ok && result.name === 'contrib_policy');
-  if (!policy?.ok) return 'follow repo claim/assignment instructions before opening a PR';
-  const evidence = policy.result.evidence.find((item) => item.category === 'claim_required' && typeof item.excerpt === 'string');
-  return typeof evidence?.excerpt === 'string' ? evidence.excerpt : 'follow repo claim/assignment instructions before opening a PR';
-}
-
-function linkedPrCitation(subResults: SubResult[], predicate: (item: Record<string, unknown>) => boolean): string | null {
-  const linked = subResults.find((result) => result.ok && result.name === 'linked_work');
-  if (!linked?.ok) return null;
-  const evidence = linked.result.evidence.find((item) => item.kind === 'linked_pr' && item.ignored_reason !== 'automation_author' && typeof item.number === 'number' && predicate(item));
-  return evidence ? `#${evidence.number}${typeof evidence.url === 'string' ? ` ${evidence.url}` : ''}` : null;
-}
-
-function assignmentCitation(subResults: SubResult[]): string | null {
-  const linked = subResults.find((result) => result.ok && result.name === 'linked_work');
-  if (!linked?.ok) return null;
-  const evidence = linked.result.evidence.find((item) => item.kind === 'assignment' && typeof item.assignee === 'string');
-  if (!evidence || typeof evidence.assignee !== 'string') return null;
-  return `${evidence.assignee}${typeof evidence.assigned_at === 'string' ? ` at ${evidence.assigned_at}` : ''}`;
-}
 
 function linkedDensity(subResults: SubResult[]): { priorAttempts: number; referencedCommits: number; networkPrs: number; openCloser: string | null } {
   const linked = subResults.find((result) => result.ok && result.name === 'linked_work');
@@ -92,20 +61,16 @@ async function runNamed(name: string, run: () => Promise<Envelope>): Promise<Sub
   }
 }
 
-function hasCleanLinkedWork(subResults: SubResult[]): boolean {
-  const linked = subResults.find((result) => result.name === 'linked_work');
-  return Boolean(linked?.ok && (linked.result.signals ?? []).length === 0);
-}
-
-function isBranchOnlySkipSignal(signals: Signal[], subResults: SubResult[]): boolean {
-  if (!hasCleanLinkedWork(subResults)) return false;
-  const blocking = signals.filter((signal) => !['no_pr_path', 'linked_pr_merged', 'linked_pr_closed', 'assigned', 'needs_repro', 'claim_required'].includes(signal));
-  return blocking.length === 1 && blocking[0] === 'in_flight';
-}
-
-function hasOpenLinkedPr(subResults: SubResult[]): boolean {
+function hasDefinitiveClosingOpenPr(subResults: SubResult[]): boolean {
   const linked = subResults.find((result) => result.ok && result.name === 'linked_work');
-  return Boolean(linked?.ok && linked.result.signals.includes('linked_pr_open'));
+  if (!linked?.ok) return false;
+  return linked.result.evidence.some((item) =>
+    item.kind === 'linked_pr'
+    && item.state === 'open'
+    && item.closes_issue === true
+    && item.source !== 'title_overlap'
+    && item.ignored_reason !== 'automation_author'
+  );
 }
 
 function extractPerf(subResults: SubResult[], shortCircuited: boolean): WorthPerf {
@@ -133,14 +98,14 @@ export function chooseDisposition(input: {
   referencedCommits: number;
   networkPrs?: number;
 }): Disposition {
-  const { verdict, signals, priorAttempts, referencedCommits } = input;
-  const networkPrs = input.networkPrs ?? 0;
-  if (signals.some((signal) => ['shipped', 'released_fix', 'duplicate'].includes(signal))) return 'blocked';
-  if (signals.includes('linked_pr_open')) return 'land_only';
-  if (signals.includes('assigned') || signals.includes('claim_required')) return 'claim_first';
-  if (priorAttempts >= CROWDED_PRIOR_ATTEMPTS || referencedCommits + networkPrs >= CROWDED_COMMITS) return 'crowded';
-  if (verdict === 'ACT') return 'greenfield';
-  return 'review';
+  return decideFromSignals({
+    signals: input.signals,
+    sub_results: [],
+    errors: [],
+    priorAttempts: input.priorAttempts,
+    referencedCommits: input.referencedCommits,
+    networkPrs: input.networkPrs ?? 0
+  }).disposition;
 }
 
 function finalize(
@@ -149,63 +114,35 @@ function finalize(
   shortCircuited: boolean,
   extraNotChecked: string[] = []
 ): WorthEnvelope {
-  const reasons: string[] = [];
   const errors = sub_results.filter((result) => !result.ok);
   const signals = [...new Set(sub_results.flatMap((result) => result.ok ? (result.result.signals ?? []) : []))] as Signal[];
-  const verifySignals: Signal[] = ['no_pr_path', 'linked_pr_merged', 'linked_pr_closed', 'assigned', 'needs_repro', 'claim_required'];
-  const skipSignals = signals.filter((signal) => !verifySignals.includes(signal));
-  const branchOnlyInFlightWithCleanLinkedWork = isBranchOnlySkipSignal(signals, sub_results);
   const density = linkedDensity(sub_results);
-  for (const result of sub_results) {
-    if (!result.ok) reasons.push(`${result.name} errored: ${result.error.message}`);
-    if (result.ok && (result.result.signals ?? []).length > 0) reasons.push(`${result.name}: ${(result.result.signals ?? []).join(', ')}`);
-  }
-  let verdict: 'ACT' | 'VERIFY' | 'SKIP' = 'ACT';
-  if (errors.length > 0) verdict = 'VERIFY';
-  else if (branchOnlyInFlightWithCleanLinkedWork) verdict = 'VERIFY';
-  else if (skipSignals.length > 0) verdict = 'SKIP';
-  else if (signals.some((signal) => verifySignals.includes(signal))) verdict = 'VERIFY';
-  if (branchOnlyInFlightWithCleanLinkedWork) reasons.push('keyword-matched branches exist but no linked PR or assignee; read the matched branches.');
-  if (signals.includes('no_pr_path')) reasons.push(`repo accepts no pull requests; feedback channel: ${noPrFeedbackChannel(sub_results)}`);
-  if (signals.includes('claim_required')) reasons.push(`repo requires claim/assignment before a PR: ${claimProtocolCitation(sub_results)}`);
-  if (signals.includes('needs_repro')) reasons.push('bug-shaped issue lacks reproduction steps; confirm the failure before investing.');
-  if (signals.includes('linked_pr_open')) {
-    const citation = density.openCloser
-      ?? linkedPrCitation(sub_results, (item) => item.state === 'open')
-      ?? 'citation unavailable';
-    reasons.push(`open linked PR found: ${citation}`);
-    reasons.push(`disposition land_only: do not open a parallel fix; review or land ${citation}.`);
-  }
-  if (signals.includes('assigned')) reasons.push(`issue is assigned: ${assignmentCitation(sub_results) ?? 'assignee date unavailable'}`);
-  if (signals.includes('linked_pr_merged')) reasons.push(`linked PR was merged: ${linkedPrCitation(sub_results, (item) => item.merged === true) ?? 'citation unavailable'}`);
-  if (signals.includes('linked_pr_closed')) reasons.push(`closed unmerged linked PR found (prior attempt): ${linkedPrCitation(sub_results, (item) => item.state === 'closed' && item.merged !== true) ?? 'citation unavailable'}`);
-  if (density.priorAttempts > 0 || density.referencedCommits > 0 || density.networkPrs > 0) {
-    reasons.push(`lane density: ${density.priorAttempts} prior closed unmerged PR(s), ${density.referencedCommits} referenced commit(s), ${density.networkPrs} network/fork PR(s).`);
-  }
-
-  const disposition = chooseDisposition({
-    verdict,
+  const decision = decideFromSignals({
     signals,
+    sub_results,
+    errors,
     priorAttempts: density.priorAttempts,
     referencedCommits: density.referencedCommits,
     networkPrs: density.networkPrs
   });
-  if (disposition === 'crowded' && !signals.includes('linked_pr_open')) {
-    reasons.push('disposition crowded: multiple prior attempts or referenced commits — read linked_work evidence before investing.');
-  }
-  if (disposition === 'claim_first') {
-    reasons.push('disposition claim_first: coordinate or claim before opening a PR.');
-  }
-  if (disposition === 'blocked') {
-    reasons.push('disposition blocked: work appears already handled (shipped, released, or duplicate).');
-  }
+  const reasons = [...decision.reasons];
   if (extraNotChecked.length > 0) {
     reasons.push(`perf short-circuit: skipped ${extraNotChecked.length} expensive sub-check${extraNotChecked.length === 1 ? '' : 's'} after open linked PR.`);
   }
 
   const base = createEnvelope({
-    verdict_summary: verdict === 'ACT' ? 'no blocking evidence found by completed checks.' : verdict === 'SKIP' ? 'blocking evidence was found by completed checks.' : 'mixed signals or sub-check errors require human review.',
-    evidence: [],
+    verdict_summary: decision.verdict === 'ACT' ? 'no blocking evidence found by completed checks.' : decision.verdict === 'SKIP' ? 'blocking evidence was found by completed checks.' : 'mixed signals or sub-check errors require human review.',
+    evidence: decision.findings.map((item) => ({
+      kind: 'finding',
+      id: item.id,
+      type: item.type,
+      strength: item.strength,
+      effect: item.effect,
+      source: item.source,
+      message: item.message,
+      ...(item.url ? { url: item.url } : {}),
+      data: item.data
+    })),
     signals,
     checked: sub_results.filter((result) => result.ok).map((result) => result.name),
     not_checked: [...new Set([
@@ -216,8 +153,8 @@ function finalize(
   });
   return {
     ...base,
-    verdict,
-    disposition,
+    verdict: decision.verdict,
+    disposition: decision.disposition,
     reasons,
     sub_results,
     timings_ms,
@@ -268,12 +205,12 @@ export async function worth_check(input: Input): Promise<WorthEnvelope> {
     timed('contrib_policy', timings_ms, () => runNamed('contrib_policy', () => contrib_policy({ repo: input.repo })))
   ]);
   timings_ms.phase1 = Date.now() - phase1Started;
-  if (hasOpenLinkedPr(phase1)) {
+  if (hasDefinitiveClosingOpenPr(phase1)) {
     const skipped = [
-      'issue_vs_main skipped after open linked PR (perf short-circuit).',
-      'branch_scan skipped after open linked PR (perf short-circuit).',
-      'dupe_cluster skipped after open linked PR (perf short-circuit).',
-      ...(input.npm_package ? ['release_gap skipped after open linked PR (perf short-circuit).'] : [])
+      'issue_vs_main skipped after definitive open closing PR (perf short-circuit).',
+      'branch_scan skipped after definitive open closing PR (perf short-circuit).',
+      'dupe_cluster skipped after definitive open closing PR (perf short-circuit).',
+      ...(input.npm_package ? ['release_gap skipped after definitive open closing PR (perf short-circuit).'] : [])
     ];
     timings_ms.total = Date.now() - totalStarted;
     const shortCircuitResult = finalize(phase1, timings_ms, true, skipped);

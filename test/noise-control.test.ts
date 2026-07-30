@@ -43,7 +43,7 @@ describe('term extraction noise controls', () => {
   it('filters generic title words before branch_scan while capping branch-only in_flight at VERIFY when linked_work is clean', async () => {
     const result = await worth_check({ repo: 'PostHog/code', issue_number: 2886 });
     expect(result.verdict).toBe('VERIFY');
-    expect(result.reasons).toContain('keyword-matched branches exist but no linked PR or assignee; read the matched branches.');
+    expect(result.reasons.join(' ')).toContain('Matching branch names are heuristic');
     expect(JSON.stringify(result)).toContain('recover-sleep-interrupted-turns');
     expect(branchScanMock).toHaveBeenCalledWith({ repo: 'PostHog/code', keywords: ['laptop', 'sleep'], issue_number: 2886 });
   });

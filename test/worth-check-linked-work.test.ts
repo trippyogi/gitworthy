@@ -20,26 +20,26 @@ vi.mock('../src/core/linked-work.js', () => ({ linked_work: mocks.linkedWork }))
 const { worth_check } = await import('../src/core/worth-check.js');
 
 describe('worth_check linked work rubric', () => {
-  it('skips when an open linked PR exists', async () => {
-    mocks.linkedWork.mockResolvedValueOnce({ verdict_summary: 'found 1 linked pull request and 0 assignees.', evidence: [{ kind: 'linked_pr', number: 4499, state: 'open', draft: false, merged: false, date: '2026-07-08T16:54:42Z', author: 'tarunag10', url: 'https://github.com/modelcontextprotocol/servers/pull/4499' }], signals: ['linked_pr_open'], checked: ['mock linked'], not_checked: ['PR linkage depends on GitHub cross-reference events or explicit issue-number mentions; a PR that never mentions the issue number remains invisible.'], cached: false, fetched_at: '2026-01-01T00:00:00.000Z' });
+  it('skips when an open linked PR explicitly closes the issue', async () => {
+    mocks.linkedWork.mockResolvedValueOnce({ verdict_summary: 'found 1 linked pull request and 0 assignees.', evidence: [{ kind: 'linked_pr', number: 4499, state: 'open', draft: false, merged: false, closes_issue: true, source: 'timeline', date: '2026-07-08T16:54:42Z', author: 'tarunag10', url: 'https://github.com/modelcontextprotocol/servers/pull/4499' }], signals: ['linked_pr_open'], checked: ['mock linked'], not_checked: ['PR linkage depends on GitHub cross-reference events or explicit issue-number mentions; a PR that never mentions the issue number remains invisible.'], cached: false, fetched_at: '2026-01-01T00:00:00.000Z' });
     const result = await worth_check({ repo: 'o/r', issue_number: 1 });
     expect(result.verdict).toBe('SKIP');
-    expect(result.reasons).toContain('open linked PR found: #4499 https://github.com/modelcontextprotocol/servers/pull/4499');
     expect(result.disposition).toBe('land_only');
-    expect(result.reasons.join(' ')).toContain('do not open a parallel fix');
+    expect(result.reasons.join(' ')).toContain('PR #4499 explicitly closes the issue.');
   });
 
   it('caps ACT to VERIFY when the issue is assigned', async () => {
     mocks.linkedWork.mockResolvedValueOnce({ verdict_summary: 'found 0 linked pull requests and 1 assignee.', evidence: [{ kind: 'assignment', assignee: 'cconstable', assigned_at: '2026-07-06T13:50:11Z', assigned_by: 'yuandrew' }], signals: ['assigned'], checked: ['mock linked'], not_checked: ['PR linkage depends on GitHub cross-reference events or explicit issue-number mentions; a PR that never mentions the issue number remains invisible.'], cached: false, fetched_at: '2026-01-01T00:00:00.000Z' });
     const result = await worth_check({ repo: 'o/r', issue_number: 1 });
     expect(result.verdict).toBe('VERIFY');
-    expect(result.reasons).toContain('issue is assigned: cconstable at 2026-07-06T13:50:11Z');
+    expect(result.disposition).toBe('claim_first');
+    expect(result.reasons.join(' ')).toContain('Issue is assigned; coordinate before acting.');
   });
 
   it('caps ACT to VERIFY when a closed unmerged linked PR exists', async () => {
     mocks.linkedWork.mockResolvedValueOnce({ verdict_summary: 'found 1 linked pull request and 0 assignees.', evidence: [{ kind: 'linked_pr', number: 528, state: 'closed', draft: false, merged: false, date: '2026-07-08T16:54:42Z', author: 'someone', url: 'https://github.com/o/r/pull/528' }], signals: ['linked_pr_closed'], checked: ['mock linked'], not_checked: ['PR linkage depends on GitHub cross-reference events or explicit issue-number mentions; a PR that never mentions the issue number remains invisible.'], cached: false, fetched_at: '2026-01-01T00:00:00.000Z' });
     const result = await worth_check({ repo: 'o/r', issue_number: 1 });
     expect(result.verdict).toBe('VERIFY');
-    expect(result.reasons).toContain('closed unmerged linked PR found (prior attempt): #528 https://github.com/o/r/pull/528');
+    expect(result.reasons.join(' ')).toContain('A linked PR was closed unmerged; read the prior attempt before retrying.');
   });
 });

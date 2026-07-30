@@ -6,6 +6,7 @@
 
 - Add versioned output contracts (`schema_version: 1.0-draft.1`) under `src/contracts/` with generated JSON Schemas in `schemas/`.
 - CLI and MCP stamp/validate check results with `run_id` / `decision_id`, and return structured JSON errors (`ok: false`) while preserving legacy `verdict_summary` / `evidence` / `signals` fields.
+- Centralize `worth_check` verdict/disposition in `decideFromSignals` (`src/decision/policy.ts`): heuristics (lexical duplicate, shipped overlap, branch match, title-overlap PRs) cap at VERIFY; only definitive blockers (e.g. released_fix, explicit closing open PR) can SKIP.
 
 ## 0.3.10
 

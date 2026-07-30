@@ -24,6 +24,7 @@ describe('worth_check no PR path cap', () => {
     const result = await worth_check({ repo: 'mirror/repo', issue_number: 1 });
     expect(result.signals).toContain('no_pr_path');
     expect(result.verdict).toBe('VERIFY');
-    expect(result.reasons).toContain('repo accepts no pull requests; feedback channel: Shopify Developer Community');
+    expect(result.reasons.join(' ')).toContain('Repository policy rejects pull requests');
+    expect(result.disposition).toBe('blocked');
   });
 });
