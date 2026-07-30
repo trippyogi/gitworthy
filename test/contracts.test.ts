@@ -88,6 +88,7 @@ describe('contracts', () => {
       error: new GitworthyError({ code: 'github_rate_limit_exhausted', message: 'rate limited', status: 403 })
     });
     expect(error.error.category).toBe('network');
+    expect(error.error.retryable).toBe(true);
   });
 
   it('classifies CLI usage errors as input', () => {

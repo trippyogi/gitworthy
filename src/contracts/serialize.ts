@@ -181,7 +181,9 @@ export function toErrorResult(input: {
         code: input.error.code,
         category: categorize(input.error.code, input.error.status),
         message: input.error.message,
-        retryable: input.error.status === 429 || (input.error.status !== undefined && input.error.status >= 500),
+        retryable: categorize(input.error.code, input.error.status) === 'network'
+          || input.error.status === 429
+          || (input.error.status !== undefined && input.error.status >= 500),
         status: input.error.status ?? null,
         details: {
           github_message: input.error.github_message,
