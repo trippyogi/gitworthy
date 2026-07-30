@@ -1,4 +1,16 @@
 import { GitworthyError } from '../core/envelope.js';
+import {
+  createHttpClient,
+  DEFAULT_GITHUB_API_VERSION,
+  DEFAULT_HTTP_MAX_RETRIES,
+  DEFAULT_HTTP_TIMEOUT_MS,
+  githubApiHeaders,
+  HttpClient,
+  HttpClientError,
+  HttpClientOptions,
+  HttpTransport,
+  RequestBudget
+} from './http-client.js';
 
 export type GithubIssue = {
   number: number;
@@ -25,6 +37,36 @@ const DEFAULT_GITHUB_CACHE_MS = 30_000;
 // Only GET requests are coalesced/cached; mutations always bypass both maps.
 const githubInFlight = new Map<string, Promise<unknown>>();
 const githubTtlCache = new Map<string, { value: unknown; expiresAt: number }>();
+
+type GithubHttpTestOverrides = {
+  sleep?: (ms: number) => Promise<void>;
+  transport?: HttpTransport;
+  budget?: RequestBudget;
+  maxRetries?: number;
+  timeoutMs?: number;
+};
+
+let httpTestOverrides: GithubHttpTestOverrides = {};
+let githubHttp: HttpClient = createGithubHttpClient();
+
+function createGithubHttpClient(): HttpClient {
+  const options: HttpClientOptions = {
+    timeoutMs: httpTestOverrides.timeoutMs ?? DEFAULT_HTTP_TIMEOUT_MS,
+    maxRetries: httpTestOverrides.maxRetries ?? DEFAULT_HTTP_MAX_RETRIES,
+    githubApiVersion: DEFAULT_GITHUB_API_VERSION,
+    userAgent: 'gitworthy',
+    budget: httpTestOverrides.budget,
+    transport: httpTestOverrides.transport,
+    sleep: httpTestOverrides.sleep
+  };
+  return createHttpClient(options);
+}
+
+/** Test-only: replace HTTP client knobs (sleep/transport/budget) and rebuild the client. */
+export function configureGithubHttpForTests(overrides: GithubHttpTestOverrides | null = null): void {
+  httpTestOverrides = overrides ?? {};
+  githubHttp = createGithubHttpClient();
+}
 
 function githubCacheTtlMs(): number {
   const raw = process.env.GITWORTHY_GITHUB_CACHE_MS;
@@ -79,15 +121,22 @@ async function githubJsonUncached<T>(path: string, init: RequestInit = {}): Prom
     });
   }
   const url = path.startsWith('http') ? path : `https://api.github.com${path}`;
-  const response = await fetch(url, {
-    ...init,
-    headers: {
-      accept: 'application/vnd.github+json',
-      authorization: `Bearer ${token}`,
-      'user-agent': 'gitworthy',
-      ...init.headers
-    }
-  });
+  let response: Response;
+  try {
+    const result = await githubHttp.request(url, {
+      method: init.method,
+      body: init.body,
+      signal: init.signal ?? undefined,
+      headers: {
+        ...githubApiHeaders(token),
+        ...headersToRecord(init.headers)
+      }
+    });
+    response = result.response;
+  } catch (error) {
+    throw mapHttpClientError(error, url);
+  }
+
   if (!response.ok) {
     const remaining = response.headers.get('x-ratelimit-remaining');
     const reset = response.headers.get('x-ratelimit-reset');
@@ -124,7 +173,19 @@ async function githubJsonUncached<T>(path: string, init: RequestInit = {}): Prom
 export async function fetchRaw(repo: string, branch: string, filePath: string): Promise<string | null> {
   const url = `https://raw.githubusercontent.com/${repo}/${branch}/${filePath}`;
   const token = githubToken();
-  const response = await fetch(url, { headers: { 'user-agent': 'gitworthy', ...(token ? { authorization: `Bearer ${token}` } : {}) } });
+  let response: Response;
+  try {
+    const result = await githubHttp.request(url, {
+      github: false,
+      headers: {
+        'user-agent': 'gitworthy',
+        ...(token ? { authorization: `Bearer ${token}` } : {})
+      }
+    });
+    response = result.response;
+  } catch (error) {
+    throw mapHttpClientError(error, url);
+  }
   if (response.status === 404) return null;
   if (!response.ok) {
     throw new GitworthyError({
@@ -135,4 +196,33 @@ export async function fetchRaw(repo: string, branch: string, filePath: string): 
     });
   }
   return response.text();
+}
+
+function mapHttpClientError(error: unknown, url: string): Error {
+  if (error instanceof HttpClientError) {
+    if (error.code === 'http_timeout') {
+      return new GitworthyError({
+        code: 'github_timeout',
+        message: error.message,
+        not_checked: [`GitHub API request timed out for ${url}.`]
+      });
+    }
+    if (error.code === 'http_budget_exceeded') {
+      return new GitworthyError({
+        code: 'github_request_budget_exceeded',
+        message: error.message,
+        not_checked: [`GitHub API request budget was exceeded for ${url}.`]
+      });
+    }
+  }
+  return error instanceof Error ? error : new Error(String(error));
+}
+
+function headersToRecord(headers: RequestInit['headers'] | undefined): Record<string, string> {
+  if (!headers) return {};
+  const out: Record<string, string> = {};
+  new Headers(headers).forEach((value, key) => {
+    out[key] = value;
+  });
+  return out;
 }
