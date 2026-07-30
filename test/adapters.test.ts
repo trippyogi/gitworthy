@@ -29,7 +29,7 @@ describe('adapters', () => {
     const mcpText = (result.content as Array<{ type: string; text: string }>)[0].text;
     const mcpPayload = JSON.parse(mcpText) as Record<string, unknown>;
     const { gitworthy_version: version, ...mcpCore } = mcpPayload;
-    expect(version).toBe('0.3.8');
+    expect(version).toBe('0.3.9');
     expect(JSON.parse(cli)).toEqual(mcpCore);
     await client.close();
     await server.close();

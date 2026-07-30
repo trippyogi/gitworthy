@@ -13,7 +13,9 @@ import {
   ledger_lookup,
   ledger_record,
   linked_work,
+  listProbeTemplates,
   org_scan,
+  related_cluster,
   release_gap,
   scan,
   worth_check
@@ -25,16 +27,18 @@ const help = `gitworthy
 Usage:
   gitworthy --help
   gitworthy doctor [--json]
-  gitworthy check owner/repo#123 [--npm-package name] [--probe-glob glob] [--probe-contains text] [--json]
-  gitworthy hunt owner/repo|org [--max-checks 3] [--label ...] [--keywords ...] [--since 90d] [--limit 25] [--max-repos 8] [--no-land-hints] [--json]
+  gitworthy check owner/repo#123 [--npm-package name] [--probe-glob glob] [--probe-contains text] [--probe-template id] [--json]
+  gitworthy hunt owner/repo|org [--max-checks 3] [--label ...] [--keywords ...] [--since 90d] [--limit 25] [--max-repos 8] [--skill-profile ...] [--skip-policy-gate] [--no-land-hints] [--json]
   gitworthy branches owner/repo keyword[,keyword] [--json] [--force-refresh]
   gitworthy issue owner/repo 123 [--json]
-  gitworthy release owner/repo package-name [--probe-glob glob] [--probe-contains text] [--json]
+  gitworthy release owner/repo package-name [--probe-glob glob] [--probe-contains text] [--probe-template id] [--json]
   gitworthy dupes owner/repo 123 [--json]
+  gitworthy related owner/repo [123] [--label ...] [--keywords ...] [--limit 40] [--json]
   gitworthy linked owner/repo 123 [--json]
   gitworthy policy owner/repo [--json]
-  gitworthy scan owner/repo [--label "good first issue"] [--keywords term,term] [--since 90d] [--limit 25] [--no-land-hints] [--json]
-  gitworthy org org-or-user [--label ...] [--keywords ...] [--since 90d] [--limit 25] [--max-repos 8] [--no-land-hints] [--json]
+  gitworthy scan owner/repo [--label "good first issue"] [--keywords term,term] [--since 90d] [--limit 25] [--skill-profile ...] [--no-land-hints] [--json]
+  gitworthy org org-or-user [--label ...] [--keywords ...] [--since 90d] [--limit 25] [--max-repos 8] [--skill-profile ...] [--no-land-hints] [--json]
+  gitworthy probes [--json]
   gitworthy ledger list [--repo owner/repo] [--limit 50] [--json]
   gitworthy ledger show owner/repo#123 [--json]
   gitworthy ledger record owner/repo#123 [--verdict ACT] [--disposition greenfield] [--notes text] [--json]
@@ -84,7 +88,8 @@ function scanFilters(values: Record<string, unknown>) {
     keywords: stringValue(values.keywords)?.split(',').filter(Boolean),
     since: stringValue(values.since),
     limit: stringValue(values.limit) ? Number(stringValue(values.limit)) : undefined,
-    land_hints: values['no-land-hints'] === true ? false : undefined
+    land_hints: values['no-land-hints'] === true ? false : undefined,
+    skill_profile: stringValue(values['skill-profile'])
   };
 }
 
@@ -111,6 +116,9 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
       'npm-package': { type: 'string' },
       'probe-glob': { type: 'string' },
       'probe-contains': { type: 'string' },
+      'probe-template': { type: 'string' },
+      'skill-profile': { type: 'string' },
+      'skip-policy-gate': { type: 'boolean' },
       'force-refresh': { type: 'boolean' },
       label: { type: 'string' },
       keywords: { type: 'string' },
@@ -142,7 +150,12 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
       output = await doctor();
     } else if (command === 'check') {
       if (!first) throw new Error('check requires owner/repo#123.');
-      output = await worth_check({ ...parseIssueRef(first), npm_package: stringValue(parsed.values['npm-package']), probe: probe(parsed.values) });
+      output = await worth_check({
+        ...parseIssueRef(first),
+        npm_package: stringValue(parsed.values['npm-package']),
+        probe: probe(parsed.values),
+        probe_template: stringValue(parsed.values['probe-template'])
+      });
     } else if (command === 'branches') {
       if (!first || !second) throw new Error('branches requires owner/repo and keywords.');
       for (const keyword of second.split(',').filter(Boolean)) if (keyword.startsWith('-')) stderr(`Warning: branch keyword "${keyword}" starts with a dash. Use -- before positional arguments if your shell or parser treats it as an option.\n`);
@@ -152,10 +165,26 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
       output = await issue_vs_main({ repo: first, issue_number: Number(second) });
     } else if (command === 'release') {
       if (!first || !second) throw new Error('release requires owner/repo and package name.');
-      output = await release_gap({ repo: first, npm_package: second, probe: probe(parsed.values), force_refresh: parsed.values['force-refresh'] === true });
+      output = await release_gap({
+        repo: first,
+        npm_package: second,
+        probe: probe(parsed.values),
+        probe_template: stringValue(parsed.values['probe-template']),
+        force_refresh: parsed.values['force-refresh'] === true
+      });
     } else if (command === 'dupes') {
       if (!first || !second) throw new Error('dupes requires owner/repo and issue number.');
       output = await dupe_cluster({ repo: first, issue_number: Number(second) });
+    } else if (command === 'related') {
+      if (!first) throw new Error('related requires owner/repo.');
+      const filters = scanFilters(parsed.values);
+      output = await related_cluster({
+        repo: first,
+        issue_number: second ? Number(second) : undefined,
+        label: filters.label,
+        keywords: filters.keywords,
+        limit: filters.limit
+      });
     } else if (command === 'linked') {
       if (!first || !second) throw new Error('linked requires owner/repo and issue number.');
       output = await linked_work({ repo: first, issue_number: Number(second) });
@@ -187,8 +216,10 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
         since: filters.since,
         scan_limit: filters.limit,
         land_hints: filters.land_hints,
+        skill_profile: filters.skill_profile,
         max_checks: maxChecks,
         max_repos: maxRepos,
+        skip_policy_gate: parsed.values['skip-policy-gate'] === true,
         npm_package: stringValue(parsed.values['npm-package'])
       });
     } else if (command === 'scan') {
@@ -202,6 +233,17 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
         ...scanFilters(parsed.values),
         max_repos: maxRepos ? Number(maxRepos) : undefined
       });
+    } else if (command === 'probes') {
+      const templates = listProbeTemplates();
+      output = {
+        verdict_summary: `listed ${templates.length} probe templates.`,
+        evidence: templates,
+        checked: ['listed built-in probe templates'],
+        not_checked: ['probe templates are heuristics; they do not prove an issue-specific fix shipped.'],
+        signals: [],
+        cached: false,
+        fetched_at: new Date().toISOString()
+      };
     } else if (command === 'ledger') {
       const action = first;
       if (action === 'list') {

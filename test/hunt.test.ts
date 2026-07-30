@@ -32,16 +32,30 @@ function worthResult(overrides: Partial<{ verdict: string; disposition: string; 
   };
 }
 
+function policyEnvelope(overrides: { signals?: string[]; evidence?: MockEvidenceItem[]; not_checked?: string[] } = {}) {
+  return {
+    verdict_summary: overrides.signals?.length ? `found ${overrides.signals.length} contribution policy signals.` : 'no contribution policy signals found.',
+    evidence: overrides.evidence ?? [],
+    signals: overrides.signals ?? [],
+    checked: ['mock contrib_policy checked'],
+    not_checked: overrides.not_checked ?? ['mock contrib_policy not_checked'],
+    cached: false,
+    fetched_at: '2026-01-01T00:00:00.000Z'
+  };
+}
+
 const mocks = vi.hoisted(() => ({
   scan: vi.fn(),
   orgScan: vi.fn(),
   worthCheck: vi.fn(),
+  contribPolicy: vi.fn(),
   getLedgerEntry: vi.fn(async () => null)
 }));
 
 vi.mock('../src/core/scan.js', () => ({ scan: mocks.scan }));
 vi.mock('../src/core/org-scan.js', () => ({ org_scan: mocks.orgScan }));
 vi.mock('../src/core/worth-check.js', () => ({ worth_check: mocks.worthCheck }));
+vi.mock('../src/core/contrib-policy.js', () => ({ contrib_policy: mocks.contribPolicy }));
 vi.mock('../src/lib/ledger.js', () => ({ getLedgerEntry: mocks.getLedgerEntry }));
 
 const { hunt } = await import('../src/core/hunt.js');
@@ -51,6 +65,8 @@ beforeEach(() => {
   mocks.scan.mockReset();
   mocks.orgScan.mockReset();
   mocks.worthCheck.mockReset();
+  mocks.contribPolicy.mockReset();
+  mocks.contribPolicy.mockImplementation(async () => policyEnvelope());
   mocks.getLedgerEntry.mockReset();
   mocks.getLedgerEntry.mockImplementation(async () => null);
 });
@@ -236,5 +252,136 @@ describe('hunt signals and disposition summary', () => {
     mocks.scan.mockResolvedValue(scanEnvelope({ evidence: [] }));
     const result = await hunt({ repo: 'o/r' });
     expect(result.not_checked.some((item) => item.includes('hunt is a triage orchestrator') && item.includes('no signals'))).toBe(true);
+  });
+});
+
+describe('hunt policy gate', () => {
+  it('blocks worth_check for a repo whose contrib_policy signals no_pr_path', async () => {
+    mocks.scan.mockResolvedValue(scanEnvelope({
+      evidence: [
+        { number: 1, quality_score: 90, likely_land_only: false, soft_ask: false, assignees: [] },
+        { number: 2, quality_score: 80, likely_land_only: false, soft_ask: false, assignees: [] }
+      ]
+    }));
+    mocks.contribPolicy.mockResolvedValue(policyEnvelope({
+      signals: ['no_pr_path'],
+      evidence: [{ category: 'no_pr_path', feedback_channel: 'Discord' }],
+      not_checked: ['policy not_checked note for o/r']
+    }));
+
+    const result = await hunt({ repo: 'o/r' });
+
+    expect(mocks.contribPolicy).toHaveBeenCalledWith({ repo: 'o/r' });
+    expect(mocks.worthCheck).not.toHaveBeenCalled();
+
+    const gateEvidence = result.evidence.find((item) => item.kind === 'policy_gate');
+    expect(gateEvidence).toMatchObject({ kind: 'policy_gate', repo: 'o/r', action: 'blocked', signal: 'no_pr_path', feedback_channel: 'Discord' });
+    expect(result.evidence.filter((item) => item.kind === 'hunt_candidate')).toHaveLength(0);
+    expect(result.checked.some((item) => item.includes('policy_gate') && item.includes('no_pr_path'))).toBe(true);
+    expect(result.not_checked).toContain('policy not_checked note for o/r');
+    expect(result.not_checked.some((item) => item.includes('blocked by the contrib_policy gate'))).toBe(true);
+    expect(result.verdict_summary).toContain('hunted 0 checks');
+  });
+
+  it('only blocks the specific repo that signals no_pr_path in org mode, not others', async () => {
+    mocks.orgScan.mockResolvedValue(scanEnvelope({
+      evidence: [
+        { number: 1, repo: 'acme/blocked', quality_score: 90, likely_land_only: false, soft_ask: false, assignees: [] },
+        { number: 2, repo: 'acme/clear', quality_score: 80, likely_land_only: false, soft_ask: false, assignees: [] }
+      ]
+    }));
+    mocks.contribPolicy.mockImplementation(async ({ repo }: { repo: string }) =>
+      repo === 'acme/blocked' ? policyEnvelope({ signals: ['no_pr_path'] }) : policyEnvelope());
+    mocks.worthCheck.mockResolvedValue(worthResult());
+
+    const result = await hunt({ org: 'acme', max_checks: 2 });
+
+    expect(mocks.contribPolicy).toHaveBeenCalledTimes(2);
+    expect(mocks.worthCheck).toHaveBeenCalledTimes(1);
+    expect(mocks.worthCheck).toHaveBeenCalledWith(expect.objectContaining({ repo: 'acme/clear', issue_number: 2 }));
+
+    const candidates = result.evidence.filter((item) => item.kind === 'hunt_candidate');
+    expect(candidates.map((item) => item.repo)).toEqual(['acme/clear']);
+    const gateEvidence = result.evidence.filter((item) => item.kind === 'policy_gate');
+    expect(gateEvidence).toHaveLength(1);
+    expect(gateEvidence[0]).toMatchObject({ repo: 'acme/blocked', action: 'blocked' });
+  });
+
+  it('backfills worth_check slots when top candidates are policy-blocked', async () => {
+    mocks.orgScan.mockResolvedValue(scanEnvelope({
+      evidence: [
+        { number: 1, repo: 'acme/blocked', quality_score: 90, likely_land_only: false, soft_ask: false, assignees: [] },
+        { number: 2, repo: 'acme/blocked', quality_score: 85, likely_land_only: false, soft_ask: false, assignees: [] },
+        { number: 3, repo: 'acme/clear', quality_score: 80, likely_land_only: false, soft_ask: false, assignees: [] },
+        { number: 4, repo: 'acme/clear2', quality_score: 70, likely_land_only: false, soft_ask: false, assignees: [] }
+      ]
+    }));
+    mocks.contribPolicy.mockImplementation(async ({ repo }: { repo: string }) =>
+      repo === 'acme/blocked' ? policyEnvelope({ signals: ['no_pr_path'] }) : policyEnvelope());
+    mocks.worthCheck.mockResolvedValue(worthResult());
+
+    const result = await hunt({ org: 'acme', max_checks: 2 });
+
+    expect(mocks.worthCheck).toHaveBeenCalledTimes(2);
+    expect(mocks.worthCheck).toHaveBeenNthCalledWith(1, expect.objectContaining({ repo: 'acme/clear', issue_number: 3 }));
+    expect(mocks.worthCheck).toHaveBeenNthCalledWith(2, expect.objectContaining({ repo: 'acme/clear2', issue_number: 4 }));
+    expect(result.verdict_summary).toContain('hunted 2 checks');
+    expect(result.verdict_summary).toContain('2 policy-blocked');
+  });
+
+  it('still runs worth_check but prepends a claim_first warning when claim_required', async () => {
+    mocks.scan.mockResolvedValue(scanEnvelope({
+      evidence: [{ number: 1, quality_score: 90, likely_land_only: false, soft_ask: false, assignees: [] }]
+    }));
+    mocks.contribPolicy.mockResolvedValue(policyEnvelope({ signals: ['claim_required'] }));
+    mocks.worthCheck.mockResolvedValue(worthResult());
+
+    const result = await hunt({ repo: 'o/r' });
+
+    expect(mocks.worthCheck).toHaveBeenCalledTimes(1);
+    const gateIndex = result.evidence.findIndex((item) => item.kind === 'policy_gate');
+    const candidateIndex = result.evidence.findIndex((item) => item.kind === 'hunt_candidate');
+    expect(gateIndex).toBeGreaterThanOrEqual(0);
+    expect(candidateIndex).toBeGreaterThan(gateIndex);
+    expect(result.evidence[gateIndex]).toMatchObject({ kind: 'policy_gate', repo: 'o/r', action: 'claim_first', signal: 'claim_required' });
+    expect(result.checked.some((item) => item.includes('policy_gate warning') && item.includes('claim_required'))).toBe(true);
+  });
+
+  it('calls contrib_policy once per unique repo even with multiple candidates from the same repo', async () => {
+    mocks.scan.mockResolvedValue(scanEnvelope({
+      evidence: [
+        { number: 1, quality_score: 90, likely_land_only: false, soft_ask: false, assignees: [] },
+        { number: 2, quality_score: 80, likely_land_only: false, soft_ask: false, assignees: [] }
+      ]
+    }));
+    mocks.worthCheck.mockResolvedValue(worthResult());
+
+    await hunt({ repo: 'o/r', max_checks: 2 });
+
+    expect(mocks.contribPolicy).toHaveBeenCalledTimes(1);
+    expect(mocks.worthCheck).toHaveBeenCalledTimes(2);
+  });
+
+  it('skips the policy gate entirely when skip_policy_gate is true', async () => {
+    mocks.scan.mockResolvedValue(scanEnvelope({
+      evidence: [{ number: 1, quality_score: 90, likely_land_only: false, soft_ask: false, assignees: [] }]
+    }));
+    mocks.contribPolicy.mockResolvedValue(policyEnvelope({ signals: ['no_pr_path'] }));
+    mocks.worthCheck.mockResolvedValue(worthResult());
+
+    const result = await hunt({ repo: 'o/r', skip_policy_gate: true });
+
+    expect(mocks.contribPolicy).not.toHaveBeenCalled();
+    expect(mocks.worthCheck).toHaveBeenCalledTimes(1);
+    expect(result.evidence.some((item) => item.kind === 'policy_gate')).toBe(false);
+    expect(result.checked.some((item) => item.includes('policy gate skipped'))).toBe(true);
+  });
+
+  it('does not call contrib_policy when there are no selected candidates', async () => {
+    mocks.scan.mockResolvedValue(scanEnvelope({
+      evidence: [{ number: 1, quality_score: 90, likely_land_only: true, soft_ask: false, assignees: [] }]
+    }));
+    await hunt({ repo: 'o/r' });
+    expect(mocks.contribPolicy).not.toHaveBeenCalled();
   });
 });
