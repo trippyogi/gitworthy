@@ -24,7 +24,7 @@ vi.mock('../src/lib/github.js', () => ({
 vi.mock('../src/lib/registry.js', () => ({
   npmMetadata: vi.fn(async () => ({ name: 'pkg', 'dist-tags': { latest: '1.0.0' }, versions: { '1.0.0': { version: '1.0.0', dist: { tarball: 'https://registry.npmjs.org/pkg/-/pkg-1.0.0.tgz' } } }, time: { '1.0.0': '2026-01-01T00:00:00.000Z' } })),
   readPackageJsonFromClone: vi.fn(async () => ({ name: 'pkg', version: '1.0.0' })),
-  downloadAndExtractTarball: vi.fn(async () => ({ dir: process.cwd(), cleanup: async () => undefined }))
+  inspectTarball: vi.fn(async () => ({ matches: [], entriesScanned: 0, bytesRead: 0 }))
 }));
 
 describe('structured signals and CLI polish', () => {

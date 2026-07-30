@@ -1,7 +1,5 @@
-import { readdir, readFile } from 'node:fs/promises';
-import path from 'node:path';
 import { readCache, writeCache } from '../lib/cache.js';
-import { downloadAndExtractTarball, npmMetadata, readPackageJsonFromClone } from '../lib/registry.js';
+import { inspectTarball, npmMetadata, readPackageJsonFromClone } from '../lib/registry.js';
 import { shallowClone } from '../lib/git.js';
 import { createEnvelope, Envelope } from './envelope.js';
 import { resolveProbeTemplate } from './probe-templates.js';
@@ -10,15 +8,6 @@ const TTL = 60 * 60 * 1000;
 
 type Input = { repo: string; npm_package: string; probe?: { file_glob?: string; contains?: string }; probe_template?: string; force_refresh?: boolean };
 type ProbeResult = { probe: { file_glob?: string; contains?: string }; matches: Array<Record<string, unknown>>; matched: boolean };
-
-async function walk(dir: string): Promise<string[]> {
-  const entries = await readdir(dir, { withFileTypes: true });
-  const nested = await Promise.all(entries.map(async (entry) => {
-    const full = path.join(dir, entry.name);
-    return entry.isDirectory() ? walk(full) : [full];
-  }));
-  return nested.flat();
-}
 
 function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -93,31 +82,27 @@ export async function release_gap(input: Input): Promise<Envelope> {
     const contentProbe = Boolean(effectiveProbe?.contains);
     const probeRequested = Boolean(effectiveProbe?.contains || effectiveProbe?.file_glob);
     if (probeRequested && latestMeta?.dist?.tarball) {
-      const tarball = await downloadAndExtractTarball(latestMeta.dist.tarball);
-      try {
-        const root = path.join(tarball.dir, 'package');
-        const files = await walk(root);
-        const matches = [] as Array<Record<string, unknown>>;
-        for (const file of files) {
-          const relative = path.relative(root, file).replace(/\\/g, '/');
-          if (effectiveProbe?.file_glob && !globMatch(relative, effectiveProbe.file_glob)) continue;
-          if (contentProbe) {
-            const text = await readFile(file, 'utf8').catch(() => '');
-            if (text.includes(effectiveProbe!.contains!)) matches.push({ path: relative, context: contextLines(text, effectiveProbe!.contains!) });
-          } else {
-            matches.push({ path: relative });
-          }
+      const inspection = await inspectTarball(latestMeta.dist.tarball, {
+        matches: (relative) => !effectiveProbe?.file_glob || globMatch(relative, effectiveProbe.file_glob),
+        readContent: contentProbe
+      });
+      const matches = [] as Array<Record<string, unknown>>;
+      for (const match of inspection.matches) {
+        if (contentProbe) {
+          const text = match.content ?? '';
+          if (text.includes(effectiveProbe!.contains!)) matches.push({ path: match.path, context: contextLines(text, effectiveProbe!.contains!) });
+        } else {
+          matches.push({ path: match.path });
         }
-        probe = { probe: effectiveProbe!, matches, matched: matches.length > 0 };
-        evidence.push(probe);
-        if (!probe.matched) {
-          evidence.push({ note: contentProbe
-            ? 'probe ran; no issue-specific match found in the published artifact'
-            : 'probe ran; no files matched the probe file_glob in the published artifact' });
-        }
-      } finally {
-        await tarball.cleanup();
       }
+      probe = { probe: effectiveProbe!, matches, matched: matches.length > 0 };
+      evidence.push(probe);
+      if (!probe.matched) {
+        evidence.push({ note: contentProbe
+          ? 'probe ran; no issue-specific match found in the published artifact'
+          : 'probe ran; no files matched the probe file_glob in the published artifact' });
+      }
+      checked.push(`inspected npm tarball for ${input.npm_package}@${latest} via bounded streaming read (unsafe paths, symlinks, and hardlinks are excluded as content sources)`);
     } else if (probeRequested) {
       not_checked.push('Issue-specific artifact contents were not checked because the npm tarball was unavailable.');
     } else {
