@@ -7,8 +7,15 @@ import { DispositionSchema, VerdictSchema } from './common.js';
  * input with the same stable error codes before any network or filesystem access happens.
  */
 
-const REPO_PATTERN = /^[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?\/[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?$/;
-const LOGIN_PATTERN = /^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?$/;
+/** GitHub owner/login: starts/ends alphanumeric; hyphens allowed in the middle. */
+const OWNER_PATTERN = '[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?';
+/**
+ * GitHub repository name: may start with `.` (e.g. org `.github` community-health repos)
+ * or alphanumeric/`_`; may contain `.`/`_`/`-`; must not end with `.` or `-`.
+ */
+const REPO_NAME_PATTERN = '[A-Za-z0-9._](?:[A-Za-z0-9._-]*[A-Za-z0-9])?';
+const REPO_PATTERN = new RegExp(`^${OWNER_PATTERN}\\/${REPO_NAME_PATTERN}$`);
+const LOGIN_PATTERN = new RegExp(`^${OWNER_PATTERN}$`);
 const ISSUE_REF_PATTERN = /^([^\s#]+)#(\d+)$/;
 
 export const RepoRefSchema = z.string()

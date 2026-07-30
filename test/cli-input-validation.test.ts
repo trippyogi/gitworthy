@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { runCli } from '../src/cli/index.js';
-import { ErrorResultSchema } from '../src/contracts/index.js';
+import { ErrorResultSchema, IssueRefStringSchema, RepoRefSchema } from '../src/contracts/index.js';
 
 // All of these paths are invalid input, so none should ever reach a GitHub/git network call;
 // there are deliberately no lib/git or lib/github mocks in this file.
@@ -94,5 +94,14 @@ describe('CLI input validation', () => {
       expect(code).toBe(0);
       expect(stdout.trim().length).toBeGreaterThan(0);
     }
+  });
+
+  it('accepts GitHub repos whose names begin with a period (e.g. .github)', () => {
+    expect(RepoRefSchema.parse('octocat/.github')).toBe('octocat/.github');
+    expect(RepoRefSchema.parse('myorg/.github-private')).toBe('myorg/.github-private');
+    expect(IssueRefStringSchema.parse('octocat/.github#12')).toEqual({
+      repo: 'octocat/.github',
+      issue_number: 12
+    });
   });
 });
