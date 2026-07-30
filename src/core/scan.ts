@@ -56,8 +56,8 @@ function issueAgeDays(createdAt: string): number {
 
 function matchesKeywords(issue: GithubIssue, keywords: string[] | undefined): boolean {
   if (!keywords || keywords.length === 0) return true;
-  const title = issue.title.toLowerCase();
-  return keywords.some((keyword) => title.includes(keyword.toLowerCase()));
+  const haystack = `${issue.title}\n${issue.body ?? ''}`.toLowerCase();
+  return keywords.some((keyword) => haystack.includes(keyword.toLowerCase()));
 }
 
 function matchesLabel(issue: GithubIssue, label: string | undefined): boolean {
@@ -211,7 +211,7 @@ export async function scan(input: Input): Promise<Envelope> {
       'excluded pull requests',
       'ranked candidates by quality_score (repro, labels, staleness, soft-ask, assignees)',
       input.label ? `filtered by label: ${input.label}` : 'no label filter requested',
-      input.keywords?.length ? `filtered titles by keywords: ${input.keywords.join(', ')}` : 'no keyword filter requested',
+      input.keywords?.length ? `filtered titles and bodies by keywords: ${input.keywords.join(', ')}` : 'no keyword filter requested',
       input.since ? `filtered by created date since ${input.since}` : 'no age filter requested',
       landHintsEnabled ? 'land_hints enabled: flagged likely land-only candidates from assignees and open PR search' : 'land_hints disabled by request',
       ...policyHint.checked,

@@ -19,7 +19,57 @@ export function githubToken(): string | undefined {
   return process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
 }
 
+const DEFAULT_GITHUB_CACHE_MS = 30_000;
+
+// Keyed by the request path (including query string) as passed to githubJson.
+// Only GET requests are coalesced/cached; mutations always bypass both maps.
+const githubInFlight = new Map<string, Promise<unknown>>();
+const githubTtlCache = new Map<string, { value: unknown; expiresAt: number }>();
+
+function githubCacheTtlMs(): number {
+  const raw = process.env.GITWORTHY_GITHUB_CACHE_MS;
+  if (raw === undefined || raw === '') return DEFAULT_GITHUB_CACHE_MS;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : DEFAULT_GITHUB_CACHE_MS;
+}
+
+function isGetRequest(init: RequestInit): boolean {
+  return (init.method ?? 'GET').toUpperCase() === 'GET';
+}
+
+/** Clears the in-flight singleflight map and the TTL cache. For tests only. */
+export function clearGithubCachesForTests(): void {
+  githubInFlight.clear();
+  githubTtlCache.clear();
+}
+
 export async function githubJson<T>(path: string, init: RequestInit = {}): Promise<T> {
+  if (!isGetRequest(init)) {
+    return githubJsonUncached<T>(path, init);
+  }
+  const ttlMs = githubCacheTtlMs();
+  if (ttlMs > 0) {
+    const cached = githubTtlCache.get(path);
+    if (cached) {
+      if (cached.expiresAt > Date.now()) return cached.value as T;
+      githubTtlCache.delete(path);
+    }
+  }
+  const inFlight = githubInFlight.get(path);
+  if (inFlight) return inFlight as Promise<T>;
+  const promise = githubJsonUncached<T>(path, init)
+    .then((value) => {
+      if (ttlMs > 0) githubTtlCache.set(path, { value, expiresAt: Date.now() + ttlMs });
+      return value;
+    })
+    .finally(() => {
+      githubInFlight.delete(path);
+    });
+  githubInFlight.set(path, promise);
+  return promise;
+}
+
+async function githubJsonUncached<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = githubToken();
   if (!token) {
     throw new GitworthyError({

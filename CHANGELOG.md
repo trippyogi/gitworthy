@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.3.8
+
+- Coalesce identical in-flight GitHub GETs and cache successes for 30s (`GITWORTHY_GITHUB_CACHE_MS` to tune/disable TTL).
+- Scan keyword filters match **title and body** (catches body-only symptom text).
+- `linked_work` adds org-scoped `network_pr` density evidence for fork/sibling PRs (does not force SKIP alone); crowded disposition counts network PRs with referenced commits.
+- Add `hunt` CLI/MCP: scan/org_scan → filter land-only/soft-ask/assigned/ledger-SKIP → serial `worth_check` (max 5).
+
 ## 0.3.7
 
 - Add `doctor` (CLI/MCP): token, rate limit, auth, timeline cross-ref probe, cache writability, local vs npm version.

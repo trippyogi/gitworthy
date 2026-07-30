@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GitworthyError } from '../../src/core/envelope.js';
-import { githubJson } from '../../src/lib/github.js';
+import { clearGithubCachesForTests, githubJson } from '../../src/lib/github.js';
 
 let originalGithubToken: string | undefined;
 let originalGhToken: string | undefined;
@@ -9,6 +9,7 @@ describe('github client', () => {
   beforeEach(() => {
     originalGithubToken = process.env.GITHUB_TOKEN;
     originalGhToken = process.env.GH_TOKEN;
+    clearGithubCachesForTests();
   });
 
   afterEach(() => {
@@ -18,6 +19,7 @@ describe('github client', () => {
     else process.env.GH_TOKEN = originalGhToken;
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
+    clearGithubCachesForTests();
   });
 
   it('returns a structured missing token error without touching the network', async () => {

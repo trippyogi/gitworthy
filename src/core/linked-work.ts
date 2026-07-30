@@ -18,7 +18,7 @@ type TimelineEvent = {
 };
 type GithubPr = { number: number; state: string; draft?: boolean; merged?: boolean; title: string; body?: string | null; html_url: string; user?: { login: string } | null; created_at: string; updated_at: string; closed_at: string | null; merged_at: string | null };
 type IssueComment = { body: string | null; created_at: string; user?: { login: string } | null; html_url: string };
-type SearchResult = { items: Array<GithubIssue & { pull_request?: { url?: string; html_url?: string }; body?: string | null; title?: string }> };
+type SearchResult = { items: Array<GithubIssue & { pull_request?: { url?: string; html_url?: string; merged_at?: string | null }; body?: string | null; title?: string; repository_url?: string }> };
 type LinkedPrSource = 'timeline' | 'search' | 'comment' | 'title_overlap';
 type LinkedPrEvidence = {
   kind: 'linked_pr';
@@ -43,11 +43,23 @@ type LinkedPrEvidence = {
 };
 type AssignmentEvidence = { kind: 'assignment'; assignee: string; assigned_at: string | null; assigned_by: string | null };
 type ReferencedCommitEvidence = { kind: 'referenced_commit'; sha: string; date: string | null; url?: string; author: string | null };
+type NetworkPrEvidence = {
+  kind: 'network_pr';
+  number: number;
+  repo: string;
+  state: string;
+  merged: boolean;
+  url: string;
+  title: string;
+  author: string | null;
+  source: 'org_search';
+};
 
-const LINKAGE_LIMIT = 'PR linkage uses cross-references, explicit issue mentions (title+body), comment PR URLs, and high title overlap; renamed or differently worded work can still be missed. Fork-only PRs are invisible.';
+const LINKAGE_LIMIT = 'PR linkage uses cross-references, explicit issue mentions (title+body), comment PR URLs, and high title overlap; renamed or differently worded work can still be missed. A secondary org-scoped search surfaces fork/other-repo PRs referencing the issue as density evidence only (never a SKIP signal by itself); it is lexical and scoped to the home repo\'s org, so PRs in forks under other orgs, or PRs that reference the issue without matching keywords, can still be missed.';
 const TITLE_OVERLAP_MIN = 0.4;
 const TITLE_OVERLAP_MIN_SHARED = 2;
 const REFERENCED_COMMIT_CAP = 20;
+const NETWORK_SEARCH_PER_PAGE = 20;
 const CLAIM_COMMENT = /\b(i\s+('ve|have)\s+)?(submitted|opened|created|sent|made|raised)\s+(a\s+)?(pr|pull\s+request)\b|\b(pr|pull\s+request)\s+(is|was)\s+(up|ready|opened|submitted)\b|\bsee\s+(my\s+)?(pr|pull\s+request)\b/i;
 
 const MAX_TIMELINE_PAGES = 2;
@@ -122,9 +134,10 @@ async function timelineLinkedPrs(repo: string, events: TimelineEvent[], issueNum
   return [...prs.values()].sort((left, right) => left.number - right.number);
 }
 
-function referencedCommits(events: TimelineEvent[]): ReferencedCommitEvidence[] {
+function referencedCommits(events: TimelineEvent[]): { commits: ReferencedCommitEvidence[]; capped: boolean } {
   const seen = new Set<string>();
   const commits: ReferencedCommitEvidence[] = [];
+  let capped = false;
   for (const event of events) {
     if (event.event !== 'referenced' || !event.commit_id) continue;
     if (seen.has(event.commit_id)) continue;
@@ -136,9 +149,101 @@ function referencedCommits(events: TimelineEvent[]): ReferencedCommitEvidence[] 
       url: event.commit_url ?? undefined,
       author: event.actor?.login ?? null
     });
-    if (commits.length >= REFERENCED_COMMIT_CAP) break;
+    if (commits.length >= REFERENCED_COMMIT_CAP) {
+      capped = true;
+      break;
+    }
   }
-  return commits;
+  return { commits, capped };
+}
+
+/** Extracts an "owner/repo" full name from a Search API item's repository_url or html_url. */
+function repoFromSearchItem(item: { repository_url?: string; html_url?: string }): string | null {
+  if (item.repository_url) {
+    const match = item.repository_url.match(/\/repos\/([^/]+\/[^/]+)$/);
+    if (match) return match[1];
+  }
+  if (item.html_url) {
+    const match = item.html_url.match(/github\.com\/([^/]+\/[^/]+)\/pull\/\d+/i);
+    if (match) return match[1];
+  }
+  return null;
+}
+
+/**
+ * Soft secondary pass: searches the home repo's org for open/closed PRs (in other repos, e.g. forks)
+ * that reference the issue. This is density evidence only — never sufficient on its own to mark a PR
+ * "linked" or force a SKIP, since a fork PR mentioning the issue number may be unrelated or abandoned.
+ */
+async function networkLinkedPrs(homeRepo: string, issueNumber: number): Promise<{ prs: NetworkPrEvidence[]; checked: string[]; not_checked: string[] }> {
+  const owner = homeRepo.split('/')[0];
+  if (!owner) {
+    return { prs: [], checked: [], not_checked: ['network PR search skipped because the repository owner could not be determined from the input repo.'] };
+  }
+  try {
+    // Prefer org: for organizations; fall back to user: for personal accounts (org: returns empty/error).
+    let result: SearchResult | null = null;
+    let scope: 'org' | 'user' = 'org';
+    const issueClause = `is:pr ("Fixes #${issueNumber}" OR "Closes #${issueNumber}" OR "Resolves #${issueNumber}" OR "#${issueNumber}")`;
+    try {
+      const query = encodeURIComponent(`${issueClause} org:${owner}`);
+      result = await githubJson<SearchResult>(`/search/issues?q=${query}&per_page=${NETWORK_SEARCH_PER_PAGE}`);
+    } catch {
+      scope = 'user';
+      const query = encodeURIComponent(`${issueClause} user:${owner}`);
+      result = await githubJson<SearchResult>(`/search/issues?q=${query}&per_page=${NETWORK_SEARCH_PER_PAGE}`);
+    }
+    // If org search succeeded but returned nothing, also try user: (personal namespace owners).
+    if (scope === 'org' && (result?.items.length ?? 0) === 0) {
+      try {
+        const query = encodeURIComponent(`${issueClause} user:${owner}`);
+        const userResult = await githubJson<SearchResult>(`/search/issues?q=${query}&per_page=${NETWORK_SEARCH_PER_PAGE}`);
+        if (userResult.items.length > 0) {
+          result = userResult;
+          scope = 'user';
+        }
+      } catch {
+        // keep empty org result
+      }
+    }
+    const prs: NetworkPrEvidence[] = [];
+    const seen = new Set<string>();
+    for (const item of result?.items ?? []) {
+      if (!('pull_request' in item)) continue;
+      const itemRepo = repoFromSearchItem(item);
+      if (!itemRepo || itemRepo.toLowerCase() === homeRepo.toLowerCase()) continue;
+      const key = `${itemRepo.toLowerCase()}#${item.number}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const pr = await maybePrDetails(itemRepo, item.number);
+      if (!pr) continue;
+      if (isAutomationAuthor(pr.user?.login)) continue;
+      const text = `${pr.title}\n${pr.body ?? ''}`;
+      if (!mentionsIssue(text, issueNumber)) continue;
+      prs.push({
+        kind: 'network_pr',
+        number: pr.number,
+        repo: itemRepo,
+        state: pr.state,
+        merged: pr.merged === true || pr.merged_at !== null,
+        url: pr.html_url,
+        title: pr.title,
+        author: pr.user?.login ?? null,
+        source: 'org_search'
+      });
+    }
+    return {
+      prs,
+      checked: [`searched ${scope}:${owner} for network/fork pull requests referencing #${issueNumber}`],
+      not_checked: []
+    };
+  } catch {
+    return {
+      prs: [],
+      checked: [],
+      not_checked: [`network pull request search for owner ${owner} failed; fork/sibling PRs may be under-counted.`]
+    };
+  }
 }
 
 function timelineCapabilityNotes(events: TimelineEvent[]): { checked: string[]; not_checked: string[] } {
@@ -279,7 +384,7 @@ export async function linked_work(input: Input): Promise<Envelope> {
   const { events, truncated: timelineTruncated } = await timeline(input.repo, input.issue_number);
   const timelineNotes = timelineCapabilityNotes(events);
   const timelinePrs = await timelineLinkedPrs(input.repo, events, input.issue_number);
-  const commits = referencedCommits(events);
+  const { commits, capped: commitsCapped } = referencedCommits(events);
   const knownPrs = new Set(timelinePrs.map((pr) => pr.number));
   const { prs: commentPrs, claimComments } = await commentLinkedPrs(resolved.full_name, input.repo, input.issue_number, knownPrs);
   const { prs: searchPrs, checked: searchChecked, not_checked: searchNotChecked } = await searchLinkedPrs(input.repo, input.repo, input.issue_number, knownPrs);
@@ -288,6 +393,9 @@ export async function linked_work(input: Input): Promise<Envelope> {
   const titleResult = shouldTitleSearch
     ? await titleOverlapPrs(input.repo, input.repo, issue, knownPrs, claimComments)
     : { prs: [], checked: [], not_checked: ['title-overlap PR search skipped because explicit linkage already covered the issue.'] };
+  // Soft secondary pass, always run (capped per_page) — surfaces fork/other-repo PRs as density
+  // evidence only; never treated as a linked_pr and never forces a SKIP signal on its own.
+  const { prs: networkPrs, checked: networkChecked, not_checked: networkNotChecked } = await networkLinkedPrs(input.repo, input.issue_number);
   const { active, ignored } = partitionLinkedPrs([...timelinePrs, ...commentPrs, ...searchPrs, ...titleResult.prs]);
   const linkedPrs = active.sort((left, right) => left.number - right.number);
   const assignments = assignmentEvidence(issue, events);
@@ -300,8 +408,8 @@ export async function linked_work(input: Input): Promise<Envelope> {
   ];
   const linkedLabel = linkedPrs.length === 1 ? 'linked pull request' : 'linked pull requests';
   const assignedLabel = assignments.length === 1 ? 'assignee' : 'assignees';
-  const checkedNotes = [...new Set([...resolved.checked, ...searchChecked, ...titleResult.checked, ...timelineNotes.checked])];
-  const notCheckedNotes = [...new Set([...resolved.not_checked, ...searchNotChecked, ...titleResult.not_checked, ...timelineNotes.not_checked, LINKAGE_LIMIT])];
+  const checkedNotes = [...new Set([...resolved.checked, ...searchChecked, ...titleResult.checked, ...timelineNotes.checked, ...networkChecked])];
+  const notCheckedNotes = [...new Set([...resolved.not_checked, ...searchNotChecked, ...titleResult.not_checked, ...timelineNotes.not_checked, ...networkNotChecked, LINKAGE_LIMIT])];
   if (timelineTruncated) {
     notCheckedNotes.push(`timeline soft-capped at ${MAX_TIMELINE_PAGES} pages; older cross-references may be missing.`);
   }
@@ -311,21 +419,28 @@ export async function linked_work(input: Input): Promise<Envelope> {
   if (commits.length > 0) {
     checkedNotes.push(`collected ${commits.length} referenced commit${commits.length === 1 ? '' : 's'} from timeline (evidence only; commits do not force SKIP)`);
   }
+  if (commitsCapped) {
+    notCheckedNotes.push(`referenced commits capped at ${REFERENCED_COMMIT_CAP}; older referenced commits may be omitted.`);
+  }
+  if (networkPrs.length > 0) {
+    checkedNotes.push(`found ${networkPrs.length} cross-repository pull request${networkPrs.length === 1 ? '' : 's'} in the org referencing this issue (evidence only; does not force a linked-PR signal)`);
+  }
   if (claimComments && linkedPrs.every((pr) => pr.source !== 'title_overlap' && pr.source !== 'comment')) {
     notCheckedNotes.push('a comment claimed a pull request was submitted, but no matching PR was linked; read recent open PRs manually.');
   }
   const densityBits = [
     priorAttempts > 0 ? `${priorAttempts} prior closed unmerged PR${priorAttempts === 1 ? '' : 's'}` : null,
-    commits.length > 0 ? `${commits.length} referenced commit${commits.length === 1 ? '' : 's'}` : null
+    commits.length > 0 ? `${commits.length} referenced commit${commits.length === 1 ? '' : 's'}` : null,
+    networkPrs.length > 0 ? `${networkPrs.length} network/fork PR${networkPrs.length === 1 ? '' : 's'} referencing the issue` : null
   ].filter(Boolean);
   const verdict_summary = linkedPrs.length > 0 || assignments.length > 0
     ? `found ${linkedPrs.length} ${linkedLabel} and ${assignments.length} ${assignedLabel}${densityBits.length ? ` (${densityBits.join(', ')})` : ''}.`
     : ignored.length > 0
-      ? `no human-linked pull requests or assignees found (${ignored.length} automation PR${ignored.length === 1 ? '' : 's'} ignored)${commits.length ? `; ${commits.length} referenced commits` : ''}.`
-      : commits.length > 0
-        ? `no linked pull requests or assignees; found ${commits.length} referenced commit${commits.length === 1 ? '' : 's'}.`
+      ? `no human-linked pull requests or assignees found (${ignored.length} automation PR${ignored.length === 1 ? '' : 's'} ignored)${densityBits.length ? `; ${densityBits.join(', ')}` : ''}.`
+      : densityBits.length > 0
+        ? `no linked pull requests or assignees; found ${densityBits.join(', ')}.`
         : 'no linked pull requests or current assignees found.';
-  const evidence = [...linkedPrs, ...ignored, ...assignments, ...commits];
+  const evidence = [...linkedPrs, ...ignored, ...assignments, ...commits, ...networkPrs];
   return createEnvelope({
     verdict_summary,
     evidence,
@@ -335,7 +450,8 @@ export async function linked_work(input: Input): Promise<Envelope> {
       ...checkedNotes,
       'fetched issue timeline cross-reference, referenced commits, and assignment events',
       'fetched issue comments for pull request references',
-      'searched pull requests for explicit issue-number mentions in title and body'
+      'searched pull requests for explicit issue-number mentions in title and body',
+      'searched org-wide for cross-repository (fork/network) pull requests referencing the issue'
     ],
     not_checked: notCheckedNotes,
     cached: false

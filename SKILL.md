@@ -7,19 +7,16 @@ Use gitworthy before spending time on an external repository issue or feature re
 Wall time is usually **N × worth_check**, not one slow check. Prefer a narrow funnel:
 
 1. `npx gitworthy doctor --json` once per machine/session if auth or rate limits are unsure.
-2. `npx gitworthy policy owner/repo --json` on unfamiliar repos (or per-repo after org scan).
-3. Tracker triage:
-   - one repo: `npx gitworthy scan owner/repo --json`
-   - whole org/user: `npx gitworthy org openclaw --json` (optional `--max-repos 8`)
-4. **Prefilter** scan hits before any `worth_check`:
+2. Prefer **`npx gitworthy hunt owner/repo --json`** or **`npx gitworthy hunt openclaw --json`** (org) — scan → filter → ≤3 serial worth_checks in one call.
+3. Or manual funnel: `policy` → `scan`/`org` → prefilter → ≤3–5 serial `worth_check`.
+4. **Prefilter** (also applied by `hunt` by default):
    - skip `likely_land_only: true` / assigned / `soft_ask: true` / thin descriptions unless hunting those
    - skip known linked-PR-open / land-only
    - prefer higher `quality_score` and clear repro
    - check `gitworthy ledger show owner/repo#N --json` to avoid re-checking recent hits
-5. Run **`worth_check` on at most 3–5** survivors.
-6. **Serial `worth_check` per repo** (max concurrency **1–2**). Parallel MCP calls on the same large repo thrash clone/`ls-remote`/API budgets and erase pool wins.
+5. If hunting manually: run **`worth_check` on at most 3–5** survivors, **serial per repo** (concurrency 1–2).
 
-Do **not** worth_check every scan row. `worth_check` auto-records to the local scout ledger.
+Do **not** worth_check every scan row. `worth_check` auto-records to the local scout ledger. `hunt` returns no ACT/SKIP signals of its own — read each `hunt_candidate.worth_check`.
 
 ## Commands
 

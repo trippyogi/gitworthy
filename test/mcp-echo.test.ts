@@ -17,6 +17,7 @@ describe('MCP tools', () => {
       'contrib_policy',
       'doctor',
       'dupe_cluster',
+      'hunt',
       'issue_vs_main',
       'ledger_list',
       'ledger_lookup',

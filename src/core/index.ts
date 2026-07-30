@@ -9,4 +9,5 @@ export { linked_work } from './linked-work.js';
 export { worth_check } from './worth-check.js';
 export { scan } from './scan.js';
 export { org_scan } from './org-scan.js';
+export { hunt } from './hunt.js';
 export { ledger_lookup, ledger_record, ledger_list } from './ledger.js';
