@@ -31,6 +31,37 @@ Gitworthy is a local-first decision engine. Please treat these as security-sensi
 - **Filesystem / archive inspection** — symlink escape, path traversal, archive bombs, and unbounded clones/downloads are in-scope defect classes.
 - **Local outcome store** — corruption, race conditions between CLI and MCP processes, and silent data loss are treated as security/reliability bugs for 1.0.
 
+## Hostile-input security test suite
+
+`test/security/` is the release-facing gate for the defect classes above. It
+covers, with offline/mocked fixtures only (no live network):
+
+- **Symlink hostility** — git symlink blobs are never followed for content
+  (addressing is always by blob sha, never by tree path); tar symlink/hardlink
+  entries are excluded purely by entry type, regardless of their link target.
+- **Resource budgets** — per-file and aggregate byte budgets, and entry-count
+  budgets, for both git object reads and npm tarball streaming, including
+  boundary (cap vs. cap+1) cases and pinned regression checks on the default
+  cap values themselves.
+- **Binary blobs** — null-byte content is detected and skipped rather than
+  returned as garbage text.
+- **Path traversal / archive-link hostility** — `..`, absolute posix/Windows/UNC
+  paths, and dot-segment tricks are rejected as tarball content sources before
+  they are ever read.
+- **Timeouts** — git subprocess, HTTP, and tarball-stream timeouts all surface
+  typed, stable-coded errors (`npm_tarball_timeout`, `http_timeout`, and typed
+  git failure codes) instead of hanging or crashing; a static guard asserts
+  every `git` subprocess call site passes an explicit timeout tied to
+  `GIT_SUBPROCESS_TIMEOUT_MS`.
+- **Invalid CLI/MCP input** — malformed, injection-shaped, and unbounded-length
+  inputs are rejected with a stable `category: 'input'` error before any
+  network or git call is attempted.
+
+Related coverage also lives in `test/lib/git.test.ts` (GW-012),
+`test/lib/registry-tarball.test.ts` (GW-013), and
+`test/cli-input-validation.test.ts` / `test/mcp-input-validation.test.ts`
+(GW-007).
+
 ## Out of scope for public issues
 
 Use private reporting for:

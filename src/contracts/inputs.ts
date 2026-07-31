@@ -18,9 +18,13 @@ const REPO_PATTERN = new RegExp(`^${OWNER_PATTERN}\\/${REPO_NAME_PATTERN}$`);
 const LOGIN_PATTERN = new RegExp(`^${OWNER_PATTERN}$`);
 const ISSUE_REF_PATTERN = /^([^\s#]+)#(\d+)$/;
 
+// GitHub caps logins at 39 chars and repo names at 100 chars; capping the combined
+// "owner/repo" string rejects a hostile/fuzzed unbounded-length value before it can
+// ever be used to build a clone URL or API request path.
 export const RepoRefSchema = z.string()
   .trim()
   .min(3, 'repo must not be empty.')
+  .max(140, 'repo must be 140 characters or fewer.')
   .regex(REPO_PATTERN, 'Expected owner/repo (e.g. octocat/Hello-World).');
 
 export const OrgOrUserLoginSchema = z.string()
