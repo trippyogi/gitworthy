@@ -1,16 +1,19 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { release_gap } from '../src/core/release-gap.js';
 import type { TarballInspectOptions, TarballInspectResult, TarballMatch } from '../src/lib/registry.js';
+import { commitFixtureFiles, initGitFixture } from './helpers/git-fixture.js';
 
 let cloneDir: string;
+let cleanupClone: () => Promise<void>;
 let tarballEntries: TarballMatch[];
 
-vi.mock('../src/lib/git.js', () => ({
-  shallowClone: vi.fn(async () => ({ dir: cloneDir, cleanup: async () => undefined }))
-}));
+vi.mock('../src/lib/git.js', async () => {
+  const actual = await vi.importActual<typeof import('../src/lib/git.js')>('../src/lib/git.js');
+  return {
+    ...actual,
+    shallowClone: vi.fn(async () => ({ dir: cloneDir, cleanup: async () => undefined }))
+  };
+});
 
 vi.mock('../src/lib/registry.js', async () => {
   const actual = await vi.importActual<typeof import('../src/lib/registry.js')>('../src/lib/registry.js');
@@ -35,15 +38,19 @@ vi.mock('../src/lib/registry.js', async () => {
 
 describe('release_gap probe signal', () => {
   beforeEach(async () => {
-    cloneDir = await mkdtemp(path.join(tmpdir(), 'gitworthy-release-clone-'));
-    await writeFile(path.join(cloneDir, 'package.json'), JSON.stringify({ name: '@elevenlabs/cli', version: '0.5.5' }));
+    const clone = await initGitFixture('gitworthy-release-clone-');
+    cloneDir = clone.dir;
+    cleanupClone = clone.cleanup;
+    await commitFixtureFiles(cloneDir, {
+      'package.json': JSON.stringify({ name: '@elevenlabs/cli', version: '0.5.5' })
+    });
     tarballEntries = [
       { path: 'dist/commands/add.js', size: 41, content: 'spawn(command, args, { shell: true });\n' }
     ];
   });
 
   afterEach(async () => {
-    await rm(cloneDir, { recursive: true, force: true });
+    await cleanupClone();
   });
 
   it('emits released_fix when main equals npm latest and the probe matches', async () => {

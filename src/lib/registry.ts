@@ -1,9 +1,8 @@
-import { readFile } from 'node:fs/promises';
-import path from 'node:path';
 import { Readable } from 'node:stream';
 import { list as tarList, type ReadEntry } from 'tar';
 import { GitworthyError } from '../core/envelope.js';
 import { createHttpClient, HttpClient, HttpClientError } from './http-client.js';
+import { listTreeFiles, readTreeFile } from './git.js';
 
 export type NpmMetadata = {
   name: string;
@@ -21,8 +20,29 @@ export async function npmMetadata(packageName: string): Promise<NpmMetadata> {
   return response.json() as Promise<NpmMetadata>;
 }
 
+/**
+ * Read package.json from a bare/no-checkout clone directory via git objects
+ * (`git ls-tree` + `git cat-file`), never via a working-tree fs read.
+ */
 export async function readPackageJsonFromClone(dir: string): Promise<{ version?: string; name?: string }> {
-  return JSON.parse(await readFile(path.join(dir, 'package.json'), 'utf8')) as { version?: string; name?: string };
+  const { files } = await listTreeFiles(dir);
+  const entry = files.find((file) => file.path === 'package.json');
+  if (!entry) {
+    throw new GitworthyError({
+      code: 'git_package_json_missing',
+      message: `package.json was not found in the cloned tree at ${dir}.`,
+      not_checked: [`package.json content was not checked for the repository at ${dir}.`]
+    });
+  }
+  const content = await readTreeFile(dir, entry);
+  if (content == null) {
+    throw new GitworthyError({
+      code: 'git_package_json_unreadable',
+      message: `package.json could not be read from git objects at ${dir}.`,
+      not_checked: [`package.json content was not checked for the repository at ${dir}.`]
+    });
+  }
+  return JSON.parse(content) as { version?: string; name?: string };
 }
 
 /**

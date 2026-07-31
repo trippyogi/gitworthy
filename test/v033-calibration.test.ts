@@ -5,17 +5,23 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { release_gap } from '../src/core/release-gap.js';
 import { dupe_cluster } from '../src/core/dupe-cluster.js';
 import type { TarballInspectOptions, TarballInspectResult, TarballMatch } from '../src/lib/registry.js';
+import { commitFixtureFiles, initGitFixture } from './helpers/git-fixture.js';
 
 let cloneDir: string;
+let cleanupClone: () => Promise<void>;
 let tarballEntries: TarballMatch[];
 
 const githubMocks = vi.hoisted(() => ({
   githubJson: vi.fn()
 }));
 
-vi.mock('../src/lib/git.js', () => ({
-  shallowClone: vi.fn(async () => ({ dir: cloneDir, cleanup: async () => undefined }))
-}));
+vi.mock('../src/lib/git.js', async () => {
+  const actual = await vi.importActual<typeof import('../src/lib/git.js')>('../src/lib/git.js');
+  return {
+    ...actual,
+    shallowClone: vi.fn(async () => ({ dir: cloneDir, cleanup: async () => undefined }))
+  };
+});
 
 vi.mock('../src/lib/registry.js', async () => {
   const actual = await vi.importActual<typeof import('../src/lib/registry.js')>('../src/lib/registry.js');
@@ -61,8 +67,10 @@ function issue(number: number, title: string, state = 'open', body = '', extra: 
 
 describe('v0.3.3 calibration regressions', () => {
   beforeEach(async () => {
-    cloneDir = await mkdtemp(path.join(tmpdir(), 'gitworthy-release-clone-'));
-    await writeFile(path.join(cloneDir, 'package.json'), JSON.stringify({ name: 'demo', version: '1.0.0' }));
+    const clone = await initGitFixture('gitworthy-release-clone-');
+    cloneDir = clone.dir;
+    cleanupClone = clone.cleanup;
+    await commitFixtureFiles(cloneDir, { 'package.json': JSON.stringify({ name: 'demo', version: '1.0.0' }) });
     tarballEntries = [{ path: 'dist/index.js', size: 24, content: 'console.log("shipped");\n' }];
     vi.clearAllMocks();
     githubMocks.githubJson.mockImplementation(async (requestPath: string) => {
@@ -77,7 +85,7 @@ describe('v0.3.3 calibration regressions', () => {
   });
 
   afterEach(async () => {
-    await rm(cloneDir, { recursive: true, force: true });
+    await cleanupClone();
   });
 
   it('excludes pull requests from duplicate clusters', async () => {
