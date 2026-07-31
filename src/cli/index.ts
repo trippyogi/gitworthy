@@ -20,8 +20,20 @@ import {
   scan,
   worth_check
 } from '../core/index.js';
+import { GitworthyError } from '../core/envelope.js';
 import { packageVersion } from '../lib/package-meta.js';
-import { toCheckResult, toErrorResult, toStampedLegacyResult } from '../contracts/index.js';
+import {
+  DispositionSchema,
+  IssueNumberStringSchema,
+  OrgOrUserLoginSchema,
+  RepoRefSchema,
+  VerdictSchema,
+  parseArg,
+  parseIssueRef,
+  toCheckResult,
+  toErrorResult,
+  toStampedLegacyResult
+} from '../contracts/index.js';
 import { startMcpServer } from '../mcp/server.js';
 
 const help = `gitworthy
@@ -50,10 +62,32 @@ Usage:
 
 type Write = (text: string) => void;
 
-function parseIssueRef(ref: string): { repo: string; issue_number: number } {
-  const match = ref.match(/^([^#]+)#(\d+)$/);
-  if (!match) throw new Error('Expected issue ref like owner/repo#123.');
-  return { repo: match[1], issue_number: Number(match[2]) };
+/** Every CLI input-validation failure is a GitworthyError with a stable code, never a bare Error. */
+function usageError(message: string): never {
+  throw new GitworthyError({ code: 'invalid_usage', message, not_checked: [message] });
+}
+
+function toCliError(error: unknown): GitworthyError {
+  if (error instanceof GitworthyError) return error;
+  const message = error instanceof Error ? error.message : String(error);
+  return new GitworthyError({ code: 'invalid_usage', message, not_checked: [message] });
+}
+
+function required(value: string | undefined, usage: string): string {
+  if (!value) usageError(usage);
+  return value;
+}
+
+function repoArg(value: string | undefined, usage: string): string {
+  return parseArg(RepoRefSchema, required(value, usage), 'invalid_repo_ref');
+}
+
+function orgArg(value: string | undefined, usage: string): string {
+  return parseArg(OrgOrUserLoginSchema, required(value, usage), 'invalid_org_ref');
+}
+
+function issueNumberArg(value: string | undefined, usage: string): number {
+  return parseArg(IssueNumberStringSchema, required(value, usage), 'invalid_issue_number');
 }
 
 function print(output: unknown, asJson: boolean, write: Write): void {
@@ -96,16 +130,49 @@ function scanFilters(values: Record<string, unknown>) {
   };
 }
 
+const CLI_OPTIONS = {
+  help: { type: 'boolean', short: 'h' },
+  version: { type: 'boolean', short: 'V' },
+  json: { type: 'boolean' },
+  'npm-package': { type: 'string' },
+  'probe-glob': { type: 'string' },
+  'probe-contains': { type: 'string' },
+  'probe-template': { type: 'string' },
+  'skill-profile': { type: 'string' },
+  'skip-policy-gate': { type: 'boolean' },
+  'force-refresh': { type: 'boolean' },
+  label: { type: 'string' },
+  keywords: { type: 'string' },
+  since: { type: 'string' },
+  limit: { type: 'string' },
+  'max-repos': { type: 'string' },
+  'max-checks': { type: 'string' },
+  'no-land-hints': { type: 'boolean' },
+  repo: { type: 'string' },
+  org: { type: 'boolean' },
+  verdict: { type: 'string' },
+  disposition: { type: 'string' },
+  notes: { type: 'string' }
+} as const;
+
+function parseCliArgs(argv: string[]) {
+  return parseArgs({
+    args: argv,
+    allowPositionals: true,
+    strict: true,
+    options: CLI_OPTIONS
+  });
+}
+
 export async function runCli(argv = process.argv.slice(2), stdout: Write = (text) => process.stdout.write(text), stderr: Write = (text) => process.stderr.write(text)): Promise<number> {
   const asJsonEarly = argv.includes('--json');
   if (argv[0] === 'branches' && argv[2]?.startsWith('-')) {
-    const first = argv[1];
-    const second = argv[2];
     try {
-      if (!first || !second) throw new Error('branches requires owner/repo and keywords.');
+      const repo = repoArg(argv[1], 'branches requires owner/repo and keywords.');
+      const second = required(argv[2], 'branches requires owner/repo and keywords.');
       stderr(`Warning: branch keyword "${second}" starts with a dash. Use -- before positional arguments if your shell or parser treats it as an option.\n`);
       const output = toStampedLegacyResult('branch_scan', await branch_scan({
-        repo: first,
+        repo,
         keywords: second.split(',').filter(Boolean),
         force_refresh: argv.includes('--force-refresh')
       }) as Record<string, unknown>);
@@ -118,35 +185,17 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
       return structured.error.category === 'input' ? 2 : 1;
     }
   }
-  const parsed = parseArgs({
-    args: argv,
-    allowPositionals: true,
-    strict: false,
-    options: {
-      help: { type: 'boolean', short: 'h' },
-      version: { type: 'boolean', short: 'V' },
-      json: { type: 'boolean' },
-      'npm-package': { type: 'string' },
-      'probe-glob': { type: 'string' },
-      'probe-contains': { type: 'string' },
-      'probe-template': { type: 'string' },
-      'skill-profile': { type: 'string' },
-      'skip-policy-gate': { type: 'boolean' },
-      'force-refresh': { type: 'boolean' },
-      label: { type: 'string' },
-      keywords: { type: 'string' },
-      since: { type: 'string' },
-      limit: { type: 'string' },
-      'max-repos': { type: 'string' },
-      'max-checks': { type: 'string' },
-      'no-land-hints': { type: 'boolean' },
-      repo: { type: 'string' },
-      org: { type: 'boolean' },
-      verdict: { type: 'string' },
-      disposition: { type: 'string' },
-      notes: { type: 'string' }
-    }
-  });
+
+  let parsed: ReturnType<typeof parseCliArgs>;
+  try {
+    parsed = parseCliArgs(argv);
+  } catch (error) {
+    const structured = toErrorResult({ command: 'cli', error: toCliError(error) });
+    if (asJsonEarly) stdout(`${JSON.stringify(structured, null, 2)}\n`);
+    else stderr(`${structured.error.message}\n`);
+    return 2;
+  }
+
   const [command, first, second] = parsed.positionals;
   if (parsed.values.version || command === 'version') {
     stdout(`${packageVersion()}\n`);
@@ -169,8 +218,7 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
       output = toStampedLegacyResult('doctor', await doctor() as Record<string, unknown>);
     } else if (command === 'check') {
       commandName = 'check';
-      if (!first) throw new Error('check requires owner/repo#123.');
-      const ref = parseIssueRef(first);
+      const ref = parseIssueRef(required(first, 'check requires owner/repo#123.'));
       const legacy = await worth_check({
         ...ref,
         npm_package: stringValue(parsed.values['npm-package']),
@@ -180,67 +228,75 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
       output = toCheckResult(legacy as Record<string, unknown>, ref);
     } else if (command === 'branches') {
       commandName = 'branch_scan';
-      if (!first || !second) throw new Error('branches requires owner/repo and keywords.');
-      for (const keyword of second.split(',').filter(Boolean)) if (keyword.startsWith('-')) stderr(`Warning: branch keyword "${keyword}" starts with a dash. Use -- before positional arguments if your shell or parser treats it as an option.\n`);
-      output = toStampedLegacyResult('branch_scan', await branch_scan({ repo: first, keywords: second.split(',').filter(Boolean), force_refresh: parsed.values['force-refresh'] === true }) as Record<string, unknown>);
+      const repo = repoArg(first, 'branches requires owner/repo and keywords.');
+      const keywordsArg = required(second, 'branches requires owner/repo and keywords.');
+      for (const keyword of keywordsArg.split(',').filter(Boolean)) if (keyword.startsWith('-')) stderr(`Warning: branch keyword "${keyword}" starts with a dash. Use -- before positional arguments if your shell or parser treats it as an option.\n`);
+      output = toStampedLegacyResult('branch_scan', await branch_scan({ repo, keywords: keywordsArg.split(',').filter(Boolean), force_refresh: parsed.values['force-refresh'] === true }) as Record<string, unknown>);
     } else if (command === 'issue') {
       commandName = 'issue_vs_main';
-      if (!first || !second) throw new Error('issue requires owner/repo and issue number.');
-      output = toStampedLegacyResult('issue_vs_main', await issue_vs_main({ repo: first, issue_number: Number(second) }) as Record<string, unknown>);
+      const repo = repoArg(first, 'issue requires owner/repo and issue number.');
+      const issue_number = issueNumberArg(second, 'issue requires owner/repo and issue number.');
+      output = toStampedLegacyResult('issue_vs_main', await issue_vs_main({ repo, issue_number }) as Record<string, unknown>);
     } else if (command === 'release') {
       commandName = 'release_gap';
-      if (!first || !second) throw new Error('release requires owner/repo and package name.');
+      const repo = repoArg(first, 'release requires owner/repo and package name.');
+      const npm_package = required(second, 'release requires owner/repo and package name.');
       output = toStampedLegacyResult('release_gap', await release_gap({
-        repo: first,
-        npm_package: second,
+        repo,
+        npm_package,
         probe: probe(parsed.values),
         probe_template: stringValue(parsed.values['probe-template']),
         force_refresh: parsed.values['force-refresh'] === true
       }) as Record<string, unknown>);
     } else if (command === 'dupes') {
       commandName = 'dupe_cluster';
-      if (!first || !second) throw new Error('dupes requires owner/repo and issue number.');
-      output = toStampedLegacyResult('dupe_cluster', await dupe_cluster({ repo: first, issue_number: Number(second) }) as Record<string, unknown>);
+      const repo = repoArg(first, 'dupes requires owner/repo and issue number.');
+      const issue_number = issueNumberArg(second, 'dupes requires owner/repo and issue number.');
+      output = toStampedLegacyResult('dupe_cluster', await dupe_cluster({ repo, issue_number }) as Record<string, unknown>);
     } else if (command === 'related') {
       commandName = 'related_cluster';
-      if (!first) throw new Error('related requires owner/repo.');
+      const repo = repoArg(first, 'related requires owner/repo.');
       const filters = scanFilters(parsed.values);
       output = toStampedLegacyResult('related_cluster', await related_cluster({
-        repo: first,
-        issue_number: second ? Number(second) : undefined,
+        repo,
+        issue_number: second ? parseArg(IssueNumberStringSchema, second, 'invalid_issue_number') : undefined,
         label: filters.label,
         keywords: filters.keywords,
         limit: filters.limit
       }) as Record<string, unknown>);
     } else if (command === 'linked') {
       commandName = 'linked_work';
-      if (!first || !second) throw new Error('linked requires owner/repo and issue number.');
-      output = toStampedLegacyResult('linked_work', await linked_work({ repo: first, issue_number: Number(second) }) as Record<string, unknown>);
+      const repo = repoArg(first, 'linked requires owner/repo and issue number.');
+      const issue_number = issueNumberArg(second, 'linked requires owner/repo and issue number.');
+      output = toStampedLegacyResult('linked_work', await linked_work({ repo, issue_number }) as Record<string, unknown>);
     } else if (command === 'policy') {
       commandName = 'contrib_policy';
-      if (!first) throw new Error('policy requires owner/repo.');
-      output = toStampedLegacyResult('contrib_policy', await contrib_policy({ repo: first, force_refresh: parsed.values['force-refresh'] === true }) as Record<string, unknown>);
+      const repo = repoArg(first, 'policy requires owner/repo.');
+      output = toStampedLegacyResult('contrib_policy', await contrib_policy({ repo, force_refresh: parsed.values['force-refresh'] === true }) as Record<string, unknown>);
     } else if (command === 'hunt') {
       commandName = 'hunt';
-      if (!first) throw new Error('hunt requires owner/repo or an org/user login.');
+      const huntTarget = required(first, 'hunt requires owner/repo or an org/user login.');
       const maxChecksRaw = stringValue(parsed.values['max-checks']);
       const maxChecks = maxChecksRaw ? Number(maxChecksRaw) : undefined;
       if (maxChecksRaw && (!Number.isFinite(maxChecks) || (maxChecks as number) < 1)) {
-        throw new Error('--max-checks must be a positive number.');
+        usageError('--max-checks must be a positive number.');
       }
       const maxReposRaw = stringValue(parsed.values['max-repos']);
       const maxRepos = maxReposRaw ? Number(maxReposRaw) : undefined;
       if (maxReposRaw && (!Number.isFinite(maxRepos) || (maxRepos as number) < 1)) {
-        throw new Error('--max-repos must be a positive number.');
+        usageError('--max-repos must be a positive number.');
       }
       const filters = scanFilters(parsed.values);
       // --org forces org mode; otherwise slash ⇒ repo, no slash ⇒ org/user.
-      const asOrg = parsed.values.org === true || !first.includes('/');
-      if (parsed.values.org === true && first.includes('/')) {
-        throw new Error('hunt --org expects an org or user login, not owner/repo. Omit --org for a single repo.');
+      if (parsed.values.org === true && huntTarget.includes('/')) {
+        usageError('hunt --org expects an org or user login, not owner/repo. Omit --org for a single repo.');
       }
+      const asOrg = parsed.values.org === true || !huntTarget.includes('/');
+      const target = asOrg
+        ? { org: orgArg(huntTarget, 'hunt requires owner/repo or an org/user login.') }
+        : { repo: repoArg(huntTarget, 'hunt requires owner/repo or an org/user login.') };
       output = toStampedLegacyResult('hunt', await hunt({
-        ...(asOrg ? { org: first } : { repo: first }),
+        ...target,
         label: filters.label,
         keywords: filters.keywords,
         since: filters.since,
@@ -254,14 +310,14 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
       }) as Record<string, unknown>);
     } else if (command === 'scan') {
       commandName = 'scan';
-      if (!first) throw new Error('scan requires owner/repo.');
-      output = toStampedLegacyResult('scan', await scan({ repo: first, ...scanFilters(parsed.values) }) as Record<string, unknown>);
+      const repo = repoArg(first, 'scan requires owner/repo.');
+      output = toStampedLegacyResult('scan', await scan({ repo, ...scanFilters(parsed.values) }) as Record<string, unknown>);
     } else if (command === 'org') {
       commandName = 'org_scan';
-      if (!first) throw new Error('org requires an org or user login.');
+      const org = orgArg(first, 'org requires an org or user login.');
       const maxRepos = stringValue(parsed.values['max-repos']);
       output = toStampedLegacyResult('org_scan', await org_scan({
-        org: first,
+        org,
         ...scanFilters(parsed.values),
         max_repos: maxRepos ? Number(maxRepos) : undefined
       }) as Record<string, unknown>);
@@ -281,29 +337,32 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
       const action = first;
       if (action === 'list') {
         commandName = 'ledger_list';
+        const repoFilter = stringValue(parsed.values.repo);
         output = toStampedLegacyResult('ledger_list', await ledger_list({
-          repo: stringValue(parsed.values.repo),
+          repo: repoFilter ? parseArg(RepoRefSchema, repoFilter, 'invalid_repo_ref') : undefined,
           limit: stringValue(parsed.values.limit) ? Number(stringValue(parsed.values.limit)) : undefined
         }) as Record<string, unknown>);
       } else if (action === 'show') {
         commandName = 'ledger_lookup';
-        if (!second) throw new Error('ledger show requires owner/repo#123.');
-        output = toStampedLegacyResult('ledger_lookup', await ledger_lookup(parseIssueRef(second)) as Record<string, unknown>);
+        const ref = parseIssueRef(required(second, 'ledger show requires owner/repo#123.'));
+        output = toStampedLegacyResult('ledger_lookup', await ledger_lookup(ref) as Record<string, unknown>);
       } else if (action === 'record') {
         commandName = 'ledger_record';
-        if (!second) throw new Error('ledger record requires owner/repo#123.');
+        const ref = parseIssueRef(required(second, 'ledger record requires owner/repo#123.'));
+        const verdictRaw = stringValue(parsed.values.verdict);
+        const dispositionRaw = stringValue(parsed.values.disposition);
         output = toStampedLegacyResult('ledger_record', await ledger_record({
-          ...parseIssueRef(second),
-          verdict: stringValue(parsed.values.verdict),
-          disposition: stringValue(parsed.values.disposition),
+          ...ref,
+          verdict: verdictRaw ? parseArg(VerdictSchema, verdictRaw, 'invalid_usage') : undefined,
+          disposition: dispositionRaw ? parseArg(DispositionSchema, dispositionRaw, 'invalid_usage') : undefined,
           notes: stringValue(parsed.values.notes),
           source: 'cli'
         }) as Record<string, unknown>);
       } else {
-        throw new Error('ledger requires list, show, or record.');
+        usageError('ledger requires list, show, or record.');
       }
     } else {
-      throw new Error(`Unknown subcommand ${command}.`);
+      usageError(`Unknown subcommand ${command}.`);
     }
     print(output, asJson, stdout);
     return exitFor(output);
