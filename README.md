@@ -18,14 +18,14 @@ See `ROADMAP.md` for the path to 1.0, `CONTRIBUTING.md` to develop, and `SECURIT
 ## Quickstart
 
 ```sh
-npx -y gitworthy@0.3.10 check owner/repo#123
-npx -y gitworthy@0.3.10 check owner/repo#123 --npm-package package-name --json
-npx -y gitworthy@0.3.10 hunt owner/repo --json
-npx -y gitworthy@0.3.10 hunt openclaw --max-checks 3 --json
-npx -y gitworthy@0.3.10 scan Shopify/cli --label "good first issue" --json
-npx -y gitworthy@0.3.10 org openclaw --json
-npx -y gitworthy@0.3.10 doctor --json
-npx -y gitworthy@0.3.10 mcp
+npx -y gitworthy@0.4.0 check owner/repo#123
+npx -y gitworthy@0.4.0 check owner/repo#123 --npm-package package-name --json
+npx -y gitworthy@0.4.0 hunt owner/repo --json
+npx -y gitworthy@0.4.0 hunt openclaw --max-checks 3 --json
+npx -y gitworthy@0.4.0 scan Shopify/cli --label "good first issue" --json
+npx -y gitworthy@0.4.0 org openclaw --json
+npx -y gitworthy@0.4.0 doctor --json
+npx -y gitworthy@0.4.0 mcp
 ```
 
 ## CLI
@@ -56,7 +56,7 @@ Exit codes for `check`:
   "mcpServers": {
     "gitworthy": {
       "command": "npx",
-      "args": ["-y", "gitworthy@0.3.10", "mcp"],
+      "args": ["-y", "gitworthy@0.4.0", "mcp"],
       "env": { "GITHUB_TOKEN": "github_pat_..." }
     }
   }
