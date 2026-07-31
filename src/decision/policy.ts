@@ -49,25 +49,71 @@ function finding(input: {
 function openLinkedPrs(subResults: SubResult[]): Array<Record<string, unknown>> {
   const linked = subResults.find((result) => result.ok && result.name === 'linked_work');
   if (!linked?.ok) return [];
-  return (linked.result.evidence ?? []).filter((item) => item.kind === 'linked_pr' && item.state === 'open' && item.ignored_reason !== 'automation_author');
+  return (linked.result.evidence ?? []).filter((item) =>
+    item.kind === 'linked_pr'
+    && item.state === 'open'
+    && item.ignored_reason !== 'automation_author'
+    && item.ignored_reason !== 'draft_without_close'
+    // Defensive: drafts without closes_issue must never become land_only even if still active.
+    && !(item.draft === true && item.closes_issue !== true)
+  );
+}
+
+function prRecency(pr: Record<string, unknown>): number {
+  const raw = typeof pr.updated_at === 'string' ? pr.updated_at : typeof pr.date === 'string' ? pr.date : '';
+  const parsed = Date.parse(raw);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+/** Prefer non-draft explicit closers, then most recently updated. */
+function rankOpenClosers(closers: Array<Record<string, unknown>>): Array<Record<string, unknown>> {
+  return [...closers].sort((left, right) => {
+    const draftDelta = Number(left.draft === true) - Number(right.draft === true);
+    if (draftDelta !== 0) return draftDelta;
+    return prRecency(right) - prRecency(left);
+  });
 }
 
 function classifyLinkedOpen(subResults: SubResult[]): Finding[] {
   const opens = openLinkedPrs(subResults);
   if (opens.length === 0) return [];
 
-  const explicitCloser = opens.find((pr) => pr.closes_issue === true && pr.source !== 'title_overlap');
-  if (explicitCloser) {
-    const number = typeof explicitCloser.number === 'number' ? explicitCloser.number : undefined;
-    return [finding({
+  const explicitClosers = opens.filter((pr) => pr.closes_issue === true && pr.source !== 'title_overlap');
+  if (explicitClosers.length > 0) {
+    const ranked = rankOpenClosers(explicitClosers);
+    const primary = ranked[0];
+    const number = typeof primary.number === 'number' ? primary.number : undefined;
+    const findings: Finding[] = [finding({
       type: 'linked_pr_open',
       strength: 'definitive',
       effect: 'block',
       source: 'github_pull_request',
       message: number ? `PR #${number} explicitly closes the issue.` : 'An open PR explicitly closes the issue.',
-      url: typeof explicitCloser.url === 'string' ? explicitCloser.url : undefined,
-      data: { number, source: explicitCloser.source, closes_issue: true }
+      url: typeof primary.url === 'string' ? primary.url : undefined,
+      data: {
+        number,
+        source: primary.source,
+        closes_issue: true,
+        draft: primary.draft === true,
+        land_pick: true,
+        competing_closers: ranked.slice(1).map((pr) => pr.number).filter((value) => typeof value === 'number')
+      }
     })];
+    for (const sibling of ranked.slice(1)) {
+      const siblingNumber = typeof sibling.number === 'number' ? sibling.number : undefined;
+      findings.push(finding({
+        type: 'competing_open_closer',
+        strength: 'corroborated',
+        effect: 'inform',
+        source: 'github_pull_request',
+        message: siblingNumber && number
+          ? `Competing open closer #${siblingNumber}; prefer landing #${number} and closing or retargeting siblings.`
+          : 'Another open PR also claims to close this issue; prefer the land-pick primary.',
+        url: typeof sibling.url === 'string' ? sibling.url : undefined,
+        data: { number: siblingNumber, primary: number, source: sibling.source, closes_issue: true }
+      }));
+    }
+    return findings;
   }
 
   const nonTitle = opens.find((pr) => pr.source !== 'title_overlap');
@@ -169,11 +215,11 @@ function findingsForSignal(signal: Signal, subResults: SubResult[]): Finding[] {
       })];
     case 'linked_pr_merged':
       return [finding({
-        type: 'linked_pr_merged',
+        type: 'close_candidate',
         strength: 'definitive',
         effect: 'verify',
         source: 'linked_work',
-        message: 'A linked PR was merged while the issue remains open; verify remaining work.'
+        message: 'CLOSE_CANDIDATE: a linked PR was merged while the issue remains open — confirm remaining work, then close or retarget the issue.'
       })];
     case 'linked_pr_closed':
       return [finding({

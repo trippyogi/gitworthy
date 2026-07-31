@@ -39,6 +39,76 @@ describe('contracts', () => {
     expect(CheckResultSchema.parse(result).summary).toContain('Open PR #1');
   });
 
+  it('emits LAND #N next_actions from land-pick findings', () => {
+    const result = toCheckResult({
+      verdict_summary: 'Open PR closes this issue.',
+      evidence: [
+        {
+          kind: 'finding',
+          id: 'f1',
+          type: 'linked_pr_open',
+          strength: 'definitive',
+          effect: 'block',
+          source: 'github_pull_request',
+          message: 'PR #20 explicitly closes the issue.',
+          data: { number: 20, land_pick: true }
+        },
+        {
+          kind: 'finding',
+          id: 'f2',
+          type: 'competing_open_closer',
+          strength: 'corroborated',
+          effect: 'inform',
+          source: 'github_pull_request',
+          message: 'Competing open closer #10',
+          data: { number: 10, primary: 20 }
+        }
+      ],
+      signals: ['linked_pr_open'],
+      checked: ['linked_work'],
+      not_checked: ['n/a'],
+      cached: false,
+      fetched_at: '2026-01-01T00:00:00.000Z',
+      verdict: 'SKIP',
+      disposition: 'land_only'
+    }, { repo: 'o/r', issue_number: 9 });
+
+    expect(result.next_actions[0]).toMatchObject({
+      kind: 'land',
+      message: expect.stringContaining('LAND #20')
+    });
+    expect(result.next_actions[1]).toMatchObject({
+      kind: 'coordinate',
+      message: expect.stringContaining('#10')
+    });
+    expect(result.findings).toHaveLength(2);
+  });
+
+  it('emits CLOSE_CANDIDATE next_action for close_candidate findings', () => {
+    const result = toCheckResult({
+      verdict_summary: 'Merged linked PR; issue still open.',
+      evidence: [{
+        kind: 'finding',
+        id: 'f1',
+        type: 'close_candidate',
+        strength: 'definitive',
+        effect: 'verify',
+        source: 'linked_work',
+        message: 'CLOSE_CANDIDATE',
+        data: {}
+      }],
+      signals: ['linked_pr_merged'],
+      checked: ['linked_work'],
+      not_checked: ['n/a'],
+      cached: false,
+      fetched_at: '2026-01-01T00:00:00.000Z',
+      verdict: 'VERIFY',
+      disposition: 'review'
+    }, { repo: 'o/r', issue_number: 9 });
+
+    expect(result.next_actions[0]?.message).toContain('CLOSE_CANDIDATE');
+  });
+
   it('serializes GitworthyError into a versioned error result', () => {
     const error = toErrorResult({
       command: 'check',

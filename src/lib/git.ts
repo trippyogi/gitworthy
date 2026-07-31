@@ -415,6 +415,18 @@ export async function gitOutput(cwd: string, args: string[]): Promise<string> {
   }
 }
 
+/** True when `dir`'s origin remote looks like `owner/repo` on GitHub. */
+export async function localCheckoutMatchesRepo(dir: string, repo: string): Promise<boolean> {
+  try {
+    const { stdout } = await execa('git', ['remote', 'get-url', 'origin'], { cwd: dir, timeout: GIT_SUBPROCESS_TIMEOUT_MS });
+    const remote = stdout.trim().toLowerCase().replace(/\.git$/i, '');
+    const needle = repo.trim().toLowerCase();
+    return remote.endsWith(`/${needle}`) || remote.endsWith(`:${needle}`) || remote.includes(`github.com/${needle}`);
+  } catch {
+    return false;
+  }
+}
+
 /** Test helper: drop in-memory git caches. */
 export async function resetGitCachesForTests(): Promise<void> {
   headsCache.clear();

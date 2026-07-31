@@ -6,12 +6,12 @@
     "url": "https://github.com/trippyogi/gitworthy",
     "source": "github"
   },
-  "version": "0.4.0",
+  "version": "0.4.1",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "gitworthy",
-      "version": "0.4.0",
+      "version": "0.4.1",
       "transport": {
         "type": "stdio"
       },
@@ -27,4 +27,3 @@
     }
   ]
 }
-
