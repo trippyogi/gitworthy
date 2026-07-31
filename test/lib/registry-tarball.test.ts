@@ -1,45 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { Header } from 'tar';
 import { createHttpClient } from '../../src/lib/http-client.js';
 import { GitworthyError } from '../../src/core/envelope.js';
 import { inspectTarball, safeTarballRelativePath } from '../../src/lib/registry.js';
+import { buildTar, hangingHttpClient, tarballHttpClient, tarEntry } from '../helpers/tar-fixture.js';
 
-type EntryType = 'File' | 'Directory' | 'SymbolicLink' | 'Link';
-
-/** Hand-crafts a single raw (uncompressed) ustar entry: header block + zero-padded body. */
-function tarEntry(input: { path: string; type?: EntryType; content?: string; linkpath?: string; size?: number }): Buffer {
-  const content = Buffer.from(input.content ?? '', 'utf8');
-  const size = input.size ?? content.length;
-  const header = new Header({
-    path: input.path,
-    type: input.type ?? 'File',
-    size,
-    mode: 0o644,
-    mtime: new Date(0),
-    linkpath: input.linkpath
-  });
-  const headerBuf = Buffer.alloc(512);
-  header.encode(headerBuf);
-  if (input.type === 'SymbolicLink' || input.type === 'Link' || input.type === 'Directory') {
-    return headerBuf;
-  }
-  const paddedLen = Math.ceil(content.length / 512) * 512;
-  const body = Buffer.alloc(paddedLen);
-  content.copy(body);
-  return Buffer.concat([headerBuf, body]);
-}
-
-/** Concatenates raw entries and appends the two-zero-block EOF marker required by ustar. */
-function buildTar(entries: Buffer[]): Buffer {
-  return Buffer.concat([...entries, Buffer.alloc(1024)]);
-}
-
-function clientFor(tarball: Buffer) {
-  return createHttpClient({
-    transport: async () => new Response(tarball, { status: 200 }),
-    maxRetries: 0
-  });
-}
+const clientFor = tarballHttpClient;
 
 describe('safeTarballRelativePath', () => {
   it('strips the package/ prefix from ordinary entries', () => {
@@ -184,20 +149,11 @@ describe('inspectTarball', () => {
   });
 
   it('maps a timed-out request to a typed timeout error', async () => {
-    const hangingTransport = async (_url: string, init?: RequestInit) => new Promise<Response>((_resolve, reject) => {
-      init?.signal?.addEventListener('abort', () => {
-        const error = new Error('This operation was aborted');
-        error.name = 'AbortError';
-        reject(error);
-      });
-    });
-    const client = createHttpClient({ transport: hangingTransport, maxRetries: 0 });
-
     await expect(inspectTarball('https://example.com/demo-1.0.0.tgz', {
       matches: () => true,
       readContent: false,
       caps: { timeoutMs: 20 },
-      httpClient: client
+      httpClient: hangingHttpClient()
     })).rejects.toMatchObject({ code: 'npm_tarball_timeout' });
   });
 

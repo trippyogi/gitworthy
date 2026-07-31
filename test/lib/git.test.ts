@@ -68,6 +68,18 @@ describe('git.ts safe object reader', () => {
     }
   });
 
+  it('preserves a trailing newline byte-for-byte (regression: execa must not strip it)', async () => {
+    const fixture = await initGitFixture('gitworthy-git-trailing-nl-');
+    try {
+      await commitFixtureFiles(fixture.dir, { 'trailing.txt': 'line one\nline two\n' });
+      const { files: [file] } = await listTreeFiles(fixture.dir);
+      const content = await readTreeFile(fixture.dir, file);
+      expect(content).toBe('line one\nline two\n');
+    } finally {
+      await fixture.cleanup();
+    }
+  });
+
   it('returns null for a missing/unknown blob sha instead of throwing', async () => {
     const fixture = await initGitFixture('gitworthy-git-missing-');
     try {

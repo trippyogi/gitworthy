@@ -183,7 +183,10 @@ export async function readTreeFile(dir: string, file: ClonedFile, opts: { maxByt
   if (!Number.isFinite(size) || size > maxBytes) return null;
 
   try {
-    const { stdout } = await execa('git', ['cat-file', '-p', file.sha], { cwd: dir, timeout, encoding: 'buffer', maxBuffer: maxBytes + 4096 });
+    // `cat-file -p` writes raw blob bytes with no trailing separator of its own, so a blob whose
+    // content legitimately ends in `\n` must not have execa's default final-newline stripping
+    // silently eat that last byte.
+    const { stdout } = await execa('git', ['cat-file', '-p', file.sha], { cwd: dir, timeout, encoding: 'buffer', maxBuffer: maxBytes + 4096, stripFinalNewline: false });
     const buffer = Buffer.from(stdout as unknown as Uint8Array);
     if (buffer.includes(0)) return null; // binary content, safe no-op
     return buffer.toString('utf8');
