@@ -1,4 +1,4 @@
-import { mkdir, open, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { homedir } from 'node:os';
 import path from 'node:path';
@@ -7,6 +7,8 @@ import { GitworthyError } from '../core/envelope.js';
 const DEFAULT_LOCK_STALE_MS = 30_000;
 const DEFAULT_LOCK_WAIT_MS = 10_000;
 const DEFAULT_LOCK_POLL_MS = 50;
+/** Allow the lock creator time to finish writing the token after exclusive create. */
+const EMPTY_LOCK_GRACE_MS = 2_000;
 
 export function storeRoot(): string {
   return process.env.GITWORTHY_STORE_DIR || path.join(homedir(), '.gitworthy', 'store');
@@ -40,11 +42,24 @@ async function readLockToken(file: string): Promise<{ token: string; createdAtMs
   }
 }
 
+async function fileAgeMs(file: string): Promise<number | null> {
+  try {
+    const info = await stat(file);
+    return Date.now() - info.mtimeMs;
+  } catch {
+    return null;
+  }
+}
+
 async function isLockStale(file: string, staleMs: number): Promise<boolean> {
   const meta = await readLockToken(file);
-  // Empty/corrupt lockfiles are treated as stale so waiters can reclaim instead of spinning.
-  if (!meta) return true;
-  if (!meta.createdAtMs) return true;
+  if (!meta || !meta.createdAtMs) {
+    const age = await fileAgeMs(file);
+    // Empty/partial lockfiles are only reclaimable after a grace window so a
+    // concurrent creator can finish writing its token without being deleted.
+    if (age == null) return true;
+    return age > EMPTY_LOCK_GRACE_MS;
+  }
   return Date.now() - meta.createdAtMs > staleMs;
 }
 
@@ -69,11 +84,10 @@ export async function withStoreLock<T>(
 
   while (!handle) {
     const token = randomUUID();
+    const payload = `${token}\n${new Date().toISOString()}\n${process.pid}\n`;
     try {
-      const fh = await open(file, 'wx');
-      const payload = `${token}\n${new Date().toISOString()}\n${process.pid}\n`;
-      await fh.writeFile(payload, 'utf8');
-      await fh.close();
+      // Single write with exclusive create shrinks the empty-file window vs open+write.
+      await writeFile(file, payload, { flag: 'wx' });
       handle = {
         name,
         file,
@@ -97,11 +111,14 @@ export async function withStoreLock<T>(
       if (await isLockStale(file, staleMs)) {
         const stale = await readLockToken(file);
         if (!stale) {
-          await rm(file, { force: true }).catch(() => undefined);
+          // Only reclaim empty/partial locks past the grace window.
+          if (await isLockStale(file, staleMs)) {
+            await rm(file, { force: true }).catch(() => undefined);
+          }
           await new Promise((resolve) => setTimeout(resolve, pollMs));
           continue;
         }
-        if (Date.now() - stale.createdAtMs > staleMs || !stale.createdAtMs) {
+        if (Date.now() - stale.createdAtMs > staleMs) {
           const recheck = await readLockToken(file);
           if (!recheck || recheck.token === stale.token) {
             await rm(file, { force: true }).catch(() => undefined);
