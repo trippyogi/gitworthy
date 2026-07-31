@@ -12,7 +12,7 @@ import {
   showTarget
 } from '../lib/store-query.js';
 import { OutcomeEventNameSchema } from '../contracts/outcomes.js';
-import { persistCheckResultBestEffort } from '../lib/store.js';
+import { persistCheckResultBestEffort, getDecisionRecord } from '../lib/store.js';
 import { toCheckResult } from '../contracts/serialize.js';
 
 export async function store_run_show(input: { run_id: string }): Promise<Envelope> {
@@ -179,6 +179,7 @@ export async function store_recheck(input: {
     issue_number: input.issue_number
   });
   await persistCheckResultBestEffort(check);
+  const persisted = await getDecisionRecord(check.decision_id);
   return createEnvelope({
     verdict_summary: `recheck ${check.verdict}/${check.disposition} for ${input.repo}#${input.issue_number}.`,
     evidence: [
@@ -189,18 +190,22 @@ export async function store_recheck(input: {
         decision_id: check.decision_id,
         run_id: check.run_id,
         verdict: check.verdict,
-        disposition: check.disposition
+        disposition: check.disposition,
+        persisted: Boolean(persisted)
       },
       check
     ],
     signals: [],
     checked: [
       `re-ran worth_check for ${input.repo}#${input.issue_number}`,
-      `persisted decision ${check.decision_id}`
+      ...(persisted ? [`persisted decision ${check.decision_id}`] : [])
     ],
-    not_checked: prior.index
-      ? ['prior decision retained in store history; compare decision ids manually']
-      : ['no prior store decision existed for this target'],
+    not_checked: [
+      ...(persisted ? [] : ['decision persistence failed; ids in evidence may not exist on disk']),
+      ...(prior.index
+        ? ['prior decision retained in store history; compare decision ids manually']
+        : ['no prior store decision existed for this target'])
+    ],
     cached: false
   });
 }

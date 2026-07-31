@@ -100,10 +100,33 @@ export async function recordOutcome(input: {
   data?: Record<string, unknown>;
 }): Promise<OutcomeEvent> {
   const index = await getTargetIndex(input.repo, input.issue_number);
-  const decisionId = input.decision_id ?? index?.decision_ids[0];
-  const runId = input.run_id ?? index?.run_ids[0];
+  let decisionId = input.decision_id;
+  let runId = input.run_id;
+
+  if (decisionId && !runId) {
+    const decision = await getDecisionRecord(decisionId);
+    runId = decision?.run_id;
+  } else if (runId && !decisionId) {
+    const run = await getRunRecord(runId);
+    runId = run?.run_id ?? runId;
+    decisionId = run?.decision_id;
+  } else if (!decisionId && !runId) {
+    decisionId = index?.decision_ids[0];
+    if (decisionId) {
+      const decision = await getDecisionRecord(decisionId);
+      runId = decision?.run_id ?? index?.run_ids[0];
+    } else {
+      runId = index?.run_ids[0];
+    }
+  }
+
   if (!decisionId || !runId) {
     throw new Error(`No stored decision/run for ${input.repo}#${input.issue_number}; run a check first or pass --decision-id and --run-id.`);
+  }
+
+  const decision = await getDecisionRecord(decisionId);
+  if (decision && decision.run_id !== runId) {
+    throw new Error(`decision ${decisionId} is linked to run ${decision.run_id}, not ${runId}.`);
   }
   return putOutcomeEvent({
     decision_id: decisionId,
