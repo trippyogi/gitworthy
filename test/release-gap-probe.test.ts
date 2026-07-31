@@ -1,13 +1,11 @@
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { release_gap } from '../src/core/release-gap.js';
+import type { TarballInspectOptions, TarballInspectResult, TarballMatch } from '../src/lib/registry.js';
 import { commitFixtureFiles, initGitFixture } from './helpers/git-fixture.js';
 
 let cloneDir: string;
 let cleanupClone: () => Promise<void>;
-let tarballDir: string;
+let tarballEntries: TarballMatch[];
 
 vi.mock('../src/lib/git.js', async () => {
   const actual = await vi.importActual<typeof import('../src/lib/git.js')>('../src/lib/git.js');
@@ -27,7 +25,14 @@ vi.mock('../src/lib/registry.js', async () => {
       versions: { '0.5.5': { version: '0.5.5', dist: { tarball: 'https://registry.npmjs.org/@elevenlabs/cli/-/cli-0.5.5.tgz' } } },
       time: { '0.5.5': '2026-07-06T16:22:18.825Z' }
     })),
-    downloadAndExtractTarball: vi.fn(async () => ({ dir: tarballDir, cleanup: async () => undefined }))
+    inspectTarball: vi.fn(async (_url: string, options: TarballInspectOptions): Promise<TarballInspectResult> => {
+      const matches: TarballMatch[] = [];
+      for (const entry of tarballEntries) {
+        if (!options.matches(entry.path)) continue;
+        matches.push(options.readContent ? entry : { path: entry.path, size: entry.size });
+      }
+      return { matches, entriesScanned: tarballEntries.length, bytesRead: 0 };
+    })
   };
 });
 
@@ -39,14 +44,13 @@ describe('release_gap probe signal', () => {
     await commitFixtureFiles(cloneDir, {
       'package.json': JSON.stringify({ name: '@elevenlabs/cli', version: '0.5.5' })
     });
-    tarballDir = await mkdtemp(path.join(tmpdir(), 'gitworthy-release-tarball-'));
-    await mkdir(path.join(tarballDir, 'package', 'dist', 'commands'), { recursive: true });
-    await writeFile(path.join(tarballDir, 'package', 'dist', 'commands', 'add.js'), 'spawn(command, args, { shell: true });\n');
+    tarballEntries = [
+      { path: 'dist/commands/add.js', size: 41, content: 'spawn(command, args, { shell: true });\n' }
+    ];
   });
 
   afterEach(async () => {
     await cleanupClone();
-    await rm(tarballDir, { recursive: true, force: true });
   });
 
   it('emits released_fix when main equals npm latest and the probe matches', async () => {
@@ -80,7 +84,7 @@ describe('release_gap probe signal', () => {
   });
 
   it('runs an existence probe for file_glob-only templates like changelog', async () => {
-    await writeFile(path.join(tarballDir, 'package', 'CHANGELOG.md'), '# Changes\n');
+    tarballEntries.push({ path: 'CHANGELOG.md', size: 10 });
     const result = await release_gap({ repo: 'elevenlabs/cli', npm_package: '@elevenlabs/cli', probe_template: 'changelog', force_refresh: true });
     expect(result.checked.some((item) => item.includes('resolved probe_template "changelog"'))).toBe(true);
     expect(result.not_checked.some((item) => item.includes('no probe was provided'))).toBe(false);
@@ -91,7 +95,7 @@ describe('release_gap probe signal', () => {
   });
 
   it('merges probe_template file_glob with explicit probe contains', async () => {
-    await writeFile(path.join(tarballDir, 'package', 'CHANGELOG.md'), 'Fixed shell: true spawn\n');
+    tarballEntries.push({ path: 'CHANGELOG.md', size: 24, content: 'Fixed shell: true spawn\n' });
     const result = await release_gap({
       repo: 'elevenlabs/cli',
       npm_package: '@elevenlabs/cli',

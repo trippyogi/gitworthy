@@ -1,14 +1,15 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { release_gap } from '../src/core/release-gap.js';
 import { dupe_cluster } from '../src/core/dupe-cluster.js';
+import type { TarballInspectOptions, TarballInspectResult, TarballMatch } from '../src/lib/registry.js';
 import { commitFixtureFiles, initGitFixture } from './helpers/git-fixture.js';
 
 let cloneDir: string;
 let cleanupClone: () => Promise<void>;
-let tarballDir: string;
+let tarballEntries: TarballMatch[];
 
 const githubMocks = vi.hoisted(() => ({
   githubJson: vi.fn()
@@ -32,7 +33,14 @@ vi.mock('../src/lib/registry.js', async () => {
       versions: { '1.0.0': { version: '1.0.0', dist: { tarball: 'https://registry.npmjs.org/demo/-/demo-1.0.0.tgz' } } },
       time: { '1.0.0': '2026-07-01T00:00:00.000Z' }
     })),
-    downloadAndExtractTarball: vi.fn(async () => ({ dir: tarballDir, cleanup: async () => undefined }))
+    inspectTarball: vi.fn(async (_url: string, options: TarballInspectOptions): Promise<TarballInspectResult> => {
+      const matches: TarballMatch[] = [];
+      for (const entry of tarballEntries) {
+        if (!options.matches(entry.path)) continue;
+        matches.push(options.readContent ? entry : { path: entry.path, size: entry.size });
+      }
+      return { matches, entriesScanned: tarballEntries.length, bytesRead: 0 };
+    })
   };
 });
 
@@ -63,9 +71,7 @@ describe('v0.3.3 calibration regressions', () => {
     cloneDir = clone.dir;
     cleanupClone = clone.cleanup;
     await commitFixtureFiles(cloneDir, { 'package.json': JSON.stringify({ name: 'demo', version: '1.0.0' }) });
-    tarballDir = await mkdtemp(path.join(tmpdir(), 'gitworthy-release-tarball-'));
-    await mkdir(path.join(tarballDir, 'package', 'dist'), { recursive: true });
-    await writeFile(path.join(tarballDir, 'package', 'dist', 'index.js'), 'console.log("shipped");\n');
+    tarballEntries = [{ path: 'dist/index.js', size: 24, content: 'console.log("shipped");\n' }];
     vi.clearAllMocks();
     githubMocks.githubJson.mockImplementation(async (requestPath: string) => {
       if (/^\/repos\/[^/]+\/[^/]+$/.test(requestPath)) {
@@ -80,7 +86,6 @@ describe('v0.3.3 calibration regressions', () => {
 
   afterEach(async () => {
     await cleanupClone();
-    await rm(tarballDir, { recursive: true, force: true });
   });
 
   it('excludes pull requests from duplicate clusters', async () => {
