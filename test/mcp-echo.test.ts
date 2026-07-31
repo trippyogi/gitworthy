@@ -28,8 +28,13 @@ describe('MCP tools', () => {
       'related_cluster',
       'release_gap',
       'scan',
+      'store_decision_list',
+      'store_export',
       'store_migrate_ledger',
+      'store_outcome_record',
+      'store_recheck',
       'store_rebuild_indexes',
+      'store_target_show',
       'worth_check'
     ].sort());
     await client.close();
