@@ -48,14 +48,48 @@ function mapSubResultsToChecks(subResults: unknown[] | undefined): CheckResult['
   });
 }
 
+function findingEvidence(legacy: LegacyEnvelopeLike): Array<Record<string, unknown>> {
+  return (legacy.evidence ?? []).filter((item) => item.kind === 'finding');
+}
+
+function findingDataNumber(item: Record<string, unknown>): number | undefined {
+  const data = asRecord(item.data);
+  return typeof data.number === 'number' ? data.number : undefined;
+}
+
 function nextActionsFor(legacy: LegacyEnvelopeLike): CheckResult['next_actions'] {
+  const findings = findingEvidence(legacy);
   if (legacy.verdict === 'SKIP' && legacy.disposition === 'land_only') {
-    return [{ kind: 'land', message: 'Review or help land the open linked PR. Do not open a parallel implementation.' }];
+    const primary = findings.find((item) => item.type === 'linked_pr_open');
+    const primaryNumber = primary ? findingDataNumber(primary) : undefined;
+    const siblings = findings.filter((item) => item.type === 'competing_open_closer');
+    const actions: CheckResult['next_actions'] = [{
+      kind: 'land',
+      message: primaryNumber
+        ? `LAND #${primaryNumber}: review or help land the primary closing PR. Do not open a parallel implementation.`
+        : 'Review or help land the open linked PR. Do not open a parallel implementation.'
+    }];
+    for (const sibling of siblings) {
+      const siblingNumber = findingDataNumber(sibling);
+      actions.push({
+        kind: 'coordinate',
+        message: siblingNumber && primaryNumber
+          ? `Competing closer #${siblingNumber}: coordinate or close as sibling once #${primaryNumber} lands.`
+          : 'Another open closer competes; coordinate or close siblings once the land-pick primary lands.'
+      });
+    }
+    return actions;
   }
   if (legacy.verdict === 'VERIFY' && legacy.disposition === 'claim_first') {
     return [{ kind: 'coordinate', message: 'Request assignment or follow the claim protocol before opening a pull request.' }];
   }
   if (legacy.verdict === 'VERIFY') {
+    if (findings.some((item) => item.type === 'close_candidate')) {
+      return [{
+        kind: 'verify',
+        message: 'CLOSE_CANDIDATE: confirm remaining work after the merged linked PR, then close or retarget the issue.'
+      }];
+    }
     return [{ kind: 'verify', message: legacy.verdict_summary ?? 'Perform the named human verification steps before investing.' }];
   }
   if (legacy.verdict === 'ACT') {
@@ -81,7 +115,16 @@ export function toCheckResult(legacy: LegacyEnvelopeLike & Record<string, unknow
     checked: legacy.checked ?? ['check'],
     not_checked: legacy.not_checked ?? ['limitations not recorded'],
     checks: mapSubResultsToChecks(legacy.sub_results),
-    findings: [],
+    findings: findingEvidence(legacy).map((item) => ({
+      id: typeof item.id === 'string' ? item.id : 'finding',
+      type: typeof item.type === 'string' ? item.type : 'unknown',
+      strength: (item.strength === 'definitive' || item.strength === 'corroborated' || item.strength === 'heuristic') ? item.strength : 'heuristic',
+      effect: (item.effect === 'block' || item.effect === 'verify' || item.effect === 'inform') ? item.effect : 'verify',
+      source: typeof item.source === 'string' ? item.source : 'unknown',
+      message: typeof item.message === 'string' ? item.message : 'finding',
+      ...(typeof item.url === 'string' ? { url: item.url } : {}),
+      data: asRecord(item.data)
+    })),
     metrics: { duration_ms: duration },
     target: {
       input_repo: input.repo,

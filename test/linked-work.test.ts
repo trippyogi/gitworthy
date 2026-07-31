@@ -42,8 +42,15 @@ describe('linked_work', () => {
 
   it('falls back to PR search for explicit issue-number mentions', async () => {
     const result = await linked_work({ repo: 'o/r', issue_number: 404 });
+    // Search hit body is "Fixes #404" so closes_issue stays true even though the PR is draft.
     expect(result.signals).toContain('linked_pr_open');
-    expect(result.evidence).toContainEqual(expect.objectContaining({ kind: 'linked_pr', number: 505, draft: true, source: 'search' }));
+    expect(result.evidence).toContainEqual(expect.objectContaining({
+      kind: 'linked_pr',
+      number: 505,
+      draft: true,
+      source: 'search',
+      closes_issue: true
+    }));
   });
 
   it('detects pull request URLs referenced in issue comments', async () => {
@@ -71,5 +78,73 @@ describe('linked_work', () => {
     expect(result.signals).not.toContain('linked_pr_open');
     expect(result.signals).not.toContain('linked_pr_merged');
     expect(result.evidence).toContainEqual(expect.objectContaining({ kind: 'linked_pr', number: 809, state: 'closed', merged: false, source: 'timeline', prior_attempt: true }));
+  });
+
+  it('ignores draft PRs that only mention the issue without closing language', async () => {
+    mocks.githubJson.mockImplementation(async (path: string) => {
+      if (path.includes('/repos/o/r') && !path.includes('/issues') && !path.includes('/pulls') && !path.includes('/search')) {
+        return { full_name: 'o/r', default_branch: 'main', html_url: 'https://github.com/o/r' };
+      }
+      if (path.includes('/issues/905/timeline')) return [];
+      if (path.includes('/issues/905/comments')) return [];
+      if (path.includes('/search/issues')) {
+        return {
+          items: [{
+            number: 906,
+            title: 'WORKING: all issues',
+            body: 'Mentions #905 among many others',
+            state: 'open',
+            labels: [],
+            comments: 0,
+            html_url: 'https://github.com/o/r/pull/906',
+            created_at: '2026-07-08T00:00:00Z',
+            updated_at: '2026-07-08T00:00:00Z',
+            closed_at: null,
+            pull_request: { url: 'https://api.github.com/repos/o/r/pulls/906' }
+          }]
+        };
+      }
+      if (path.includes('/pulls/906')) {
+        return {
+          number: 906,
+          state: 'open',
+          draft: true,
+          merged: false,
+          title: 'WORKING: all issues',
+          body: 'Mentions #905 among many others',
+          html_url: 'https://github.com/o/r/pull/906',
+          user: { login: 'dev5' },
+          created_at: '2026-07-08T00:00:00Z',
+          updated_at: '2026-07-08T00:00:00Z',
+          closed_at: null,
+          merged_at: null
+        };
+      }
+      if (path.includes('/issues/905')) {
+        return {
+          number: 905,
+          title: 'Draft false link',
+          body: null,
+          state: 'open',
+          labels: [],
+          assignees: [],
+          comments: 0,
+          html_url: 'https://github.com/o/r/issues/905',
+          created_at: '2026-07-01T00:00:00Z',
+          updated_at: '2026-07-09T00:00:00Z',
+          closed_at: null
+        };
+      }
+      return { items: [] };
+    });
+    const result = await linked_work({ repo: 'o/r', issue_number: 905 });
+    expect(result.signals).not.toContain('linked_pr_open');
+    expect(result.evidence).toContainEqual(expect.objectContaining({
+      kind: 'linked_pr',
+      number: 906,
+      draft: true,
+      ignored_reason: 'draft_without_close'
+    }));
+    expect(result.checked.join(' ')).toContain('draft');
   });
 });

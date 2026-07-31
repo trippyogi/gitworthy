@@ -27,6 +27,7 @@ type LinkedPrEvidence = {
   draft: boolean;
   merged: boolean;
   date: string;
+  updated_at?: string;
   author: string | null;
   title: string;
   url: string;
@@ -113,6 +114,7 @@ function linkedPrEvidence(pr: GithubPr, date: string, source: LinkedPrSource, is
     draft: pr.draft === true,
     merged,
     date,
+    updated_at: pr.updated_at,
     author: pr.user?.login ?? null,
     title: pr.title,
     url: pr.html_url,
@@ -299,7 +301,13 @@ async function searchLinkedPrs(repo: string, issueNumber: number, existing: Set<
     const pr = await prDetails(itemRepo, item.number);
     const text = `${item.title ?? pr.title}\n${item.body ?? pr.body ?? ''}`;
     if (!mentionsIssue(text, issueNumber)) continue;
-    prs.push(linkedPrEvidence(pr, pr.created_at, 'search', issueNumber, { repo: itemRepo }));
+    // Prefer search-hit text for closes_issue — PR detail payloads often omit body, and
+    // draft closers must still count when the search hit carries "Fixes #N".
+    prs.push(linkedPrEvidence(pr, pr.created_at, 'search', issueNumber, {
+      repo: itemRepo,
+      // Only override when search text proves a close; never clear a true from PR detail body.
+      ...(closesIssue(text, issueNumber) ? { closes_issue: true } : {})
+    }));
     existing.add(key);
   }
   return {
@@ -416,9 +424,15 @@ function partitionLinkedPrs(prs: LinkedPrEvidence[]): { active: LinkedPrEvidence
   for (const pr of prs) {
     if (isAutomationAuthor(pr.author)) {
       ignored.push({ ...pr, automation: true, ignored_reason: 'automation_author' });
-    } else {
-      active.push(pr);
+      continue;
     }
+    // Draft mega-PRs / WIP PRs that do not explicitly close the issue must not drive
+    // linked_pr_open / land_only — keep them as ignored evidence for humans.
+    if (pr.state === 'open' && pr.draft === true && pr.closes_issue !== true) {
+      ignored.push({ ...pr, ignored_reason: 'draft_without_close' });
+      continue;
+    }
+    active.push(pr);
   }
   return { active, ignored };
 }
@@ -462,7 +476,14 @@ export async function linked_work(input: Input): Promise<Envelope> {
     notCheckedNotes.push(`timeline soft-capped at ${MAX_TIMELINE_PAGES} pages; older cross-references may be missing.`);
   }
   if (ignored.length > 0) {
-    checkedNotes.push(`ignored ${ignored.length} automation-authored pull request${ignored.length === 1 ? '' : 's'} for verdict signals`);
+    const draftIgnored = ignored.filter((pr) => pr.ignored_reason === 'draft_without_close').length;
+    const automationIgnored = ignored.filter((pr) => pr.ignored_reason === 'automation_author').length;
+    if (automationIgnored > 0) {
+      checkedNotes.push(`ignored ${automationIgnored} automation-authored pull request${automationIgnored === 1 ? '' : 's'} for verdict signals`);
+    }
+    if (draftIgnored > 0) {
+      checkedNotes.push(`ignored ${draftIgnored} draft pull request${draftIgnored === 1 ? '' : 's'} without an explicit closing relationship for verdict signals`);
+    }
   }
   if (commits.length > 0) {
     checkedNotes.push(`collected ${commits.length} referenced commit${commits.length === 1 ? '' : 's'} from timeline (evidence only; commits do not force SKIP)`);
@@ -484,7 +505,7 @@ export async function linked_work(input: Input): Promise<Envelope> {
   const verdict_summary = linkedPrs.length > 0 || assignments.length > 0
     ? `found ${linkedPrs.length} ${linkedLabel} and ${assignments.length} ${assignedLabel}${densityBits.length ? ` (${densityBits.join(', ')})` : ''}.`
     : ignored.length > 0
-      ? `no human-linked pull requests or assignees found (${ignored.length} automation PR${ignored.length === 1 ? '' : 's'} ignored)${densityBits.length ? `; ${densityBits.join(', ')}` : ''}.`
+      ? `no linked pull requests or assignees counted for verdicts (${ignored.length} draft/automation PR${ignored.length === 1 ? '' : 's'} ignored)${densityBits.length ? `; ${densityBits.join(', ')}` : ''}.`
       : densityBits.length > 0
         ? `no linked pull requests or assignees; found ${densityBits.join(', ')}.`
         : 'no linked pull requests or current assignees found.';

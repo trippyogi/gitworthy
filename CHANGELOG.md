@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.4.1
+
+- Dig-quality: ignore open draft PRs without an explicit closing relationship for linked-work verdict signals (keep as ignored evidence).
+- Dig-quality: map merged linked PRs on still-open issues to `close_candidate` VERIFY findings and CLOSE_CANDIDATE next_actions (not a vague VERIFY).
+- Dig-quality: rank competing open closers (prefer non-draft, then freshest) and emit land-pick primary + `competing_open_closer` inform findings with `LAND #N` next_actions.
+- Dig-quality: when bare clone fails, `issue_vs_main` falls back to `GITWORTHY_LOCAL_REPO` checkout or GitHub contents/raw probes for named path terms (typed `contents_fallback` / `local_checkout` modes).
+
 ## 0.4.0
 
 - Add versioned output contracts (`schema_version: 1.0-draft.1`) under `src/contracts/` with generated JSON Schemas in `schemas/`.
