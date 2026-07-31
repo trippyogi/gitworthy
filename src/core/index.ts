@@ -12,6 +12,7 @@ export { scan } from './scan.js';
 export { org_scan } from './org-scan.js';
 export { hunt } from './hunt.js';
 export { ledger_lookup, ledger_record, ledger_list } from './ledger.js';
+export { store_migrate_ledger, store_rebuild_indexes } from './store-admin.js';
 export { listProbeTemplates, resolveProbeTemplate } from './probe-templates.js';
 export type { ProbeTemplate, ProbeTemplateId } from './probe-templates.js';
 export { parseSkillProfile, resolveSkillProfile, scoreSkillFit } from './skill-fit.js';

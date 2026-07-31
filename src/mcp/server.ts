@@ -17,6 +17,8 @@ import {
   related_cluster,
   release_gap,
   scan,
+  store_migrate_ledger,
+  store_rebuild_indexes,
   worth_check
 } from '../core/index.js';
 import { packageVersion } from '../lib/package-meta.js';
@@ -151,6 +153,10 @@ export function createMcpServer(): McpServer {
     withToolErrors('ledger_record', () => ledger_record(parseToolInput(LedgerRecordInputSchema, input)), stamp('ledger_record')));
   server.registerTool('ledger_list', { title: 'Ledger list', inputSchema: { repo: z.string().optional(), limit: z.number().optional() } }, async (input) =>
     withToolErrors('ledger_list', () => ledger_list(parseToolInput(LedgerListInputSchema, input)), stamp('ledger_list')));
+  server.registerTool('store_migrate_ledger', { title: 'Migrate legacy ledger', inputSchema: { force: z.boolean().optional() } }, async (input) =>
+    withToolErrors('store_migrate_ledger', () => store_migrate_ledger({ force: input?.force === true }), stamp('store_migrate_ledger')));
+  server.registerTool('store_rebuild_indexes', { title: 'Rebuild store indexes', inputSchema: {} }, async () =>
+    withToolErrors('store_rebuild_indexes', () => store_rebuild_indexes(), stamp('store_rebuild_indexes')));
   return server;
 }
 
