@@ -195,20 +195,7 @@ export async function persistCheckResultBestEffort(result: {
   schema_version?: string;
 }): Promise<void> {
   try {
-    await putRunRecord({
-      run_id: result.run_id,
-      command: result.command ?? 'check',
-      generated_at: result.generated_at,
-      cached: result.cached ?? false,
-      summary: result.summary,
-      target: { repo: result.target.canonical_repo, issue_number: result.target.issue_number },
-      decision_id: result.decision_id,
-      checked: result.checked ?? [],
-      not_checked: result.not_checked ?? [],
-      metrics: result.metrics ?? {},
-      gitworthy_version: result.gitworthy_version,
-      schema_version: result.schema_version as RunRecord['schema_version'] | undefined
-    });
+    // Write decision first so a partial failure cannot leave a run pointing at a missing decision.
     await putDecisionRecord({
       decision_id: result.decision_id,
       run_id: result.run_id,
@@ -222,6 +209,20 @@ export async function persistCheckResultBestEffort(result: {
       signals: result.signals ?? [],
       gitworthy_version: result.gitworthy_version,
       schema_version: result.schema_version as DecisionRecord['schema_version'] | undefined
+    });
+    await putRunRecord({
+      run_id: result.run_id,
+      command: result.command ?? 'check',
+      generated_at: result.generated_at,
+      cached: result.cached ?? false,
+      summary: result.summary,
+      target: { repo: result.target.canonical_repo, issue_number: result.target.issue_number },
+      decision_id: result.decision_id,
+      checked: result.checked ?? [],
+      not_checked: result.not_checked ?? [],
+      metrics: result.metrics ?? {},
+      gitworthy_version: result.gitworthy_version,
+      schema_version: result.schema_version as RunRecord['schema_version'] | undefined
     });
   } catch {
     // Durable store is best-effort; never fail a check because persistence failed.
