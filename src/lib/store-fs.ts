@@ -42,8 +42,9 @@ async function readLockToken(file: string): Promise<{ token: string; createdAtMs
 
 async function isLockStale(file: string, staleMs: number): Promise<boolean> {
   const meta = await readLockToken(file);
+  // Empty/corrupt lockfiles are treated as stale so waiters can reclaim instead of spinning.
   if (!meta) return true;
-  if (!meta.createdAtMs) return false;
+  if (!meta.createdAtMs) return true;
   return Date.now() - meta.createdAtMs > staleMs;
 }
 
@@ -95,13 +96,18 @@ export async function withStoreLock<T>(
       }
       if (await isLockStale(file, staleMs)) {
         const stale = await readLockToken(file);
-        // Only remove if still the same stale token we inspected (avoid racing a fresh holder).
-        if (stale && Date.now() - stale.createdAtMs > staleMs) {
+        if (!stale) {
+          await rm(file, { force: true }).catch(() => undefined);
+          await new Promise((resolve) => setTimeout(resolve, pollMs));
+          continue;
+        }
+        if (Date.now() - stale.createdAtMs > staleMs || !stale.createdAtMs) {
           const recheck = await readLockToken(file);
-          if (recheck?.token === stale.token) {
+          if (!recheck || recheck.token === stale.token) {
             await rm(file, { force: true }).catch(() => undefined);
           }
         }
+        await new Promise((resolve) => setTimeout(resolve, pollMs));
         continue;
       }
       if (Date.now() >= deadline) {
@@ -128,7 +134,21 @@ export async function writeJsonAtomic(file: string, value: unknown): Promise<voi
   const tmp = `${file}.${process.pid}.${Date.now()}.tmp`;
   try {
     await writeFile(tmp, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
-    await rename(tmp, file);
+    const deadline = Date.now() + 2_000;
+    // Windows can transiently refuse replacing an existing file (AV / open handles).
+    while (true) {
+      try {
+        await rename(tmp, file);
+        return;
+      } catch (error) {
+        const code = error && typeof error === 'object' && 'code' in error ? String((error as { code: unknown }).code) : '';
+        if ((code === 'EPERM' || code === 'EBUSY' || code === 'EACCES') && Date.now() < deadline) {
+          await new Promise((resolve) => setTimeout(resolve, 25));
+          continue;
+        }
+        throw error;
+      }
+    }
   } catch (error) {
     await rm(tmp, { force: true }).catch(() => undefined);
     throw error;
