@@ -45,7 +45,8 @@ vi.mock('../src/lib/git.js', () => ({
   listCloneFiles: mocks.listCloneFiles,
   readClonedFilesBatch: mocks.readClonedFilesBatch,
   listTreeFiles: mocks.listTreeFiles,
-  readTreeFilesBatch: mocks.readTreeFilesBatch
+  readTreeFilesBatch: mocks.readTreeFilesBatch,
+  localCheckoutMatchesRepo: vi.fn(async () => false)
 }));
 
 vi.mock('../src/lib/github.js', () => ({

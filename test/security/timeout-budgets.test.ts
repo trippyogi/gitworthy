@@ -42,7 +42,7 @@ describe('GIT_SUBPROCESS_TIMEOUT_MS coverage guard', () => {
     // If this count changes, a new git subprocess call site was added (or
     // removed) — update the count once you have confirmed the new call site
     // also passes an explicit `timeout`/`timeoutMs` option below.
-    expect(indices).toHaveLength(8);
+    expect(indices).toHaveLength(9);
 
     for (let i = 0; i < indices.length; i += 1) {
       const start = indices[i]!;

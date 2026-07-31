@@ -1,5 +1,5 @@
 import { githubJson, fetchRaw, GithubIssue } from '../lib/github.js';
-import { DEFAULT_MAX_TREE_FILES, listCloneFiles, listTreeFiles, readClonedFilesBatch, readTreeFilesBatch, shallowClone, type ClonedFile } from '../lib/git.js';
+import { DEFAULT_MAX_TREE_FILES, listCloneFiles, listTreeFiles, localCheckoutMatchesRepo, readClonedFilesBatch, readTreeFilesBatch, shallowClone, type ClonedFile } from '../lib/git.js';
 import { loadCanonicalRepo } from '../lib/repo.js';
 import { assessRepro, looksLikeBug } from './candidate-quality.js';
 import { createEnvelope, Envelope, GitworthyError } from './envelope.js';
@@ -195,6 +195,7 @@ async function scanLocalCheckout(input: {
   const local = process.env.GITWORTHY_LOCAL_REPO?.trim();
   if (!local) return null;
   try {
+    if (!(await localCheckoutMatchesRepo(local, input.repo))) return null;
     const listed = await listTreeFiles(local);
     const slice = listed.files.slice(0, MAX_GREP_FILES);
     const contentsByPath = await readTreeFilesBatch(local, slice, { maxTotalBytes: MAX_GREP_TOTAL_BYTES });
@@ -211,7 +212,8 @@ async function scanLocalCheckout(input: {
       contentsByPath
     });
     const notCheckedExtra: string[] = [
-      `used local checkout at ${local} via GITWORTHY_LOCAL_REPO; remote clone was unavailable.`
+      `used local checkout at ${local} via GITWORTHY_LOCAL_REPO; remote clone was unavailable.`,
+      'local checkout HEAD may differ from the remote default branch; treat shipped signals as VERIFY evidence only.'
     ];
     if (listed.truncated) {
       notCheckedExtra.push(
@@ -224,6 +226,7 @@ async function scanLocalCheckout(input: {
       cloneCached: null,
       fileListCached: false,
       checked: [
+        `verified local checkout origin matches ${input.repo}`,
         `listed local checkout tree for ${input.repo} at ${local}`,
         'searched candidate terms in tree and file contents'
       ],

@@ -258,7 +258,6 @@ function chooseDisposition(input: {
   const types = new Set(input.findings.map((item) => item.type));
   if (input.findings.some((item) => item.effect === 'block' && item.strength === 'definitive' && item.type === 'released_fix')) return 'blocked';
   if (types.has('linked_pr_open')) return 'land_only';
-  if (types.has('close_candidate')) return 'review';
   if (types.has('assigned') || types.has('claim_required')) return 'claim_first';
   if (types.has('no_pr_path')) return 'blocked';
   if (input.priorAttempts >= 2 || input.referencedCommits + input.networkPrs >= 3) return 'crowded';
