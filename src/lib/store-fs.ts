@@ -1,4 +1,5 @@
-import { mkdir, open, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
+import { mkdir, open, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
 import { homedir } from 'node:os';
 import path from 'node:path';
 import { GitworthyError } from '../core/envelope.js';
@@ -23,21 +24,33 @@ function lockPath(name: string): string {
 type LockHandle = {
   name: string;
   file: string;
+  token: string;
   release: () => Promise<void>;
 };
 
-async function isLockStale(file: string, staleMs: number): Promise<boolean> {
+async function readLockToken(file: string): Promise<{ token: string; createdAtMs: number } | null> {
   try {
-    const info = await stat(file);
-    return Date.now() - info.mtimeMs > staleMs;
+    const raw = await readFile(file, 'utf8');
+    const [token, createdAt] = raw.trim().split('\n');
+    if (!token) return null;
+    const createdAtMs = Date.parse(createdAt ?? '');
+    return { token, createdAtMs: Number.isFinite(createdAtMs) ? createdAtMs : 0 };
   } catch {
-    return false;
+    return null;
   }
+}
+
+async function isLockStale(file: string, staleMs: number): Promise<boolean> {
+  const meta = await readLockToken(file);
+  if (!meta) return true;
+  if (!meta.createdAtMs) return false;
+  return Date.now() - meta.createdAtMs > staleMs;
 }
 
 /**
  * Cross-process exclusive lock via O_EXCL lockfiles.
- * Stale locks (mtime older than staleMs) are removed and retried.
+ * Stale locks (token timestamp older than staleMs) are removed and retried.
+ * Release only deletes the lockfile when the token still matches this holder.
  */
 export async function withStoreLock<T>(
   name: string,
@@ -54,16 +67,21 @@ export async function withStoreLock<T>(
   let handle: LockHandle | undefined;
 
   while (!handle) {
+    const token = randomUUID();
     try {
       const fh = await open(file, 'wx');
-      const payload = `${process.pid}\n${new Date().toISOString()}\n`;
+      const payload = `${token}\n${new Date().toISOString()}\n${process.pid}\n`;
       await fh.writeFile(payload, 'utf8');
       await fh.close();
       handle = {
         name,
         file,
+        token,
         release: async () => {
-          await rm(file, { force: true }).catch(() => undefined);
+          const current = await readLockToken(file);
+          if (current?.token === token) {
+            await rm(file, { force: true }).catch(() => undefined);
+          }
         }
       };
     } catch (error) {
@@ -76,7 +94,14 @@ export async function withStoreLock<T>(
         });
       }
       if (await isLockStale(file, staleMs)) {
-        await rm(file, { force: true }).catch(() => undefined);
+        const stale = await readLockToken(file);
+        // Only remove if still the same stale token we inspected (avoid racing a fresh holder).
+        if (stale && Date.now() - stale.createdAtMs > staleMs) {
+          const recheck = await readLockToken(file);
+          if (recheck?.token === stale.token) {
+            await rm(file, { force: true }).catch(() => undefined);
+          }
+        }
         continue;
       }
       if (Date.now() >= deadline) {
