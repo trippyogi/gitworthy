@@ -2,11 +2,17 @@
 
 ## Unreleased
 
-### 0.4.0 (in progress)
+## 0.4.0
 
 - Add versioned output contracts (`schema_version: 1.0-draft.1`) under `src/contracts/` with generated JSON Schemas in `schemas/`.
 - CLI and MCP stamp/validate check results with `run_id` / `decision_id`, and return structured JSON errors (`ok: false`) while preserving legacy `verdict_summary` / `evidence` / `signals` fields.
+- Add strict shared CLI/MCP input schemas; unknown flags and malformed refs fail before network access.
 - Centralize `worth_check` verdict/disposition in `decideFromSignals` (`src/decision/policy.ts`): heuristics (lexical duplicate, shipped overlap, branch match, title-overlap PRs) cap at VERIFY; only definitive blockers (e.g. released_fix, explicit closing open PR) can SKIP.
+- Fix cross-repo linked-work identity (`owner/repo#n` dedupe, timeline/comment PR lookups use the PR's real repo).
+- Add bounded shared HTTP client (timeouts, retries, Retry-After, request budgets, GitHub API version headers).
+- Replace working-tree inspection with a bare-clone git-object reader (`ls-tree` / `cat-file`, symlink-safe, budgeted).
+- Replace whole-tarball extract with streaming `inspectTarball` (path validation, entry/byte/timeout caps).
+- Add release-facing hostile-input security suite under `test/security/`.
 
 ## 0.3.10
 
