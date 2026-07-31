@@ -18,8 +18,18 @@ import {
   related_cluster,
   release_gap,
   scan,
+  store_decision_list,
+  store_decision_show,
+  store_export,
   store_migrate_ledger,
+  store_outcome_list,
+  store_outcome_record,
+  store_outcome_show,
+  store_recheck,
   store_rebuild_indexes,
+  store_run_list,
+  store_run_show,
+  store_target_show,
   worth_check
 } from '../core/index.js';
 import { GitworthyError } from '../core/envelope.js';
@@ -62,6 +72,16 @@ Usage:
   gitworthy ledger record owner/repo#123 [--verdict ACT] [--disposition greenfield] [--notes text] [--json]
   gitworthy ledger migrate [--force] [--json]
   gitworthy store rebuild-indexes [--json]
+  gitworthy store target owner/repo#123 [--json]
+  gitworthy store export [--repo owner/repo] [--issue 123] --out-dir path [--json]
+  gitworthy run show <run_id> [--json]
+  gitworthy run list [--repo owner/repo] [--issue 123] [--limit 50] [--json]
+  gitworthy decision show <decision_id> [--json]
+  gitworthy decision list [--repo owner/repo] [--issue 123] [--limit 50] [--json]
+  gitworthy outcome show <event_id> [--json]
+  gitworthy outcome list [--repo owner/repo] [--issue 123] [--limit 50] [--json]
+  gitworthy outcome record owner/repo#123 --event selected [--decision-id id] [--run-id id] [--notes text] [--json]
+  gitworthy recheck owner/repo#123 [--npm-package name] [--json]
   gitworthy mcp
 `;
 
@@ -158,7 +178,12 @@ const CLI_OPTIONS = {
   verdict: { type: 'string' },
   disposition: { type: 'string' },
   notes: { type: 'string' },
-  force: { type: 'boolean' }
+  force: { type: 'boolean' },
+  event: { type: 'string' },
+  'decision-id': { type: 'string' },
+  'run-id': { type: 'string' },
+  'out-dir': { type: 'string' },
+  issue: { type: 'string' }
 } as const;
 
 function parseCliArgs(argv: string[]) {
@@ -379,9 +404,97 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
       if (action === 'rebuild-indexes') {
         commandName = 'store_rebuild_indexes';
         output = toStampedLegacyResult('store_rebuild_indexes', await store_rebuild_indexes() as Record<string, unknown>);
+      } else if (action === 'target') {
+        commandName = 'store_target_show';
+        const ref = parseIssueRef(required(second, 'store target requires owner/repo#123.'));
+        output = toStampedLegacyResult('store_target_show', await store_target_show(ref) as Record<string, unknown>);
+      } else if (action === 'export') {
+        commandName = 'store_export';
+        const outDir = required(stringValue(parsed.values['out-dir']), 'store export requires --out-dir path.');
+        const repoFilter = stringValue(parsed.values.repo);
+        const issueRaw = stringValue(parsed.values.issue);
+        output = toStampedLegacyResult('store_export', await store_export({
+          out_dir: outDir,
+          repo: repoFilter ? parseArg(RepoRefSchema, repoFilter, 'invalid_repo_ref') : undefined,
+          issue_number: issueRaw ? issueNumberArg(issueRaw, 'store export --issue requires a positive integer.') : undefined
+        }) as Record<string, unknown>);
       } else {
-        usageError('store requires rebuild-indexes.');
+        usageError('store requires rebuild-indexes, target, or export.');
       }
+    } else if (command === 'run') {
+      const action = first;
+      if (action === 'show') {
+        commandName = 'store_run_show';
+        output = toStampedLegacyResult('store_run_show', await store_run_show({
+          run_id: required(second, 'run show requires a run_id.')
+        }) as Record<string, unknown>);
+      } else if (action === 'list') {
+        commandName = 'store_run_list';
+        const repoFilter = stringValue(parsed.values.repo);
+        const issueRaw = stringValue(parsed.values.issue);
+        output = toStampedLegacyResult('store_run_list', await store_run_list({
+          repo: repoFilter ? parseArg(RepoRefSchema, repoFilter, 'invalid_repo_ref') : undefined,
+          issue_number: issueRaw ? issueNumberArg(issueRaw, 'run list --issue requires a positive integer.') : undefined,
+          limit: stringValue(parsed.values.limit) ? Number(stringValue(parsed.values.limit)) : undefined
+        }) as Record<string, unknown>);
+      } else {
+        usageError('run requires show or list.');
+      }
+    } else if (command === 'decision') {
+      const action = first;
+      if (action === 'show') {
+        commandName = 'store_decision_show';
+        output = toStampedLegacyResult('store_decision_show', await store_decision_show({
+          decision_id: required(second, 'decision show requires a decision_id.')
+        }) as Record<string, unknown>);
+      } else if (action === 'list') {
+        commandName = 'store_decision_list';
+        const repoFilter = stringValue(parsed.values.repo);
+        const issueRaw = stringValue(parsed.values.issue);
+        output = toStampedLegacyResult('store_decision_list', await store_decision_list({
+          repo: repoFilter ? parseArg(RepoRefSchema, repoFilter, 'invalid_repo_ref') : undefined,
+          issue_number: issueRaw ? issueNumberArg(issueRaw, 'decision list --issue requires a positive integer.') : undefined,
+          limit: stringValue(parsed.values.limit) ? Number(stringValue(parsed.values.limit)) : undefined
+        }) as Record<string, unknown>);
+      } else {
+        usageError('decision requires show or list.');
+      }
+    } else if (command === 'outcome') {
+      const action = first;
+      if (action === 'show') {
+        commandName = 'store_outcome_show';
+        output = toStampedLegacyResult('store_outcome_show', await store_outcome_show({
+          event_id: required(second, 'outcome show requires an event_id.')
+        }) as Record<string, unknown>);
+      } else if (action === 'list') {
+        commandName = 'store_outcome_list';
+        const repoFilter = stringValue(parsed.values.repo);
+        const issueRaw = stringValue(parsed.values.issue);
+        output = toStampedLegacyResult('store_outcome_list', await store_outcome_list({
+          repo: repoFilter ? parseArg(RepoRefSchema, repoFilter, 'invalid_repo_ref') : undefined,
+          issue_number: issueRaw ? issueNumberArg(issueRaw, 'outcome list --issue requires a positive integer.') : undefined,
+          limit: stringValue(parsed.values.limit) ? Number(stringValue(parsed.values.limit)) : undefined
+        }) as Record<string, unknown>);
+      } else if (action === 'record') {
+        commandName = 'store_outcome_record';
+        const ref = parseIssueRef(required(second, 'outcome record requires owner/repo#123.'));
+        output = toStampedLegacyResult('store_outcome_record', await store_outcome_record({
+          ...ref,
+          event: required(stringValue(parsed.values.event), 'outcome record requires --event <name>.'),
+          decision_id: stringValue(parsed.values['decision-id']),
+          run_id: stringValue(parsed.values['run-id']),
+          notes: stringValue(parsed.values.notes)
+        }) as Record<string, unknown>);
+      } else {
+        usageError('outcome requires show, list, or record.');
+      }
+    } else if (command === 'recheck') {
+      commandName = 'store_recheck';
+      const ref = parseIssueRef(required(first, 'recheck requires owner/repo#123.'));
+      output = toStampedLegacyResult('store_recheck', await store_recheck({
+        ...ref,
+        npm_package: stringValue(parsed.values['npm-package'])
+      }) as Record<string, unknown>);
     } else {
       usageError(`Unknown subcommand ${command}.`);
     }

@@ -5,6 +5,7 @@
 - Add versioned local store under `~/.gitworthy/store` (override with `GITWORTHY_STORE_DIR`): run/decision/outcome records, per-target indexes, and cross-process lockfiles (GW-015).
 - Persist check results best-effort into the store from CLI and MCP (commands for browse/export land in GW-017).
 - Add safe legacy-ledger migration with quarantine + target-index rebuild (`gitworthy ledger migrate`, `gitworthy store rebuild-indexes`) (GW-016).
+- Add store browse/record/recheck/export commands: `run` / `decision` / `outcome` / `recheck` / `store target|export` (GW-017).
 
 ## 0.4.1
 

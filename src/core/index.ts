@@ -13,6 +13,18 @@ export { org_scan } from './org-scan.js';
 export { hunt } from './hunt.js';
 export { ledger_lookup, ledger_record, ledger_list } from './ledger.js';
 export { store_migrate_ledger, store_rebuild_indexes } from './store-admin.js';
+export {
+  store_run_show,
+  store_run_list,
+  store_decision_show,
+  store_decision_list,
+  store_outcome_show,
+  store_outcome_list,
+  store_outcome_record,
+  store_target_show,
+  store_export,
+  store_recheck
+} from './store-commands.js';
 export { listProbeTemplates, resolveProbeTemplate } from './probe-templates.js';
 export type { ProbeTemplate, ProbeTemplateId } from './probe-templates.js';
 export { parseSkillProfile, resolveSkillProfile, scoreSkillFit } from './skill-fit.js';

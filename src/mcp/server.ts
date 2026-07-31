@@ -17,8 +17,13 @@ import {
   related_cluster,
   release_gap,
   scan,
+  store_decision_list,
+  store_export,
   store_migrate_ledger,
+  store_outcome_record,
+  store_recheck,
   store_rebuild_indexes,
+  store_target_show,
   worth_check
 } from '../core/index.js';
 import { packageVersion } from '../lib/package-meta.js';
@@ -157,6 +162,16 @@ export function createMcpServer(): McpServer {
     withToolErrors('store_migrate_ledger', () => store_migrate_ledger({ force: input?.force === true }), stamp('store_migrate_ledger')));
   server.registerTool('store_rebuild_indexes', { title: 'Rebuild store indexes', inputSchema: {} }, async () =>
     withToolErrors('store_rebuild_indexes', () => store_rebuild_indexes(), stamp('store_rebuild_indexes')));
+  server.registerTool('store_target_show', { title: 'Show store target', inputSchema: { repo: z.string(), issue_number: z.number() } }, async (input) =>
+    withToolErrors('store_target_show', () => store_target_show({ repo: input.repo, issue_number: input.issue_number }), stamp('store_target_show')));
+  server.registerTool('store_decision_list', { title: 'List store decisions', inputSchema: { repo: z.string().optional(), issue_number: z.number().optional(), limit: z.number().optional() } }, async (input) =>
+    withToolErrors('store_decision_list', () => store_decision_list(input ?? {}), stamp('store_decision_list')));
+  server.registerTool('store_outcome_record', { title: 'Record outcome event', inputSchema: { repo: z.string(), issue_number: z.number(), event: z.string(), decision_id: z.string().optional(), run_id: z.string().optional(), notes: z.string().optional() } }, async (input) =>
+    withToolErrors('store_outcome_record', () => store_outcome_record(input), stamp('store_outcome_record')));
+  server.registerTool('store_recheck', { title: 'Recheck target', inputSchema: { repo: z.string(), issue_number: z.number(), npm_package: z.string().optional() } }, async (input) =>
+    withToolErrors('store_recheck', () => store_recheck(input), stamp('store_recheck')));
+  server.registerTool('store_export', { title: 'Export store slice', inputSchema: { out_dir: z.string(), repo: z.string().optional(), issue_number: z.number().optional() } }, async (input) =>
+    withToolErrors('store_export', () => store_export(input), stamp('store_export')));
   return server;
 }
 
