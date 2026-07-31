@@ -10,6 +10,7 @@ import { HuntResultSchema } from '../src/contracts/hunt.js';
 import { DoctorResultSchema } from '../src/contracts/doctor.js';
 import { LedgerResultSchema } from '../src/contracts/ledger.js';
 import { OutcomeEventSchema } from '../src/contracts/outcomes.js';
+import { RunRecordSchema, DecisionRecordSchema, TargetIndexSchema } from '../src/contracts/store.js';
 
 const outDir = join(process.cwd(), 'schemas');
 mkdirSync(outDir, { recursive: true });
@@ -23,7 +24,10 @@ const docs: Array<{ file: string; schema: z.ZodType }> = [
   { file: 'gitworthy-hunt.v1.schema.json', schema: HuntResultSchema },
   { file: 'gitworthy-doctor.v1.schema.json', schema: DoctorResultSchema },
   { file: 'gitworthy-ledger.v1.schema.json', schema: LedgerResultSchema },
-  { file: 'gitworthy-outcome-event.v1.schema.json', schema: OutcomeEventSchema }
+  { file: 'gitworthy-outcome-event.v1.schema.json', schema: OutcomeEventSchema },
+  { file: 'gitworthy-run-record.v1.schema.json', schema: RunRecordSchema },
+  { file: 'gitworthy-decision-record.v1.schema.json', schema: DecisionRecordSchema },
+  { file: 'gitworthy-target-index.v1.schema.json', schema: TargetIndexSchema }
 ];
 
 const checkOnly = process.argv.includes('--check');

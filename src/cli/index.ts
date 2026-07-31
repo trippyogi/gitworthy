@@ -34,6 +34,7 @@ import {
   toErrorResult,
   toStampedLegacyResult
 } from '../contracts/index.js';
+import { persistCheckResultBestEffort } from '../lib/store.js';
 import { startMcpServer } from '../mcp/server.js';
 
 const help = `gitworthy
@@ -225,7 +226,9 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
         probe: probe(parsed.values),
         probe_template: stringValue(parsed.values['probe-template'])
       });
-      output = toCheckResult(legacy as Record<string, unknown>, ref);
+      const check = toCheckResult(legacy as Record<string, unknown>, ref);
+      await persistCheckResultBestEffort(check);
+      output = check;
     } else if (command === 'branches') {
       commandName = 'branch_scan';
       const repo = repoArg(first, 'branches requires owner/repo and keywords.');
