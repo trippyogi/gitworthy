@@ -48,7 +48,7 @@ describe('legacy ledger migration (GW-016)', () => {
     expect(first.rebuilt_targets).toBe(1);
 
     const index = await getTargetIndex('o/r', 7);
-    expect(index?.decision_ids.length).toBe(1);
+    expect(index?.decision_ids).toEqual(['decision_ledger_o_r#7']);
     const decision = await getDecisionRecord(index!.decision_ids[0]!);
     expect(decision).toMatchObject({
       verdict: 'SKIP',
@@ -58,7 +58,33 @@ describe('legacy ledger migration (GW-016)', () => {
 
     const second = await migrateLegacyLedger();
     expect(second.already_done).toBe(true);
-    expect(second.migrated).toBe(1);
+    expect(second.skipped).toBe(1);
+
+    await upsertLedgerEntry({
+      repo: 'o/r',
+      issue_number: 8,
+      verdict: 'ACT',
+      disposition: 'greenfield',
+      source: 'cli'
+    });
+    const third = await migrateLegacyLedger();
+    expect(third.already_done).toBe(false);
+    expect(third.migrated).toBe(1);
+    expect(third.skipped).toBe(1);
+  });
+
+  it('force remigrates without duplicating decision ids', async () => {
+    await upsertLedgerEntry({
+      repo: 'o/r',
+      issue_number: 9,
+      verdict: 'VERIFY',
+      disposition: 'review',
+      source: 'cli'
+    });
+    await migrateLegacyLedger();
+    await migrateLegacyLedger({ force: true });
+    const index = await getTargetIndex('o/r', 9);
+    expect(index?.decision_ids.filter((id) => id === 'decision_ledger_o_r#9')).toHaveLength(1);
   });
 
   it('quarantines corrupt ledger JSON and invalid entries', async () => {

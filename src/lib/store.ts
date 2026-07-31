@@ -72,31 +72,33 @@ async function updateTargetIndex(
   target: { repo: string; issue_number: number },
   patch: { runId?: string; decisionId?: string; outcomeId?: string }
 ): Promise<TargetIndex> {
-  const file = targetIndexPath(target.repo, target.issue_number);
-  const existing = await readJsonFile<unknown>(file);
-  const base = existing
-    ? TargetIndexSchema.parse(existing)
-    : TargetIndexSchema.parse({
-      record_version: 1,
-      record_kind: 'target_index',
+  return withStoreLock('indexes', async () => {
+    const file = targetIndexPath(target.repo, target.issue_number);
+    const existing = await readJsonFile<unknown>(file);
+    const base = existing
+      ? TargetIndexSchema.parse(existing)
+      : TargetIndexSchema.parse({
+        record_version: 1,
+        record_kind: 'target_index',
+        target: { repo: target.repo.toLowerCase(), issue_number: target.issue_number },
+        updated_at: new Date().toISOString(),
+        run_ids: [],
+        decision_ids: [],
+        outcome_ids: []
+      });
+
+    const next: TargetIndex = {
+      ...base,
       target: { repo: target.repo.toLowerCase(), issue_number: target.issue_number },
       updated_at: new Date().toISOString(),
-      run_ids: [],
-      decision_ids: [],
-      outcome_ids: []
-    });
-
-  const next: TargetIndex = {
-    ...base,
-    target: { repo: target.repo.toLowerCase(), issue_number: target.issue_number },
-    updated_at: new Date().toISOString(),
-    run_ids: patch.runId ? pushCapped(base.run_ids, patch.runId, INDEX_RUN_CAP) : base.run_ids,
-    decision_ids: patch.decisionId ? pushCapped(base.decision_ids, patch.decisionId, INDEX_DECISION_CAP) : base.decision_ids,
-    outcome_ids: patch.outcomeId ? pushCapped(base.outcome_ids, patch.outcomeId, INDEX_OUTCOME_CAP) : base.outcome_ids
-  };
-  const parsed = TargetIndexSchema.parse(next);
-  await writeJsonAtomic(file, parsed);
-  return parsed;
+      run_ids: patch.runId ? pushCapped(base.run_ids, patch.runId, INDEX_RUN_CAP) : base.run_ids,
+      decision_ids: patch.decisionId ? pushCapped(base.decision_ids, patch.decisionId, INDEX_DECISION_CAP) : base.decision_ids,
+      outcome_ids: patch.outcomeId ? pushCapped(base.outcome_ids, patch.outcomeId, INDEX_OUTCOME_CAP) : base.outcome_ids
+    };
+    const parsed = TargetIndexSchema.parse(next);
+    await writeJsonAtomic(file, parsed);
+    return parsed;
+  });
 }
 
 export async function putRunRecord(input: Omit<RunRecord, 'record_version' | 'record_kind' | 'schema_version' | 'gitworthy_version'> & Partial<Pick<RunRecord, 'schema_version' | 'gitworthy_version'>>): Promise<RunRecord> {
@@ -111,9 +113,7 @@ export async function putRunRecord(input: Omit<RunRecord, 'record_version' | 're
   return withStoreLock(`run:${record.run_id}`, async () => {
     await writeJsonAtomic(runPath(record.run_id), record);
     if (record.target) {
-      await withStoreLock(`target:${targetKey(record.target.repo, record.target.issue_number)}`, async () => {
-        await updateTargetIndex(record.target!, { runId: record.run_id });
-      });
+      await updateTargetIndex(record.target, { runId: record.run_id });
     }
     return record;
   });
@@ -130,12 +130,10 @@ export async function putDecisionRecord(input: Omit<DecisionRecord, 'record_vers
 
   return withStoreLock(`decision:${record.decision_id}`, async () => {
     await writeJsonAtomic(decisionPath(record.decision_id), record);
-    await withStoreLock(`target:${targetKey(record.target.canonical_repo, record.target.issue_number)}`, async () => {
-      await updateTargetIndex(
-        { repo: record.target.canonical_repo, issue_number: record.target.issue_number },
-        { decisionId: record.decision_id, runId: record.run_id }
-      );
-    });
+    await updateTargetIndex(
+      { repo: record.target.canonical_repo, issue_number: record.target.issue_number },
+      { decisionId: record.decision_id, runId: record.run_id }
+    );
     return record;
   });
 }
@@ -149,9 +147,7 @@ export async function putOutcomeEvent(input: Omit<OutcomeEvent, 'event_version' 
 
   return withStoreLock(`outcome:${event.event_id}`, async () => {
     await writeJsonAtomic(outcomePath(event.event_id), event);
-    await withStoreLock(`target:${targetKey(event.target.repo, event.target.issue_number)}`, async () => {
-      await updateTargetIndex(event.target, { outcomeId: event.event_id, runId: event.run_id, decisionId: event.decision_id });
-    });
+    await updateTargetIndex(event.target, { outcomeId: event.event_id, runId: event.run_id, decisionId: event.decision_id });
     return event;
   });
 }
@@ -199,7 +195,7 @@ export async function rebuildTargetIndexes(): Promise<{
   outcomes: number;
   skipped: number;
 }> {
-  return withStoreLock('rebuild-indexes', async () => {
+  return withStoreLock('indexes', async () => {
     await rm(indexesDir(), { recursive: true, force: true }).catch(() => undefined);
     let skipped = 0;
     const byTarget = new Map<string, TargetIndex>();

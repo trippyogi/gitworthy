@@ -1,14 +1,10 @@
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
-import { DispositionSchema, VerdictSchema, newDecisionId, newRunId } from '../contracts/common.js';
+import { DispositionSchema, VerdictSchema } from '../contracts/common.js';
 import { ledgerPath, ledgerRoot, type LedgerEntry } from './ledger.js';
 import { putDecisionRecord, putRunRecord, rebuildTargetIndexes } from './store.js';
 import { readJsonFile, storeRoot, withStoreLock, writeJsonAtomic } from './store-fs.js';
-
-type Verdict = z.infer<typeof VerdictSchema>;
-type Disposition = z.infer<typeof DispositionSchema>;
 
 const MIGRATION_ID = 'legacy-ledger-v1';
 
@@ -29,7 +25,11 @@ type MigrationMarker = {
   completed_at: string;
   migrated: number;
   quarantined: number;
+  migrated_keys: string[];
 };
+
+type Verdict = z.infer<typeof VerdictSchema>;
+type Disposition = z.infer<typeof DispositionSchema>;
 
 function migrationMarkerPath(): string {
   return path.join(storeRoot(), 'migrations', `${MIGRATION_ID}.json`);
@@ -61,6 +61,19 @@ function isLedgerEntry(value: unknown): value is LedgerEntry {
     && typeof row.updated_at === 'string';
 }
 
+function ledgerEntryKey(entry: LedgerEntry): string {
+  return `${entry.repo.toLowerCase()}#${entry.issue_number}`;
+}
+
+/** Stable ids so re-runs / --force overwrite instead of duplicating. */
+function migrationRecordIds(entry: LedgerEntry): { runId: string; decisionId: string } {
+  const slug = ledgerEntryKey(entry).replace(/[^a-z0-9#_.-]+/gi, '_');
+  return {
+    runId: `run_ledger_${slug}`,
+    decisionId: `decision_ledger_${slug}`
+  };
+}
+
 async function quarantineBlob(name: string, contents: string): Promise<string> {
   const dir = quarantineRoot();
   await mkdir(dir, { recursive: true });
@@ -82,7 +95,6 @@ async function readLegacyLedgerRaw(): Promise<{ entries: Record<string, unknown>
       return { entries: parsed as Record<string, unknown>, quarantinedFile: null };
     } catch {
       const quarantined = await quarantineBlob(`entries.invalid-json.${Date.now()}.json`, raw);
-      // Move aside the broken ledger so future reads start clean.
       await rename(file, `${file}.broken.${Date.now()}`).catch(async () => {
         await rm(file, { force: true }).catch(() => undefined);
       });
@@ -96,8 +108,7 @@ async function readLegacyLedgerRaw(): Promise<{ entries: Record<string, unknown>
 }
 
 async function migrateOneEntry(entry: LedgerEntry): Promise<void> {
-  const runId = newRunId();
-  const decisionId = newDecisionId();
+  const { runId, decisionId } = migrationRecordIds(entry);
   const verdict = asVerdict(entry.verdict) ?? 'VERIFY';
   const disposition = asDisposition(entry.disposition);
   const createdAt = entry.updated_at || entry.recorded_at || new Date().toISOString();
@@ -124,20 +135,33 @@ async function migrateOneEntry(entry: LedgerEntry): Promise<void> {
     reasons,
     signals: []
   });
-  await putRunRecord({
-    run_id: runId,
-    command: 'ledger_migrate',
-    generated_at: createdAt,
-    cached: false,
-    summary: `Migrated legacy ledger entry for ${repo}#${entry.issue_number}.`,
-    target: { repo, issue_number: entry.issue_number },
-    decision_id: decisionId,
-    checked: ['legacy ledger entry'],
-    not_checked: ['full check pipeline was not re-run during ledger migration'],
-    metrics: {
-      ...(typeof entry.quality_score === 'number' ? { quality_score: entry.quality_score } : {})
-    }
-  });
+  try {
+    await putRunRecord({
+      run_id: runId,
+      command: 'ledger_migrate',
+      generated_at: createdAt,
+      cached: false,
+      summary: `Migrated legacy ledger entry for ${repo}#${entry.issue_number}.`,
+      target: { repo, issue_number: entry.issue_number },
+      decision_id: decisionId,
+      checked: ['legacy ledger entry'],
+      not_checked: ['full check pipeline was not re-run during ledger migration'],
+      metrics: {
+        ...(typeof entry.quality_score === 'number' ? { quality_score: entry.quality_score } : {})
+      }
+    });
+  } catch (error) {
+    // Decision without run is worse than quarantine; drop the decision file best-effort.
+    await rm(path.join(storeRoot(), 'decisions', `${decisionId}.json`), { force: true }).catch(() => undefined);
+    throw error;
+  }
+}
+
+async function writeMarker(partial: Omit<MigrationMarker, 'migration_id'>): Promise<void> {
+  await writeJsonAtomic(migrationMarkerPath(), {
+    migration_id: MIGRATION_ID,
+    ...partial
+  } satisfies MigrationMarker);
 }
 
 /** Migrate ~/.gitworthy/ledger into versioned store records; quarantine corrupt rows. */
@@ -147,24 +171,12 @@ export async function migrateLegacyLedger(opts: { force?: boolean } = {}): Promi
 
   return withStoreLock('migrate-legacy-ledger', async () => {
     const existing = await readJsonFile<MigrationMarker>(markerPath);
-    if (existing && !opts.force) {
-      return {
-        migration_id: MIGRATION_ID,
-        already_done: true,
-        migrated: existing.migrated,
-        quarantined: existing.quarantined,
-        skipped: 0,
-        rebuilt_targets: 0,
-        quarantine_dir: quarantineDir,
-        marker_path: markerPath,
-        ledger_path: ledgerPath()
-      };
-    }
-
+    const migratedKeys = new Set(existing?.migrated_keys ?? []);
     const { entries, quarantinedFile } = await readLegacyLedgerRaw();
+
     let migrated = 0;
     let quarantined = quarantinedFile ? 1 : 0;
-    const skipped = 0;
+    let skipped = 0;
 
     for (const [key, value] of Object.entries(entries)) {
       if (!isLedgerEntry(value)) {
@@ -172,9 +184,22 @@ export async function migrateLegacyLedger(opts: { force?: boolean } = {}): Promi
         quarantined += 1;
         continue;
       }
+      const entryKey = ledgerEntryKey(value);
+      if (!opts.force && migratedKeys.has(entryKey)) {
+        skipped += 1;
+        continue;
+      }
       try {
         await migrateOneEntry(value);
+        migratedKeys.add(entryKey);
         migrated += 1;
+        // Checkpoint after each success so crashes resume without duplicating unfinished work.
+        await writeMarker({
+          completed_at: new Date().toISOString(),
+          migrated: migratedKeys.size,
+          quarantined,
+          migrated_keys: [...migratedKeys].sort()
+        });
       } catch {
         await quarantineBlob(
           `entry-failed.${key.replace(/[^a-zA-Z0-9._#-]+/g, '_')}.${Date.now()}.json`,
@@ -184,14 +209,28 @@ export async function migrateLegacyLedger(opts: { force?: boolean } = {}): Promi
       }
     }
 
+    const noWorkLeft = migrated === 0 && quarantined === (quarantinedFile ? 1 : 0) && skipped === Object.keys(entries).length;
+    if (existing && !opts.force && noWorkLeft && Object.keys(entries).length > 0) {
+      return {
+        migration_id: MIGRATION_ID,
+        already_done: true,
+        migrated: existing.migrated,
+        quarantined: existing.quarantined,
+        skipped,
+        rebuilt_targets: 0,
+        quarantine_dir: quarantineDir,
+        marker_path: markerPath,
+        ledger_path: ledgerPath()
+      };
+    }
+
     const rebuilt = await rebuildTargetIndexes();
-    const marker: MigrationMarker = {
-      migration_id: MIGRATION_ID,
+    await writeMarker({
       completed_at: new Date().toISOString(),
-      migrated,
-      quarantined
-    };
-    await writeJsonAtomic(markerPath, marker);
+      migrated: migratedKeys.size,
+      quarantined: (existing?.quarantined ?? 0) + quarantined,
+      migrated_keys: [...migratedKeys].sort()
+    });
 
     return {
       migration_id: MIGRATION_ID,
@@ -209,9 +248,4 @@ export async function migrateLegacyLedger(opts: { force?: boolean } = {}): Promi
 
 export async function getLegacyLedgerMigrationStatus(): Promise<MigrationMarker | null> {
   return readJsonFile<MigrationMarker>(migrationMarkerPath());
-}
-
-/** Test helper: unique ids for quarantine filenames under contention. */
-export function migrationIdForTests(): string {
-  return `${MIGRATION_ID}-${randomUUID().slice(0, 8)}`;
 }
