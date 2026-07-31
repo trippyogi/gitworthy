@@ -1,9 +1,12 @@
+import { readFileSync } from 'node:fs';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { describe, expect, it, vi } from 'vitest';
 import { runCli } from '../src/cli/index.js';
 import { createMcpServer } from '../src/mcp/server.js';
 import { SCHEMA_VERSION } from '../src/contracts/index.js';
+
+const packageVersion = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version as string;
 
 vi.mock('../src/lib/git.js', () => ({
   lsRemoteHeads: vi.fn(async () => []),
@@ -37,7 +40,8 @@ describe('adapters', () => {
     const mcpText = (result.content as Array<{ type: string; text: string }>)[0].text;
     const mcpPayload = JSON.parse(mcpText) as Record<string, unknown>;
     const cliPayload = JSON.parse(cli) as Record<string, unknown>;
-    expect(mcpPayload.gitworthy_version).toBe('0.3.10');
+    expect(mcpPayload.gitworthy_version).toBe(packageVersion);
+    expect(cliPayload.gitworthy_version).toBe(packageVersion);
     expect(mcpPayload.schema_version).toBe(SCHEMA_VERSION);
     expect(cliPayload.schema_version).toBe(SCHEMA_VERSION);
     expect(stableContract(cliPayload)).toEqual(stableContract(mcpPayload));
