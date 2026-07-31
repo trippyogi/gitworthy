@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { readdir, rm } from 'node:fs/promises';
 import {
   DecisionRecordSchema,
   RunRecordSchema,
@@ -58,35 +59,46 @@ function pushCapped(list: string[], id: string, cap: number): string[] {
   return next.slice(0, cap);
 }
 
+async function listJsonIds(dir: string): Promise<string[]> {
+  try {
+    const names = await readdir(dir);
+    return names.filter((name) => name.endsWith('.json')).map((name) => name.slice(0, -'.json'.length));
+  } catch {
+    return [];
+  }
+}
+
 async function updateTargetIndex(
   target: { repo: string; issue_number: number },
   patch: { runId?: string; decisionId?: string; outcomeId?: string }
 ): Promise<TargetIndex> {
-  const file = targetIndexPath(target.repo, target.issue_number);
-  const existing = await readJsonFile<unknown>(file);
-  const base = existing
-    ? TargetIndexSchema.parse(existing)
-    : TargetIndexSchema.parse({
-      record_version: 1,
-      record_kind: 'target_index',
+  return withStoreLock('indexes', async () => {
+    const file = targetIndexPath(target.repo, target.issue_number);
+    const existing = await readJsonFile<unknown>(file);
+    const base = existing
+      ? TargetIndexSchema.parse(existing)
+      : TargetIndexSchema.parse({
+        record_version: 1,
+        record_kind: 'target_index',
+        target: { repo: target.repo.toLowerCase(), issue_number: target.issue_number },
+        updated_at: new Date().toISOString(),
+        run_ids: [],
+        decision_ids: [],
+        outcome_ids: []
+      });
+
+    const next: TargetIndex = {
+      ...base,
       target: { repo: target.repo.toLowerCase(), issue_number: target.issue_number },
       updated_at: new Date().toISOString(),
-      run_ids: [],
-      decision_ids: [],
-      outcome_ids: []
-    });
-
-  const next: TargetIndex = {
-    ...base,
-    target: { repo: target.repo.toLowerCase(), issue_number: target.issue_number },
-    updated_at: new Date().toISOString(),
-    run_ids: patch.runId ? pushCapped(base.run_ids, patch.runId, INDEX_RUN_CAP) : base.run_ids,
-    decision_ids: patch.decisionId ? pushCapped(base.decision_ids, patch.decisionId, INDEX_DECISION_CAP) : base.decision_ids,
-    outcome_ids: patch.outcomeId ? pushCapped(base.outcome_ids, patch.outcomeId, INDEX_OUTCOME_CAP) : base.outcome_ids
-  };
-  const parsed = TargetIndexSchema.parse(next);
-  await writeJsonAtomic(file, parsed);
-  return parsed;
+      run_ids: patch.runId ? pushCapped(base.run_ids, patch.runId, INDEX_RUN_CAP) : base.run_ids,
+      decision_ids: patch.decisionId ? pushCapped(base.decision_ids, patch.decisionId, INDEX_DECISION_CAP) : base.decision_ids,
+      outcome_ids: patch.outcomeId ? pushCapped(base.outcome_ids, patch.outcomeId, INDEX_OUTCOME_CAP) : base.outcome_ids
+    };
+    const parsed = TargetIndexSchema.parse(next);
+    await writeJsonAtomic(file, parsed);
+    return parsed;
+  });
 }
 
 export async function putRunRecord(input: Omit<RunRecord, 'record_version' | 'record_kind' | 'schema_version' | 'gitworthy_version'> & Partial<Pick<RunRecord, 'schema_version' | 'gitworthy_version'>>): Promise<RunRecord> {
@@ -101,9 +113,7 @@ export async function putRunRecord(input: Omit<RunRecord, 'record_version' | 're
   return withStoreLock(`run:${record.run_id}`, async () => {
     await writeJsonAtomic(runPath(record.run_id), record);
     if (record.target) {
-      await withStoreLock(`target:${targetKey(record.target.repo, record.target.issue_number)}`, async () => {
-        await updateTargetIndex(record.target!, { runId: record.run_id });
-      });
+      await updateTargetIndex(record.target, { runId: record.run_id });
     }
     return record;
   });
@@ -120,12 +130,10 @@ export async function putDecisionRecord(input: Omit<DecisionRecord, 'record_vers
 
   return withStoreLock(`decision:${record.decision_id}`, async () => {
     await writeJsonAtomic(decisionPath(record.decision_id), record);
-    await withStoreLock(`target:${targetKey(record.target.canonical_repo, record.target.issue_number)}`, async () => {
-      await updateTargetIndex(
-        { repo: record.target.canonical_repo, issue_number: record.target.issue_number },
-        { decisionId: record.decision_id, runId: record.run_id }
-      );
-    });
+    await updateTargetIndex(
+      { repo: record.target.canonical_repo, issue_number: record.target.issue_number },
+      { decisionId: record.decision_id, runId: record.run_id }
+    );
     return record;
   });
 }
@@ -139,9 +147,7 @@ export async function putOutcomeEvent(input: Omit<OutcomeEvent, 'event_version' 
 
   return withStoreLock(`outcome:${event.event_id}`, async () => {
     await writeJsonAtomic(outcomePath(event.event_id), event);
-    await withStoreLock(`target:${targetKey(event.target.repo, event.target.issue_number)}`, async () => {
-      await updateTargetIndex(event.target, { outcomeId: event.event_id, runId: event.run_id, decisionId: event.decision_id });
-    });
+    await updateTargetIndex(event.target, { outcomeId: event.event_id, runId: event.run_id, decisionId: event.decision_id });
     return event;
   });
 }
@@ -164,6 +170,117 @@ export async function getOutcomeEvent(eventId: string): Promise<OutcomeEvent | n
 export async function getTargetIndex(repo: string, issueNumber: number): Promise<TargetIndex | null> {
   const raw = await readJsonFile<unknown>(targetIndexPath(repo, issueNumber));
   return raw ? TargetIndexSchema.parse(raw) : null;
+}
+
+export async function listRunIds(): Promise<string[]> {
+  return listJsonIds(runsDir());
+}
+
+export async function listDecisionIds(): Promise<string[]> {
+  return listJsonIds(decisionsDir());
+}
+
+export async function listOutcomeIds(): Promise<string[]> {
+  return listJsonIds(outcomesDir());
+}
+
+/**
+ * Drop and rebuild per-target indexes from durable run/decision/outcome records.
+ * Skips unreadable/corrupt records (reported in the result).
+ */
+export async function rebuildTargetIndexes(): Promise<{
+  targets: number;
+  runs: number;
+  decisions: number;
+  outcomes: number;
+  skipped: number;
+}> {
+  return withStoreLock('indexes', async () => {
+    await rm(indexesDir(), { recursive: true, force: true }).catch(() => undefined);
+    let skipped = 0;
+    const byTarget = new Map<string, TargetIndex>();
+
+    const ensure = (repo: string, issueNumber: number): TargetIndex => {
+      const key = targetKey(repo, issueNumber);
+      const existing = byTarget.get(key);
+      if (existing) return existing;
+      const created = TargetIndexSchema.parse({
+        record_version: 1,
+        record_kind: 'target_index',
+        target: { repo: repo.toLowerCase(), issue_number: issueNumber },
+        updated_at: new Date().toISOString(),
+        run_ids: [],
+        decision_ids: [],
+        outcome_ids: []
+      });
+      byTarget.set(key, created);
+      return created;
+    };
+
+    const runIds = await listRunIds();
+    for (const id of runIds) {
+      try {
+        const record = await getRunRecord(id);
+        if (!record?.target) {
+          skipped += 1;
+          continue;
+        }
+        const index = ensure(record.target.repo, record.target.issue_number);
+        index.run_ids = pushCapped(index.run_ids, record.run_id, INDEX_RUN_CAP);
+        if (record.decision_id) index.decision_ids = pushCapped(index.decision_ids, record.decision_id, INDEX_DECISION_CAP);
+        index.updated_at = new Date().toISOString();
+      } catch {
+        skipped += 1;
+      }
+    }
+
+    const decisionIds = await listDecisionIds();
+    for (const id of decisionIds) {
+      try {
+        const record = await getDecisionRecord(id);
+        if (!record) {
+          skipped += 1;
+          continue;
+        }
+        const index = ensure(record.target.canonical_repo, record.target.issue_number);
+        index.decision_ids = pushCapped(index.decision_ids, record.decision_id, INDEX_DECISION_CAP);
+        index.run_ids = pushCapped(index.run_ids, record.run_id, INDEX_RUN_CAP);
+        index.updated_at = new Date().toISOString();
+      } catch {
+        skipped += 1;
+      }
+    }
+
+    const outcomeIds = await listOutcomeIds();
+    for (const id of outcomeIds) {
+      try {
+        const event = await getOutcomeEvent(id);
+        if (!event) {
+          skipped += 1;
+          continue;
+        }
+        const index = ensure(event.target.repo, event.target.issue_number);
+        index.outcome_ids = pushCapped(index.outcome_ids, event.event_id, INDEX_OUTCOME_CAP);
+        index.run_ids = pushCapped(index.run_ids, event.run_id, INDEX_RUN_CAP);
+        index.decision_ids = pushCapped(index.decision_ids, event.decision_id, INDEX_DECISION_CAP);
+        index.updated_at = new Date().toISOString();
+      } catch {
+        skipped += 1;
+      }
+    }
+
+    for (const index of byTarget.values()) {
+      await writeJsonAtomic(targetIndexPath(index.target.repo, index.target.issue_number), TargetIndexSchema.parse(index));
+    }
+
+    return {
+      targets: byTarget.size,
+      runs: runIds.length,
+      decisions: decisionIds.length,
+      outcomes: outcomeIds.length,
+      skipped
+    };
+  });
 }
 
 /** Best-effort persist of a check result into run + decision records. Never throws to callers. */

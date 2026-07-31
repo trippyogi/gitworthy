@@ -18,6 +18,8 @@ import {
   related_cluster,
   release_gap,
   scan,
+  store_migrate_ledger,
+  store_rebuild_indexes,
   worth_check
 } from '../core/index.js';
 import { GitworthyError } from '../core/envelope.js';
@@ -58,6 +60,8 @@ Usage:
   gitworthy ledger list [--repo owner/repo] [--limit 50] [--json]
   gitworthy ledger show owner/repo#123 [--json]
   gitworthy ledger record owner/repo#123 [--verdict ACT] [--disposition greenfield] [--notes text] [--json]
+  gitworthy ledger migrate [--force] [--json]
+  gitworthy store rebuild-indexes [--json]
   gitworthy mcp
 `;
 
@@ -153,7 +157,8 @@ const CLI_OPTIONS = {
   org: { type: 'boolean' },
   verdict: { type: 'string' },
   disposition: { type: 'string' },
-  notes: { type: 'string' }
+  notes: { type: 'string' },
+  force: { type: 'boolean' }
 } as const;
 
 function parseCliArgs(argv: string[]) {
@@ -361,8 +366,21 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
           notes: stringValue(parsed.values.notes),
           source: 'cli'
         }) as Record<string, unknown>);
+      } else if (action === 'migrate') {
+        commandName = 'store_migrate_ledger';
+        output = toStampedLegacyResult('store_migrate_ledger', await store_migrate_ledger({
+          force: parsed.values.force === true
+        }) as Record<string, unknown>);
       } else {
-        usageError('ledger requires list, show, or record.');
+        usageError('ledger requires list, show, record, or migrate.');
+      }
+    } else if (command === 'store') {
+      const action = first;
+      if (action === 'rebuild-indexes') {
+        commandName = 'store_rebuild_indexes';
+        output = toStampedLegacyResult('store_rebuild_indexes', await store_rebuild_indexes() as Record<string, unknown>);
+      } else {
+        usageError('store requires rebuild-indexes.');
       }
     } else {
       usageError(`Unknown subcommand ${command}.`);
