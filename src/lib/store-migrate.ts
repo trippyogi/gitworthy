@@ -26,6 +26,8 @@ type MigrationMarker = {
   migrated: number;
   quarantined: number;
   migrated_keys: string[];
+  quarantined_keys: string[];
+  indexes_rebuilt_at?: string;
 };
 
 type Verdict = z.infer<typeof VerdictSchema>;
@@ -172,6 +174,7 @@ export async function migrateLegacyLedger(opts: { force?: boolean } = {}): Promi
   return withStoreLock('migrate-legacy-ledger', async () => {
     const existing = await readJsonFile<MigrationMarker>(markerPath);
     const migratedKeys = new Set(existing?.migrated_keys ?? []);
+    const quarantinedKeys = new Set(existing?.quarantined_keys ?? []);
     const { entries, quarantinedFile } = await readLegacyLedgerRaw();
 
     let migrated = 0;
@@ -180,8 +183,20 @@ export async function migrateLegacyLedger(opts: { force?: boolean } = {}): Promi
 
     for (const [key, value] of Object.entries(entries)) {
       if (!isLedgerEntry(value)) {
+        if (quarantinedKeys.has(key)) {
+          skipped += 1;
+          continue;
+        }
         await quarantineBlob(`entry.${key.replace(/[^a-zA-Z0-9._#-]+/g, '_')}.${Date.now()}.json`, `${JSON.stringify({ key, value }, null, 2)}\n`);
+        quarantinedKeys.add(key);
         quarantined += 1;
+        await writeMarker({
+          completed_at: new Date().toISOString(),
+          migrated: migratedKeys.size,
+          quarantined: quarantinedKeys.size,
+          migrated_keys: [...migratedKeys].sort(),
+          quarantined_keys: [...quarantinedKeys].sort()
+        });
         continue;
       }
       const entryKey = ledgerEntryKey(value);
@@ -197,44 +212,41 @@ export async function migrateLegacyLedger(opts: { force?: boolean } = {}): Promi
         await writeMarker({
           completed_at: new Date().toISOString(),
           migrated: migratedKeys.size,
-          quarantined,
-          migrated_keys: [...migratedKeys].sort()
+          quarantined: quarantinedKeys.size,
+          migrated_keys: [...migratedKeys].sort(),
+          quarantined_keys: [...quarantinedKeys].sort()
         });
       } catch {
         await quarantineBlob(
           `entry-failed.${key.replace(/[^a-zA-Z0-9._#-]+/g, '_')}.${Date.now()}.json`,
           `${JSON.stringify({ key, value }, null, 2)}\n`
         );
+        quarantinedKeys.add(key);
         quarantined += 1;
+        await writeMarker({
+          completed_at: new Date().toISOString(),
+          migrated: migratedKeys.size,
+          quarantined: quarantinedKeys.size,
+          migrated_keys: [...migratedKeys].sort(),
+          quarantined_keys: [...quarantinedKeys].sort()
+        });
       }
-    }
-
-    const noWorkLeft = migrated === 0 && quarantined === (quarantinedFile ? 1 : 0) && skipped === Object.keys(entries).length;
-    if (existing && !opts.force && noWorkLeft && Object.keys(entries).length > 0) {
-      return {
-        migration_id: MIGRATION_ID,
-        already_done: true,
-        migrated: existing.migrated,
-        quarantined: existing.quarantined,
-        skipped,
-        rebuilt_targets: 0,
-        quarantine_dir: quarantineDir,
-        marker_path: markerPath,
-        ledger_path: ledgerPath()
-      };
     }
 
     const rebuilt = await rebuildTargetIndexes();
     await writeMarker({
       completed_at: new Date().toISOString(),
       migrated: migratedKeys.size,
-      quarantined: (existing?.quarantined ?? 0) + quarantined,
-      migrated_keys: [...migratedKeys].sort()
+      quarantined: quarantinedKeys.size,
+      migrated_keys: [...migratedKeys].sort(),
+      quarantined_keys: [...quarantinedKeys].sort(),
+      indexes_rebuilt_at: new Date().toISOString()
     });
 
+    const alreadyDone = !opts.force && migrated === 0 && quarantined === (quarantinedFile ? 1 : 0);
     return {
       migration_id: MIGRATION_ID,
-      already_done: false,
+      already_done: alreadyDone,
       migrated,
       quarantined,
       skipped,
