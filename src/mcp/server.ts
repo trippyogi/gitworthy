@@ -41,6 +41,7 @@ import {
   toStampedLegacyResult,
   WorthCheckInputSchema
 } from '../contracts/index.js';
+import { persistCheckResultBestEffort } from '../lib/store.js';
 
 function jsonText(value: unknown, isError = false) {
   return {
@@ -103,7 +104,11 @@ export function createMcpServer(): McpServer {
         parsed = parseToolInput(WorthCheckInputSchema, input);
         return worth_check(parsed);
       },
-      (value) => toCheckResult(value as Record<string, unknown>, { repo: parsed!.repo, issue_number: parsed!.issue_number })
+      (value) => {
+        const check = toCheckResult(value as Record<string, unknown>, { repo: parsed!.repo, issue_number: parsed!.issue_number });
+        void persistCheckResultBestEffort(check);
+        return check;
+      }
     );
   });
   server.registerTool('scan', { title: 'Scan issues', inputSchema: { repo: z.string(), label: z.string().optional(), keywords: z.array(z.string()).optional(), since: z.string().optional(), limit: z.number().optional(), land_hints: z.boolean().optional(), skill_profile: skillProfileSchema } }, async (input) =>

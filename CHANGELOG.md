@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add versioned local store under `~/.gitworthy/store` (override with `GITWORTHY_STORE_DIR`): run/decision/outcome records, per-target indexes, and cross-process lockfiles (GW-015).
+- Persist check results best-effort into the store from CLI and MCP (commands for browse/export land in GW-017).
+
 ## 0.4.1
 
 - Dig-quality: ignore open draft PRs without an explicit closing relationship for linked-work verdict signals (keep as ignored evidence).

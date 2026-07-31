@@ -36,6 +36,15 @@ export type { LedgerResult } from './ledger.js';
 export { OutcomeEventNameSchema, OutcomeEventSchema } from './outcomes.js';
 export type { OutcomeEvent } from './outcomes.js';
 
+export {
+  STORE_RECORD_VERSION,
+  StoreTargetSchema,
+  RunRecordSchema,
+  DecisionRecordSchema,
+  TargetIndexSchema
+} from './store.js';
+export type { RunRecord, DecisionRecord, TargetIndex } from './store.js';
+
 export { toCheckResult, toStampedLegacyResult, toErrorResult } from './serialize.js';
 
 export {
