@@ -1,150 +1,228 @@
-# gitworthy
-is it worth your commit?
+<p align="center">
+  <img src="./assets/gitworthy-mascot.svg" width="144" alt="Gitworthy pixel mascot">
+</p>
 
-<img width="1082" height="689" alt="image" src="https://github.com/user-attachments/assets/eaaf2d91-5939-4b53-a9e6-727d6002be7c" />
-*worth_check on a real issue: SKIP, because the fix is already on an internal branch*
+<h1 align="center">Gitworthy</h1>
 
-gitworthy is an open-source pre-flight tool for OSS contribution targets. Before a human or agent invests time in someone else's issue or feature request, it checks whether the work is already done, already in flight, already fixed but unreleased, duplicated, or genuinely open.
+<p align="center">
+  <strong>The decision layer before a coding agent starts work.</strong>
+</p>
 
-It ships as one package with a shared TypeScript core and two thin adapters:
+<p align="center">
+  Gitworthy helps coding agents scout, rank, and preflight software work before
+  they spend cycles implementing it. It finds the strongest candidates, checks
+  whether the work is already handled or blocked, and returns evidence-backed
+  <code>ACT</code>, <code>VERIFY</code>, or <code>SKIP</code> decisions for each target.
+</p>
 
-- CLI for humans, scripts, and CI.
-- MCP server over stdio for agent harnesses.
+<p align="center">
+  <a href="https://www.npmjs.com/package/gitworthy"><img alt="npm" src="https://img.shields.io/npm/v/gitworthy"></a>
+  <a href="./LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-f59a17"></a>
+  <img alt="Node 22+" src="https://img.shields.io/badge/node-%3E%3D22-f4d995">
+</p>
 
-No telemetry is active by default. Optional PostHog telemetry requires both `GITWORTHY_TELEMETRY=on` and `GITWORTHY_POSTHOG_KEY`, plus a user-installed `posthog-node` package. If telemetry is requested but `posthog-node` is missing, gitworthy prints one warning and continues with telemetry disabled. The MCP server path emits no telemetry at all.
+<p align="center">
+  <a href="#use-it-with-cursor-chatgpt-hermes-or-any-mcp-client">MCP setup</a> ·
+  <a href="#try-it-in-30-seconds">CLI</a> ·
+  <a href="./docs/AGENT_WORKFLOW.md">Agent workflow</a> ·
+  <a href="./CASE_STUDIES.md">Case studies</a> ·
+  <a href="./ROADMAP.md">Roadmap</a> ·
+  <a href="./CONTRIBUTING.md">Contributing</a>
+</p>
 
-See `ROADMAP.md` for the path to 1.0, `CONTRIBUTING.md` to develop, and `SECURITY.md` to report vulnerabilities privately.
+---
 
-## Quickstart
+## Why Gitworthy
 
-```sh
-npx -y gitworthy@0.4.1 check owner/repo#123
-npx -y gitworthy@0.4.1 check owner/repo#123 --npm-package package-name --json
-npx -y gitworthy@0.4.1 hunt owner/repo --json
-npx -y gitworthy@0.4.1 hunt openclaw --max-checks 3 --json
-npx -y gitworthy@0.4.1 scan Shopify/cli --label "good first issue" --json
-npx -y gitworthy@0.4.1 org openclaw --json
-npx -y gitworthy@0.4.1 doctor --json
-npx -y gitworthy@0.4.1 mcp
+Coding agents make implementation cheap. Choosing the wrong task is still expensive.
+
+An issue can look open while:
+
+- a fix already exists on an unlinked branch;
+- another contributor has an active pull request;
+- the change landed on `main` but has not been released;
+- the repository requires assignment before accepting work;
+- a duplicate or abandoned implementation already contains the answer.
+
+Gitworthy performs that preflight before a human or agent spends the next unit of work.
+
+## How agents use Gitworthy
+
+The agent owns the loop. Gitworthy is the MCP decision engine it calls to scout and validate work.
+
+```text
+Contribution goal, repository, or organization
+                      │
+                      ▼
+         Cursor / ChatGPT / Hermes / agent
+                      │
+                 Gitworthy MCP
+                      │
+                      ▼
+        policy → scan → rank → preflight
+                      │
+             ┌────────┼────────┐
+             ▼        ▼        ▼
+            ACT     VERIFY    SKIP
+          queue it   inspect   drop it
+             │
+             ▼
+       Ranked candidate shortlist
+             │
+             ▼
+         Select a candidate
+             │
+             ▼
+   recheck → reproduce → implement → review
 ```
 
-## CLI
+There are two distinct lanes:
 
-```sh
-gitworthy check owner/repo#123 [--npm-package name] [--probe-glob glob] [--probe-contains text] [--json]
-gitworthy branches owner/repo keyword[,keyword] [--json]
-gitworthy issue owner/repo 123 [--json]
-gitworthy release owner/repo package-name [--probe-glob glob] [--probe-contains text] [--json]
-gitworthy dupes owner/repo 123 [--json]
-gitworthy linked owner/repo 123 [--json]
-gitworthy policy owner/repo [--json]
-gitworthy scan Shopify/cli --label "good first issue" --json
-gitworthy mcp
-```
+- **Scout lane:** discover, filter, rank, preflight, and return a shortlist.
+- **Execute lane:** select, record intent, recheck fresh state, reproduce, implement, review, and submit through the repository's allowed contribution path.
 
-Exit codes for `check`:
+`ACT` means “worth considering,” not “start coding blindly.” Scout results go stale, so Gitworthy should be run again when an agent actually claims or begins a target.
 
-- 0 means ACT.
-- 10 means VERIFY.
-- 20 means SKIP.
-- 1 means error.
+See [docs/AGENT_WORKFLOW.md](./docs/AGENT_WORKFLOW.md) for the complete agent policy, tool-selection guide, and scout-to-execute handoff.
 
-## Use from an MCP client
+## Use it with Cursor, ChatGPT, Hermes, or any MCP client
+
+Add Gitworthy as an MCP server:
 
 ```json
 {
   "mcpServers": {
     "gitworthy": {
       "command": "npx",
-      "args": ["-y", "gitworthy@0.4.1", "mcp"],
-      "env": { "GITHUB_TOKEN": "github_pat_..." }
+      "args": ["-y", "gitworthy@latest", "mcp"],
+      "env": {
+        "GITHUB_TOKEN": "github_pat_..."
+      }
     }
   }
 }
 ```
 
-The token needs only fine-grained, read-only access to public repositories. For accurate `linked_work`, prefer a classic PAT or a fine-grained token with **Issues: Read** so the timeline includes **cross-referenced** events; weaker tokens omit those and under-count prior PRs (gitworthy falls back to title/body search and warns in `not_checked`).
+Give the agent a policy like this:
 
-## Configuration
+> Use Gitworthy before investing in external repository work. Use `hunt` to
+> build a short ranked queue. Read each candidate's `worth_check`; `hunt` does
+> not produce one global verdict. Treat `ACT` as a queue candidate, perform the
+> named checks on `VERIFY`, and remove `SKIP` candidates. Before implementing a
+> selected target, rerun `worth_check` and follow the repository's contribution
+> policy.
 
-- `GITHUB_TOKEN` / `GH_TOKEN` enables authenticated GitHub REST checks.
-- `GITWORTHY_CACHE_DIR` overrides the default cache at `~/.gitworthy/cache`.
-- `GITWORTHY_TELEMETRY=on` plus `GITWORTHY_POSTHOG_KEY` requests optional telemetry. Install `posthog-node` yourself if you want this path active. It is not part of the default install.
+The token only needs read access to public repositories. For the most accurate linked-work detection, use a classic PAT or a fine-grained token with **Issues: Read** so Gitworthy can see timeline cross-references. Weaker tokens still work, but missing visibility is reported in `not_checked`.
 
-When `GITHUB_TOKEN` is absent, checks that require GitHub REST return structured errors or explicit `not_checked` entries. Checks that can use public git or npm endpoints still run.
+## Try it in 30 seconds
 
-## Requirements 
-Node 22 or newer required.
-
-## Core checks
-
-### branch_scan
-
-Lists remote heads with `git ls-remote --heads`, filters branch names by lexical keyword matches (issue-number tokens preferred), and reports matching branches. With a GitHub token, it fetches tip commit date/subject for a small budget (default 3, issue-number first).
-
-### issue_vs_main
-
-Fetches issue metadata and reproduction signals. Tree/grep runs only when the issue names concrete paths (`src/…`, `extensions/…`, or ≥2 path-like tokens); otherwise clone is skipped and `not_checked` explains the gate. When cloning, file lists are cached on the shallow-clone lease.
-
-### release_gap
-
-Fetches npm metadata, reads package version from main, and compares it to npm latest. `--npm-package` alone reports package release state; it does not prove an issue-specific fix shipped. Emit `released_fix` only when you also pass a tarball probe (`--probe-glob` + `--probe-contains`) and that probe matches in the published artifact.
-
-### dupe_cluster
-
-Fetches the target issue, searches GitHub issues for distinctive title tokens, lists a soft-capped page of issues, and scores lexical similarity.
-
-### linked_work
-
-Fetches issue timeline cross-references (soft-capped pages), explicit issue-number PR mentions in **title and body**, comment PR URLs, referenced commits, and high title-overlap open PRs (especially when someone claims they submitted a PR without linking it). It emits `linked_pr_open` for open linked PRs (with `closes_issue` when Fixes/Closes/Resolves), `linked_pr_merged` for merged linked PRs, `linked_pr_closed` for closed unmerged linked PRs (with `prior_attempt` metadata), and `assigned` for maintainer assignment. Automation authors (Dependabot, Renovate, and other bots) are kept in evidence but ignored for verdict signals. Referenced commits are evidence-only and do not force SKIP.
-
-### contrib_policy
-
-Reads common contribution policy files from main or master and extracts deterministic policy signals with raw excerpts. If docs state that pull requests are not accepted or will be auto-closed, it emits `no_pr_path` and extracts the stated alternate feedback channel when present. If docs require claiming or requesting assignment before a PR, it emits `claim_required`.
-
-### hunt
-
-One-shot triage orchestrator: `scan` or `org_scan` → hard policy gate (`no_pr_path` blocks checks for that repo; `claim_required` warns first; `--skip-policy-gate` to disable) → drop likely land-only / soft-ask / assigned / ledger-SKIP rows → serial `worth_check` on up to `--max-checks` (default 3, max 5). Optional `--skill-profile languages=ts,go;topics=mcp;avoid=swift` ranks by `fit_score` after `quality_score`. Returns no ACT/SKIP signals of its own; read each `hunt_candidate.worth_check`. Prefer this over hand-rolling N× checks.
-
-### doctor
-
-Reports hunt readiness: token present, GitHub auth login, rate-limit remaining, timeline cross-reference visibility probe, cache directory writability, and local package version vs npm latest. Does not emit ACT/VERIFY/SKIP signals.
-
-### scan
-
-Tracker triage only: lists open issue tracker candidates ranked by `quality_score` (repro clarity, contributor-friendly labels, staleness, soft asks, assignees). With `--skill-profile`, also computes `fit_score` and sorts by quality then fit. By default also sets `likely_land_only` / `land_hint` from assignees and one open-PR search so agents can skip land-only rows before `worth_check` (disable with `--no-land-hints`). Scan does not vet issues and does not produce ACT, VERIFY, or SKIP verdicts. It appends a one-line cached contribution-policy hint when available, or reminds you to run policy before investing. When a label filter yields a thin set (below `min(5, limit)` candidates) or every remaining candidate is assigned, scan appends a `widen_hint` evidence item with suggestions such as dropping the label, trying `help wanted`, or scanning without a label. Use it to find candidate issue numbers, then run `gitworthy check owner/repo#123` on specific targets.
-
-Example composition:
+Check that your environment is ready:
 
 ```sh
-gitworthy scan Shopify/cli --label "good first issue" --json
-gitworthy org openclaw --max-repos 8 --json
-# then pass selected issue numbers to gitworthy check
+npx -y gitworthy@latest doctor --json
 ```
 
-### org_scan
+Evaluate a specific issue:
 
-Fans out `scan` across the top public non-fork repos for an org or user (default 8). Candidates are tagged with `repo`, merged, and re-ranked by `quality_score` (then `fit_score` when a skill profile is set). Still tracker-only — run per-repo `policy` / `worth_check` before investing.
+```sh
+npx -y gitworthy@latest check owner/repo#123
+```
 
-### related_cluster
+Scout and preflight a short list of contribution targets:
 
-Lexical connected-component clustering of related open issues (token overlap + shared error phrases). Advisory only — no embeddings. CLI: `gitworthy related owner/repo [issue]`.
+```sh
+npx -y gitworthy@latest hunt owner/repo --json
+npx -y gitworthy@latest hunt openclaw --max-checks 3 --json
+```
 
-### probe templates
+Use `@latest` for exploration. Pin a version in repeatable agent workflows and CI.
 
-Named release probes for `check` / `release`: `changelog`, `readme`, `package-exports`, `dist-index`, `src-index`. List with `gitworthy probes` or MCP `list_probe_templates`. Prefer `--probe-template changelog` over hand-rolled globs when one of these fits.
+## What `hunt` actually returns
 
-### ledger
+`hunt` is a bounded funnel, not a bulk verdict command:
 
-Local scout memory under `~/.gitworthy/ledger` (override with `GITWORTHY_LEDGER_DIR`). `worth_check` auto-records verdict/disposition best-effort. Use `ledger show` / `ledger list` to avoid re-checking the same issues across chats.
+```text
+contribution policy
+        ↓
+scan repository or organization
+        ↓
+rank issue quality and optional skill fit
+        ↓
+remove obvious land-only, assigned, weak, or known-SKIP rows
+        ↓
+run worth_check on only the best few candidates
+        ↓
+return candidates with individual verdicts and evidence
+```
 
-### worth_check
+The agent should read each `hunt_candidate.worth_check`. Gitworthy intentionally avoids running an expensive full preflight on every issue returned by a broad scan.
 
-Composes the checks into ACT, VERIFY, or SKIP, plus a hunt `disposition`: `greenfield` (safe to start), `land_only` (open linked PR — do not open a parallel fix), `claim_first`, `blocked`, `crowded` (dense prior attempts/commits), or `review`. Any sub-check error forces VERIFY. `linked_pr_open` forces SKIP with the PR citation and `land_only`. `linked_pr_closed` and `linked_pr_merged` cap ACT at VERIFY with the PR citation so agents inspect abandoned or landed attempts before claiming. `assigned` and `claim_required` cap ACT at VERIFY so contributors claim/coordinate first. `needs_repro` caps ACT at VERIFY when a bug-shaped issue lacks reproduction steps. The `no_pr_path` signal caps ACT at VERIFY with the alternate feedback channel, because a repo with no PR path has no direct contribution path. Sub-results remain visible in full. Responses include `timings_ms` and `perf` (clone/file-list cache flags, tip-fetch count, short-circuit). ACT is not the same as claimable: always read `linked_work` evidence, `disposition`, and `reasons` before investing. For agent hunts, prefer `scan` → filter → ≤3–5 serial `worth_check`s (see [SKILL.md](./SKILL.md)).
+## ACT, VERIFY, or SKIP
 
-## Output envelope
+| Verdict | Scout behavior | Execution behavior |
+|---|---|---|
+| **ACT** | Add it to the ranked queue after reading evidence. | Recheck before claiming or implementing; proceed only if fresh state and policy still allow it. |
+| **VERIFY** | Surface it with the unresolved checks named. | Resolve those checks before forking or making a public claim. |
+| **SKIP** | Remove it from the queue. | Do not begin parallel work; inspect the cited work or choose another target. |
 
-Every core result includes:
+A verdict is not a vibes-based score. Gitworthy returns structured evidence, the checks it completed, and the checks it could not complete.
+
+## A real preflight
+
+A target issue in `block/buzz` appeared open, but a prior implementation already existed in a pull request using nearly the same title.
+
+```text
+Target: block/buzz#1659
+Verdict: VERIFY
+Disposition: review
+
+Evidence:
+- An implementation exists in PR #1675.
+- The pull request is linked work, not a duplicate issue.
+
+Next action:
+Inspect the current implementation before starting parallel work.
+```
+
+That case also exposed a false-positive path in duplicate detection: GitHub's issues API includes pull requests. The fix became a regression test and calibration case.
+
+More real contribution sessions are documented in [CASE_STUDIES.md](./CASE_STUDIES.md).
+
+## How it works
+
+Gitworthy combines bounded checks that answer different ways a task can be unsafe or wasteful to start.
+
+| Check | What it protects against |
+|---|---|
+| **Linked work** | Existing pull requests, assignments, referenced commits, and prior attempts |
+| **Branch scan** | Work already present on unlinked remote branches |
+| **Issue vs. main** | Fixes that landed while the issue remained open |
+| **Release gap** | Changes on `main` that are not in the published package |
+| **Contribution policy** | Claim requirements, assignment rules, and repositories that do not accept pull requests |
+| **Duplicate analysis** | Related or previously reported issues |
+| **Scan / org scan** | Unranked issue tracker noise |
+| **Hunt** | Wasteful broad checking by narrowing candidates before expensive preflight |
+
+The CLI and MCP server are thin adapters over the same TypeScript core.
+
+## Trust model
+
+Gitworthy is designed to be useful without pretending to know more than it checked.
+
+- Heuristic evidence cannot independently create a hard `SKIP`.
+- Hard `SKIP` requires definitive evidence.
+- Failed mandatory checks cap the result at `VERIFY`.
+- Every real result includes meaningful `checked` and `not_checked` fields.
+- Human-readable prose is never parsed to decide the verdict.
+- Target repositories and packages are treated as hostile input.
+- Telemetry is off by default. The MCP path emits no telemetry.
+- Scout results are not treated as permanent; execution requires fresh revalidation.
+
+`ACT` does not mean “blindly start coding.” Read the evidence, disposition, reasons, linked work, and repository policy before investing.
+
+## Agent-native output
+
+Every core result includes a structured envelope:
 
 ```json
 {
@@ -158,17 +236,87 @@ Every core result includes:
 }
 ```
 
-`checked` and `not_checked` are load-bearing. Empty `not_checked` on a real result is a bug.
+`signals` is the load-bearing input to the decision policy. `checked` and `not_checked` are part of the result, not footnotes.
 
-`signals` is the only load-bearing verdict input for `worth_check`. Human-readable prose is never parsed to decide ACT, VERIFY, or SKIP.
+## Common commands
 
-## Calibration cases
+```sh
+gitworthy check owner/repo#123 [--npm-package name] [--json]
+gitworthy hunt owner/repo [--max-checks 3] [--json]
+gitworthy scan owner/repo [--label "help wanted"] [--json]
+gitworthy org owner [--max-repos 8] [--json]
+gitworthy policy owner/repo [--json]
+gitworthy related owner/repo [issue] [--json]
+gitworthy ledger show owner/repo#123 [--json]
+gitworthy doctor [--json]
+gitworthy mcp
+```
 
-Real contribution sessions that calibrated false-positive fixes in v0.3.3 (Dawn cart drawer, Buzz PR leakage into duplicate detection, Firecrawl renamed-repo Search, and release-probe semantics) are documented in [CASE_STUDIES.md](./CASE_STUDIES.md).
+Exit codes for `check`:
 
-## Why
+- `0` — ACT
+- `10` — VERIFY
+- `20` — SKIP
+- `1` — error
 
-gitworthy exists because "this issue looks open" is usually wrong in active repos. Its acceptance suite is frozen from a real contribution session across PostHog, ElevenLabs, and Temporal repositories in July 2026, where six of eight apparent targets were already handled: fixed on an unlinked internal branch, shipped on main with the issue left open, or fixed but not yet released to npm. Every check in this tool is one of the manual verifications that caught those six before any work was wasted. The tool reports what it checked and what it could not check on every result, because unjustified confidence is the failure mode it was built against.
+See [SKILL.md](./SKILL.md) for the strict contribution gates and [docs/AGENT_WORKFLOW.md](./docs/AGENT_WORKFLOW.md) for the explanatory workflow guide.
+
+## Configuration
+
+- `GITHUB_TOKEN` / `GH_TOKEN` enables authenticated GitHub REST checks.
+- `GITWORTHY_CACHE_DIR` overrides the cache under `~/.gitworthy/cache`.
+- `GITWORTHY_LEDGER_DIR` overrides local scout history under `~/.gitworthy/ledger`.
+- `GITWORTHY_TELEMETRY=on` plus `GITWORTHY_POSTHOG_KEY` requests optional telemetry.
+
+Optional PostHog telemetry also requires a user-installed `posthog-node` package. If it is missing, Gitworthy warns once and continues with telemetry disabled.
+
+Without a GitHub token, checks that require GitHub REST return structured errors or explicit `not_checked` entries. Checks that can use public git or npm endpoints still run.
+
+## Current status
+
+Gitworthy is pre-1.0 and actively hardening its decision contract, hostile-input handling, local outcomes, evaluation corpus, and onboarding.
+
+The 1.0 goal is a trustworthy, local-first CLI and MCP decision engine—not a hosted SaaS and not another coding agent.
+
+See [ROADMAP.md](./ROADMAP.md) for the release ladder.
+
+## Where this is going
+
+Gitworthy is becoming the agent-native readiness layer between task discovery and implementation:
+
+1. discover candidate work;
+2. rank the most promising targets;
+3. determine whether each is actually ready;
+4. return a machine-actionable next step;
+5. revalidate selected work before execution;
+6. record what happened;
+7. improve future decisions from real outcomes.
+
+The open-source decision engine stays local-first and MIT licensed. Possible post-1.0 layers include shared outcome history, scheduled hunts, private-repository coordination, and an API for agent dispatch.
+
+## Contributing
+
+Gitworthy is built from real cases where apparently open work turned out to be handled, blocked, or unsafe to start.
+
+The most valuable contributions are:
+
+- examples where Gitworthy made the wrong decision;
+- repositories or ecosystems it cannot inspect correctly;
+- Cursor, ChatGPT, Claude Code, Codex, OpenClaw, Hermes, or other agent integrations;
+- improvements to evidence quality and failure reporting;
+- new frozen evaluation cases;
+- documentation that helps another person get a useful result quickly.
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for development setup and trust requirements.
+
+## Requirements
+
+- Node.js 22 or newer
+- A GitHub token is strongly recommended for real hunts
+
+## Security
+
+Report vulnerabilities privately using [SECURITY.md](./SECURITY.md) or email `security@gitworthy.com`.
 
 ## License
 
