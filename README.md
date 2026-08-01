@@ -9,10 +9,10 @@
 </p>
 
 <p align="center">
-  Gitworthy checks whether a software task is already done, already in flight,
-  blocked by repository policy, duplicated, or genuinely ready to start.
-  It returns <code>ACT</code>, <code>VERIFY</code>, or <code>SKIP</code>
-  with the evidence behind the decision.
+  Gitworthy helps coding agents scout, rank, and preflight software work before
+  they spend cycles implementing it. It finds the strongest candidates, checks
+  whether the work is already handled or blocked, and returns evidence-backed
+  <code>ACT</code>, <code>VERIFY</code>, or <code>SKIP</code> decisions for each target.
 </p>
 
 <p align="center">
@@ -22,9 +22,9 @@
 </p>
 
 <p align="center">
-  <a href="#use-it-with-cursor-or-any-mcp-client">MCP</a> ·
+  <a href="#use-it-with-cursor-chatgpt-hermes-or-any-mcp-client">MCP setup</a> ·
   <a href="#try-it-in-30-seconds">CLI</a> ·
-  <a href="#how-it-works">How it works</a> ·
+  <a href="./docs/AGENT_WORKFLOW.md">Agent workflow</a> ·
   <a href="./CASE_STUDIES.md">Case studies</a> ·
   <a href="./ROADMAP.md">Roadmap</a> ·
   <a href="./CONTRIBUTING.md">Contributing</a>
@@ -46,19 +46,46 @@ An issue can look open while:
 
 Gitworthy performs that preflight before a human or agent spends the next unit of work.
 
+## How agents use Gitworthy
+
+The agent owns the loop. Gitworthy is the MCP decision engine it calls to scout and validate work.
+
 ```text
-Issue or feature request
-          │
-          ▼
-      Gitworthy
-          │
-     ┌────┼──────┐
-     ▼    ▼      ▼
-    ACT  VERIFY  SKIP
-  proceed inspect stop
+Contribution goal, repository, or organization
+                      │
+                      ▼
+         Cursor / ChatGPT / Hermes / agent
+                      │
+                 Gitworthy MCP
+                      │
+                      ▼
+        policy → scan → rank → preflight
+                      │
+             ┌────────┼────────┐
+             ▼        ▼        ▼
+            ACT     VERIFY    SKIP
+          queue it   inspect   drop it
+             │
+             ▼
+       Ranked candidate shortlist
+             │
+             ▼
+         Select a candidate
+             │
+             ▼
+   recheck → reproduce → implement → review
 ```
 
-## Use it with Cursor or any MCP client
+There are two distinct lanes:
+
+- **Scout lane:** discover, filter, rank, preflight, and return a shortlist.
+- **Execute lane:** select, record intent, recheck fresh state, reproduce, implement, review, and submit through the repository's allowed contribution path.
+
+`ACT` means “worth considering,” not “start coding blindly.” Scout results go stale, so Gitworthy should be run again when an agent actually claims or begins a target.
+
+See [docs/AGENT_WORKFLOW.md](./docs/AGENT_WORKFLOW.md) for the complete agent policy, tool-selection guide, and scout-to-execute handoff.
+
+## Use it with Cursor, ChatGPT, Hermes, or any MCP client
 
 Add Gitworthy as an MCP server:
 
@@ -76,11 +103,14 @@ Add Gitworthy as an MCP server:
 }
 ```
 
-Then give your agent this rule:
+Give the agent a policy like this:
 
-> Before implementing an issue in an external repository, run Gitworthy.
-> Proceed on `ACT`, perform the named checks on `VERIFY`, and do not begin
-> parallel work on `SKIP`.
+> Use Gitworthy before investing in external repository work. Use `hunt` to
+> build a short ranked queue. Read each candidate's `worth_check`; `hunt` does
+> not produce one global verdict. Treat `ACT` as a queue candidate, perform the
+> named checks on `VERIFY`, and remove `SKIP` candidates. Before implementing a
+> selected target, rerun `worth_check` and follow the repository's contribution
+> policy.
 
 The token only needs read access to public repositories. For the most accurate linked-work detection, use a classic PAT or a fine-grained token with **Issues: Read** so Gitworthy can see timeline cross-references. Weaker tokens still work, but missing visibility is reported in `not_checked`.
 
@@ -98,7 +128,7 @@ Evaluate a specific issue:
 npx -y gitworthy@latest check owner/repo#123
 ```
 
-Find and preflight a short list of contribution targets:
+Scout and preflight a short list of contribution targets:
 
 ```sh
 npx -y gitworthy@latest hunt owner/repo --json
@@ -107,13 +137,33 @@ npx -y gitworthy@latest hunt openclaw --max-checks 3 --json
 
 Use `@latest` for exploration. Pin a version in repeatable agent workflows and CI.
 
+## What `hunt` actually returns
+
+`hunt` is a bounded funnel, not a bulk verdict command:
+
+```text
+contribution policy
+        ↓
+scan repository or organization
+        ↓
+rank issue quality and optional skill fit
+        ↓
+remove obvious land-only, assigned, weak, or known-SKIP rows
+        ↓
+run worth_check on only the best few candidates
+        ↓
+return candidates with individual verdicts and evidence
+```
+
+The agent should read each `hunt_candidate.worth_check`. Gitworthy intentionally avoids running an expensive full preflight on every issue returned by a broad scan.
+
 ## ACT, VERIFY, or SKIP
 
-| Verdict | Meaning | Agent behavior |
+| Verdict | Scout behavior | Execution behavior |
 |---|---|---|
-| **ACT** | Completed checks found no blocking evidence. | Proceed, while reading the evidence and repository policy. |
-| **VERIFY** | A named check, coordination step, or missing capability still matters. | Pause and perform the requested verification. |
-| **SKIP** | Definitive evidence says parallel implementation should not begin. | Stop, inspect the cited work, or choose another task. |
+| **ACT** | Add it to the ranked queue after reading evidence. | Recheck before claiming or implementing; proceed only if fresh state and policy still allow it. |
+| **VERIFY** | Surface it with the unresolved checks named. | Resolve those checks before forking or making a public claim. |
+| **SKIP** | Remove it from the queue. | Do not begin parallel work; inspect the cited work or choose another target. |
 
 A verdict is not a vibes-based score. Gitworthy returns structured evidence, the checks it completed, and the checks it could not complete.
 
@@ -150,7 +200,8 @@ Gitworthy combines bounded checks that answer different ways a task can be unsaf
 | **Release gap** | Changes on `main` that are not in the published package |
 | **Contribution policy** | Claim requirements, assignment rules, and repositories that do not accept pull requests |
 | **Duplicate analysis** | Related or previously reported issues |
-| **Hunt** | Wasteful broad scans by narrowing candidates before expensive checks |
+| **Scan / org scan** | Unranked issue tracker noise |
+| **Hunt** | Wasteful broad checking by narrowing candidates before expensive preflight |
 
 The CLI and MCP server are thin adapters over the same TypeScript core.
 
@@ -165,8 +216,9 @@ Gitworthy is designed to be useful without pretending to know more than it check
 - Human-readable prose is never parsed to decide the verdict.
 - Target repositories and packages are treated as hostile input.
 - Telemetry is off by default. The MCP path emits no telemetry.
+- Scout results are not treated as permanent; execution requires fresh revalidation.
 
-`ACT` does not mean “blindly start coding.” Read the evidence, disposition, reasons, and repository policy before investing.
+`ACT` does not mean “blindly start coding.” Read the evidence, disposition, reasons, linked work, and repository policy before investing.
 
 ## Agent-native output
 
@@ -207,7 +259,7 @@ Exit codes for `check`:
 - `20` — SKIP
 - `1` — error
 
-See [SKILL.md](./SKILL.md) for the recommended agent hunt loop.
+See [SKILL.md](./SKILL.md) for the strict contribution gates and [docs/AGENT_WORKFLOW.md](./docs/AGENT_WORKFLOW.md) for the explanatory workflow guide.
 
 ## Configuration
 
@@ -233,10 +285,12 @@ See [ROADMAP.md](./ROADMAP.md) for the release ladder.
 Gitworthy is becoming the agent-native readiness layer between task discovery and implementation:
 
 1. discover candidate work;
-2. determine whether it is actually ready;
-3. return a machine-actionable next step;
-4. record what happened;
-5. improve future decisions from real outcomes.
+2. rank the most promising targets;
+3. determine whether each is actually ready;
+4. return a machine-actionable next step;
+5. revalidate selected work before execution;
+6. record what happened;
+7. improve future decisions from real outcomes.
 
 The open-source decision engine stays local-first and MIT licensed. Possible post-1.0 layers include shared outcome history, scheduled hunts, private-repository coordination, and an API for agent dispatch.
 
@@ -248,7 +302,7 @@ The most valuable contributions are:
 
 - examples where Gitworthy made the wrong decision;
 - repositories or ecosystems it cannot inspect correctly;
-- Cursor, Claude Code, Codex, OpenClaw, or other agent integrations;
+- Cursor, ChatGPT, Claude Code, Codex, OpenClaw, Hermes, or other agent integrations;
 - improvements to evidence quality and failure reporting;
 - new frozen evaluation cases;
 - documentation that helps another person get a useful result quickly.
