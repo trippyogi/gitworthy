@@ -107,16 +107,16 @@ describe('hunt skill_profile', () => {
     expect(candidate).not.toHaveProperty('fit_score');
   });
 
-  it('prefers higher fit_score among candidates that tie on quality_score when selecting max_checks', async () => {
+  it('prefers higher fit/rank among candidates that tie on quality_score when selecting max_checks', async () => {
     mocks.scan.mockResolvedValue(scanEnvelope([
-      { number: 1, quality_score: 90, fit_score: 0.4, likely_land_only: false, soft_ask: false, assignees: [] },
-      { number: 2, quality_score: 90, fit_score: 0.9, likely_land_only: false, soft_ask: false, assignees: [] },
-      { number: 3, quality_score: 80, fit_score: 0.99, likely_land_only: false, soft_ask: false, assignees: [] }
+      { number: 1, quality_score: 90, fit_score: 0.4, rank_score: 0.6, likely_land_only: false, soft_ask: false, assignees: [] },
+      { number: 2, quality_score: 90, fit_score: 0.9, rank_score: 0.85, likely_land_only: false, soft_ask: false, assignees: [] },
+      { number: 3, quality_score: 80, fit_score: 0.99, rank_score: 0.7, likely_land_only: false, soft_ask: false, assignees: [] }
     ]));
     mocks.worthCheck.mockResolvedValue(worthResult());
 
     await hunt({ repo: 'o/r', skill_profile: { languages: ['typescript'] }, max_checks: 2 });
 
-    expect(mocks.worthCheck.mock.calls.map((call) => call[0].issue_number)).toEqual([2, 1]);
+    expect(mocks.worthCheck.mock.calls.map((call) => call[0].issue_number)).toEqual([2, 3]);
   });
 });

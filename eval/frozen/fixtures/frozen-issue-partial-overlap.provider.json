@@ -1,0 +1,60 @@
+{
+  "schema_version": "1.0-draft.1",
+  "fixture_version": 1,
+  "case_id": "frozen-issue-partial-overlap",
+  "attributed_from": {
+    "notes": "GW-024 synthetic offline promotion pack"
+  },
+  "http_exchanges": [
+    {
+      "sequence": 0,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/repos/acme/partial/issues/24",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": {
+          "body": "Add structured logging to src/widgets/handler.ts for timeout cases.",
+          "labels": [],
+          "comments": 0,
+          "html_url": "https://github.com/acme/widgets/issues/24",
+          "created_at": "2026-01-01T00:00:00Z",
+          "updated_at": "2026-01-02T00:00:00Z",
+          "closed_at": null,
+          "assignees": [],
+          "number": 24,
+          "title": "Improve src/widgets/handler.ts logging",
+          "state": "open"
+        }
+      }
+    }
+  ],
+  "git_probes": [
+    {
+      "sequence": 0,
+      "kind": "shallow_clone",
+      "match": {
+        "repo": "acme/partial"
+      },
+      "response": {
+        "files": [
+          {
+            "path": "src/widgets/handler.ts",
+            "content": "export function handle() { return \"ok\"; }\n"
+          },
+          {
+            "path": "src/other/unrelated.ts",
+            "content": "export const x = 1;\n"
+          }
+        ]
+      }
+    }
+  ]
+}

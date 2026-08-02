@@ -1,0 +1,364 @@
+{
+  "schema_version": "1.0-draft.1",
+  "fixture_version": 1,
+  "case_id": "frozen-worth-skip-open-closer",
+  "attributed_from": {
+    "notes": "GW-024 synthetic offline promotion pack"
+  },
+  "http_exchanges": [
+    {
+      "sequence": 0,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/repos/acme/widgets/issues/300",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": {
+          "body": "worth check open closer short circuit",
+          "labels": [],
+          "comments": 0,
+          "html_url": "https://github.com/acme/widgets/issues/300",
+          "created_at": "2026-01-01T00:00:00Z",
+          "updated_at": "2026-01-02T00:00:00Z",
+          "closed_at": null,
+          "assignees": [],
+          "number": 300,
+          "title": "worth check open closer short circuit",
+          "state": "open"
+        }
+      }
+    },
+    {
+      "sequence": 1,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/repos/acme/widgets",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": {
+          "full_name": "acme/widgets",
+          "default_branch": "main",
+          "html_url": "https://github.com/acme/widgets"
+        }
+      }
+    },
+    {
+      "sequence": 2,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/repos/acme/widgets/issues/300",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": {
+          "body": "worth check open closer short circuit",
+          "labels": [],
+          "comments": 0,
+          "html_url": "https://github.com/acme/widgets/issues/300",
+          "created_at": "2026-01-01T00:00:00Z",
+          "updated_at": "2026-01-02T00:00:00Z",
+          "closed_at": null,
+          "assignees": [],
+          "number": 300,
+          "title": "worth check open closer short circuit",
+          "state": "open"
+        }
+      }
+    },
+    {
+      "sequence": 3,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/repos/acme/widgets/issues/300/timeline?per_page=100&page=1",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": [
+          {
+            "event": "cross-referenced",
+            "created_at": "2026-01-02T00:00:00Z",
+            "source": {
+              "type": "issue",
+              "issue": {
+                "number": 301,
+                "pull_request": {
+                  "url": "https://api.github.com/repos/acme/widgets/pulls/301"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "sequence": 4,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/repos/acme/widgets/pulls/301",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": {
+          "body": "Fixes #300",
+          "draft": false,
+          "merged": false,
+          "html_url": "https://github.com/acme/widgets/pull/301",
+          "user": {
+            "login": "human-dev"
+          },
+          "created_at": "2026-01-01T00:00:00Z",
+          "updated_at": "2026-01-02T00:00:00Z",
+          "closed_at": null,
+          "merged_at": null,
+          "number": 301,
+          "title": "Fixes #300",
+          "state": "open"
+        }
+      }
+    },
+    {
+      "sequence": 5,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/repos/acme/widgets/issues/300/comments?per_page=100",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": []
+      }
+    },
+    {
+      "sequence": 6,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/search/issues?per_page=20&q=repo%3Aacme%2Fwidgets%20is%3Apr%20300",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": {
+          "total_count": 1,
+          "incomplete_results": false,
+          "items": [
+            {
+              "number": 301,
+              "title": "Fixes #300",
+              "body": "Fixes #300",
+              "state": "open",
+              "html_url": "https://github.com/acme/widgets/pull/301",
+              "repository_url": "https://api.github.com/repos/acme/widgets",
+              "pull_request": {
+                "url": "https://api.github.com/repos/acme/widgets/pulls/301"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "sequence": 7,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/search/issues?per_page=20&q=is%3Apr%20(%22Fixes%20%23300%22%20OR%20%22Closes%20%23300%22%20OR%20%22Resolves%20%23300%22%20OR%20%22%23300%22)%20org%3Aacme",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": {
+          "total_count": 0,
+          "incomplete_results": false,
+          "items": []
+        }
+      }
+    },
+    {
+      "sequence": 8,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/search/issues?per_page=20&q=is%3Apr%20(%22Fixes%20%23300%22%20OR%20%22Closes%20%23300%22%20OR%20%22Resolves%20%23300%22%20OR%20%22%23300%22)%20user%3Aacme",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": {
+          "total_count": 0,
+          "incomplete_results": false,
+          "items": []
+        }
+      }
+    },
+    {
+      "sequence": 9,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/repos/acme/widgets",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": {
+          "full_name": "acme/widgets",
+          "default_branch": "main",
+          "html_url": "https://github.com/acme/widgets"
+        }
+      }
+    },
+    {
+      "sequence": 10,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://raw.githubusercontent.com/acme/widgets/main/CONTRIBUTING.md",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 404,
+        "headers": {},
+        "body_encoding": "omitted"
+      }
+    },
+    {
+      "sequence": 11,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://raw.githubusercontent.com/acme/widgets/main/.github/CONTRIBUTING.md",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 404,
+        "headers": {},
+        "body_encoding": "omitted"
+      }
+    },
+    {
+      "sequence": 12,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://raw.githubusercontent.com/acme/widgets/main/AGENTS.md",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 404,
+        "headers": {},
+        "body_encoding": "omitted"
+      }
+    },
+    {
+      "sequence": 13,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://raw.githubusercontent.com/acme/widgets/main/AI_POLICY.md",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 404,
+        "headers": {},
+        "body_encoding": "omitted"
+      }
+    },
+    {
+      "sequence": 14,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://raw.githubusercontent.com/acme/widgets/main/CODE_OF_CONDUCT.md",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 404,
+        "headers": {},
+        "body_encoding": "omitted"
+      }
+    },
+    {
+      "sequence": 15,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://raw.githubusercontent.com/acme/widgets/main/.github/PULL_REQUEST_TEMPLATE.md",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 404,
+        "headers": {},
+        "body_encoding": "omitted"
+      }
+    },
+    {
+      "sequence": 16,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://raw.githubusercontent.com/acme/widgets/main/SECURITY.md",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 404,
+        "headers": {},
+        "body_encoding": "omitted"
+      }
+    }
+  ],
+  "git_probes": []
+}

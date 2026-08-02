@@ -1,0 +1,34 @@
+{
+  "schema_version": "1.0-draft.1",
+  "case_version": 1,
+  "suite": "frozen",
+  "classification": "frozen",
+  "provenance": {
+    "notes": "GW-024 promotion"
+  },
+  "time_sensitive": false,
+  "id": "frozen-issue-partial-overlap",
+  "name": "Issue vs main partial overlap without shipped signal",
+  "function": "issue_vs_main",
+  "input": {
+    "repo": "acme/partial",
+    "issue_number": 24
+  },
+  "ground_truth": {
+    "verdict": "VERIFY",
+    "disposition": "review",
+    "failure_mode": "issue_vs_main_partial_overlap",
+    "adjudicator_rationale": "Path overlap without content intent match stays VERIFY (partial overlap summary, no shipped signal).",
+    "evidence_urls": [
+      "https://github.com/acme/partial/issues/24"
+    ],
+    "forbidden_signals": [
+      "shipped"
+    ],
+    "required_findings": [
+      "partial overlap"
+    ],
+    "forbidden_findings": []
+  },
+  "provider_fixtures": "../fixtures/frozen-issue-partial-overlap.provider.json"
+}

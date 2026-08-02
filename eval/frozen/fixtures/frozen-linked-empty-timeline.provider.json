@@ -1,0 +1,179 @@
+{
+  "schema_version": "1.0-draft.1",
+  "fixture_version": 1,
+  "case_id": "frozen-linked-empty-timeline",
+  "attributed_from": {
+    "notes": "GW-024 synthetic offline promotion pack"
+  },
+  "http_exchanges": [
+    {
+      "sequence": 0,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/repos/acme/widgets",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": {
+          "full_name": "acme/widgets",
+          "default_branch": "main",
+          "html_url": "https://github.com/acme/widgets"
+        }
+      }
+    },
+    {
+      "sequence": 1,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/repos/acme/widgets/issues/110",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": {
+          "body": "silent failure uploading csv",
+          "labels": [],
+          "comments": 0,
+          "html_url": "https://github.com/acme/widgets/issues/110",
+          "created_at": "2026-01-01T00:00:00Z",
+          "updated_at": "2026-01-02T00:00:00Z",
+          "closed_at": null,
+          "assignees": [],
+          "number": 110,
+          "title": "silent failure uploading csv",
+          "state": "open"
+        }
+      }
+    },
+    {
+      "sequence": 2,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/repos/acme/widgets/issues/110/timeline?per_page=100&page=1",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": []
+      }
+    },
+    {
+      "sequence": 3,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/repos/acme/widgets/issues/110/comments?per_page=100",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": []
+      }
+    },
+    {
+      "sequence": 4,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/search/issues?per_page=20&q=repo%3Aacme%2Fwidgets%20is%3Apr%20110",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": {
+          "total_count": 0,
+          "incomplete_results": false,
+          "items": []
+        }
+      }
+    },
+    {
+      "sequence": 5,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/search/issues?per_page=20&q=repo%3Aacme%2Fwidgets%20is%3Apr%20is%3Aopen%20silent%20failure%20uploading",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": {
+          "total_count": 0,
+          "incomplete_results": false,
+          "items": []
+        }
+      }
+    },
+    {
+      "sequence": 6,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/search/issues?per_page=20&q=is%3Apr%20(%22Fixes%20%23110%22%20OR%20%22Closes%20%23110%22%20OR%20%22Resolves%20%23110%22%20OR%20%22%23110%22)%20org%3Aacme",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": {
+          "total_count": 0,
+          "incomplete_results": false,
+          "items": []
+        }
+      }
+    },
+    {
+      "sequence": 7,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/search/issues?per_page=20&q=is%3Apr%20(%22Fixes%20%23110%22%20OR%20%22Closes%20%23110%22%20OR%20%22Resolves%20%23110%22%20OR%20%22%23110%22)%20user%3Aacme",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": {
+          "total_count": 0,
+          "incomplete_results": false,
+          "items": []
+        }
+      }
+    }
+  ],
+  "git_probes": []
+}

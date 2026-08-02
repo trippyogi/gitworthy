@@ -1,0 +1,77 @@
+{
+  "schema_version": "1.0-draft.1",
+  "fixture_version": 1,
+  "case_id": "frozen-release-version-only",
+  "attributed_from": {
+    "notes": "GW-024 synthetic offline promotion pack"
+  },
+  "http_exchanges": [
+    {
+      "sequence": 0,
+      "provider": "npm",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://registry.npmjs.org/@acme%2Fwidgets-lib",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": {
+          "name": "@acme/widgets-lib",
+          "dist-tags": {
+            "latest": "1.0.0"
+          },
+          "versions": {
+            "1.0.0": {
+              "version": "1.0.0",
+              "dist": {
+                "tarball": "https://registry.npmjs.org/@acme%2Fwidgets-lib/-/widgets-lib-1.0.0.tgz"
+              }
+            }
+          },
+          "time": {
+            "1.0.0": "2026-01-01T00:00:00Z"
+          }
+        }
+      }
+    },
+    {
+      "sequence": 1,
+      "provider": "npm",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://registry.npmjs.org/@acme%2Fwidgets-lib/-/widgets-lib-1.0.0.tgz",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/octet-stream"
+        },
+        "body_encoding": "base64",
+        "body": "H4sIAAAAAAAACitITM5OTE/VT8ksLtFPTEnRyypmoDYwMDAwMDMxAdMGBgbotIGBkTGEbQRTb25oYM6gQHWHjAIMkFpRkF9UUqyXn61gq1BSVJpqzTXQThoFo2AUjIJRQAcAABxTIAwACAAA"
+      }
+    }
+  ],
+  "git_probes": [
+    {
+      "sequence": 0,
+      "kind": "shallow_clone",
+      "match": {
+        "repo": "acme/npm-gap"
+      },
+      "response": {
+        "files": [
+          {
+            "path": "package.json",
+            "content": "{\"name\":\"@acme/widgets-lib\",\"version\":\"1.0.0\"}\n"
+          }
+        ]
+      }
+    }
+  ]
+}

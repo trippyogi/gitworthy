@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0-draft.1",
+  "case_version": 1,
+  "suite": "frozen",
+  "classification": "frozen",
+  "provenance": {
+    "notes": "GW-024 promotion"
+  },
+  "time_sensitive": false,
+  "id": "frozen-release-version-only",
+  "name": "Release gap version equality without probe match",
+  "function": "release_gap",
+  "input": {
+    "repo": "acme/npm-gap",
+    "npm_package": "@acme/widgets-lib",
+    "probe": {
+      "file_glob": "dist/**/add.js",
+      "contains": "shell: true"
+    }
+  },
+  "ground_truth": {
+    "verdict": "VERIFY",
+    "disposition": "review",
+    "failure_mode": "release_gap_version_only_no_probe",
+    "adjudicator_rationale": "Equal versions without issue-specific probe match must not emit released_fix.",
+    "evidence_urls": [
+      "https://www.npmjs.com/package/@acme/widgets-lib/v/1.0.0"
+    ],
+    "forbidden_signals": [
+      "released_fix"
+    ],
+    "required_findings": [
+      "1.0.0"
+    ],
+    "forbidden_findings": [
+      "released_fix"
+    ]
+  },
+  "provider_fixtures": "../fixtures/frozen-release-version-only.provider.json"
+}

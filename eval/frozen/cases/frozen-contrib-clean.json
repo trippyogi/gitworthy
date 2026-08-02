@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0-draft.1",
+  "case_version": 1,
+  "suite": "frozen",
+  "classification": "frozen",
+  "provenance": {
+    "notes": "GW-024 promotion — greenfield contrib docs with no claim/no-PR gates"
+  },
+  "time_sensitive": false,
+  "id": "frozen-contrib-clean",
+  "name": "Contribution policy with no blocking signals",
+  "function": "contrib_policy",
+  "input": {
+    "repo": "acme/open-contrib"
+  },
+  "ground_truth": {
+    "verdict": "ACT",
+    "disposition": "greenfield",
+    "failure_mode": "contrib_policy_no_blocking_signals",
+    "adjudicator_rationale": "Welcoming CONTRIBUTING.md without claim-assignment or no-PR language must emit zero contribution-policy signals so hunters are not falsely gated.",
+    "evidence_urls": [
+      "https://github.com/acme/open-contrib/blob/main/CONTRIBUTING.md"
+    ],
+    "required_signals": [],
+    "forbidden_signals": [
+      "claim_required",
+      "no_pr_path"
+    ],
+    "required_findings": [],
+    "forbidden_findings": [
+      "claim_required",
+      "no_pr_path"
+    ]
+  },
+  "provider_fixtures": "../fixtures/frozen-contrib-clean.provider.json"
+}

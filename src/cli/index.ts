@@ -13,6 +13,7 @@ import {
   dupe_cluster,
   generateBrief,
   hunt,
+  resumeHunt,
   issue_vs_main,
   ledger_list,
   ledger_lookup,
@@ -88,7 +89,7 @@ Usage:
   gitworthy config show --effective [--path path] [--json]
   gitworthy profile show [--path path] [--json]
   gitworthy check owner/repo#123 [--npm-package name] [--probe-glob glob] [--probe-contains text] [--probe-template id] [--capture] [--capture-local-private] [--json]
-  gitworthy hunt owner/repo|org [--manifest path] [--max-checks 3] [--label ...] [--keywords ...] [--since 90d] [--limit 25] [--max-repos 8] [--skill-profile ...] [--skip-policy-gate] [--no-land-hints] [--capture] [--capture-local-private] [--json]
+  gitworthy hunt owner/repo|org [--manifest path] [--max-checks 3] [--label ...] [--keywords ...] [--since 90d] [--limit 25] [--max-repos 8] [--max-pages 1] [--skill-profile ...] [--explain-ranking] [--skip-policy-gate] [--no-land-hints] [--capture] [--capture-local-private] [--json]
   gitworthy branches owner/repo keyword[,keyword] [--json] [--force-refresh]
   gitworthy issue owner/repo 123 [--json]
   gitworthy release owner/repo package-name [--probe-glob glob] [--probe-contains text] [--probe-template id] [--json]
@@ -98,8 +99,8 @@ Usage:
   gitworthy contention owner/repo 123 [--no-diffs] [--no-gaps] [--json]
   gitworthy check-scope owner/repo 123 [--diff path] [--base-ref ref] [--json]
   gitworthy policy owner/repo [--json]
-  gitworthy scan owner/repo [--label "good first issue"] [--keywords term,term] [--since 90d] [--limit 25] [--skill-profile ...] [--no-land-hints] [--json]
-  gitworthy org org-or-user [--manifest path] [--label ...] [--keywords ...] [--since 90d] [--limit 25] [--max-repos 8] [--skill-profile ...] [--no-land-hints] [--json]
+  gitworthy scan owner/repo [--label "good first issue"] [--keywords term,term] [--since 90d] [--limit 25] [--max-pages 1] [--skill-profile ...] [--explain-ranking] [--no-land-hints] [--json]
+  gitworthy org org-or-user [--manifest path] [--label ...] [--keywords ...] [--since 90d] [--limit 25] [--max-repos 8] [--max-pages 1] [--skill-profile ...] [--explain-ranking] [--no-land-hints] [--json]
   gitworthy probes [--json]
   gitworthy ledger list [--repo owner/repo] [--limit 50] [--json]
   gitworthy ledger show owner/repo#123 [--json]
@@ -109,6 +110,7 @@ Usage:
   gitworthy store target owner/repo#123 [--json]
   gitworthy store export [--repo owner/repo] [--issue 123] --out-dir path [--json]
   gitworthy run show <run_id> [--json]
+  gitworthy run resume <run_id> [--json]
   gitworthy run list [--repo owner/repo] [--issue 123] [--limit 50] [--json]
   gitworthy decision show <decision_id> [--json]
   gitworthy decision list [--repo owner/repo] [--issue 123] [--limit 50] [--json]
@@ -222,6 +224,11 @@ function exitFor(output: unknown): number {
 }
 
 function scanFilters(values: Record<string, unknown>) {
+  const maxPagesRaw = stringValue(values['max-pages']);
+  const maxPages = maxPagesRaw ? Number(maxPagesRaw) : undefined;
+  if (maxPagesRaw && (!Number.isFinite(maxPages) || (maxPages as number) < 1)) {
+    usageError('--max-pages must be a positive number.');
+  }
   return {
     label: stringValue(values.label),
     keywords: stringValue(values.keywords)?.split(',').filter(Boolean),
@@ -229,7 +236,9 @@ function scanFilters(values: Record<string, unknown>) {
     limit: stringValue(values.limit) ? Number(stringValue(values.limit)) : undefined,
     land_hints: values['no-land-hints'] === true ? false : undefined,
     skill_profile: stringValue(values['skill-profile']),
-    manifest_path: stringValue(values.manifest)
+    manifest_path: stringValue(values.manifest),
+    max_pages: maxPages,
+    explain_ranking: values['explain-ranking'] === true ? true : undefined
   };
 }
 
@@ -262,7 +271,9 @@ const CLI_OPTIONS = {
   since: { type: 'string' },
   limit: { type: 'string' },
   'max-repos': { type: 'string' },
+  'max-pages': { type: 'string' },
   'max-checks': { type: 'string' },
+  'explain-ranking': { type: 'boolean' },
   'no-land-hints': { type: 'boolean' },
   capture: { type: 'boolean' },
   'capture-local-private': { type: 'boolean' },
@@ -615,6 +626,8 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
         skill_profile: filters.skill_profile,
         max_checks: maxChecks,
         max_repos: maxRepos,
+        max_pages: filters.max_pages,
+        explain_ranking: filters.explain_ranking,
         skip_policy_gate: parsed.values['skip-policy-gate'] === true ? true : undefined,
         npm_package: stringValue(parsed.values['npm-package']),
         manifest_path: filters.manifest_path
@@ -733,6 +746,10 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
         output = toStampedLegacyResult('store_run_show', await store_run_show({
           run_id: required(second, 'run show requires a run_id.')
         }) as Record<string, unknown>);
+      } else if (action === 'resume') {
+        commandName = 'hunt';
+        const runId = required(second, 'run resume requires a run_id.');
+        output = toStampedLegacyResult('hunt', await resumeHunt(runId) as Record<string, unknown>);
       } else if (action === 'list') {
         commandName = 'store_run_list';
         const repoFilter = stringValue(parsed.values.repo);
@@ -743,7 +760,7 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
           limit: stringValue(parsed.values.limit) ? Number(stringValue(parsed.values.limit)) : undefined
         }) as Record<string, unknown>);
       } else {
-        usageError('run requires show or list.');
+        usageError('run requires show, resume, or list.');
       }
     } else if (command === 'decision') {
       const action = first;

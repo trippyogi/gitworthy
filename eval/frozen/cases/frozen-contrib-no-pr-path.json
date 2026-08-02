@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0-draft.1",
+  "case_version": 1,
+  "suite": "frozen",
+  "classification": "frozen",
+  "provenance": {
+    "notes": "GW-024 promotion"
+  },
+  "time_sensitive": false,
+  "id": "frozen-contrib-no-pr-path",
+  "name": "Contribution policy no_pr_path signal",
+  "function": "contrib_policy",
+  "input": {
+    "repo": "acme/mirror-only"
+  },
+  "ground_truth": {
+    "verdict": "VERIFY",
+    "disposition": "blocked",
+    "failure_mode": "contrib_policy_no_pr_path",
+    "adjudicator_rationale": "Mirror/no-PR policy must emit no_pr_path for blocked disposition in worth_check.",
+    "evidence_urls": [
+      "https://github.com/acme/mirror-only/blob/main/CONTRIBUTING.md"
+    ],
+    "required_signals": [
+      "no_pr_path"
+    ],
+    "forbidden_signals": [
+      "claim_required"
+    ],
+    "required_findings": [
+      "no_pr_path"
+    ],
+    "forbidden_findings": []
+  },
+  "provider_fixtures": "../fixtures/frozen-contrib-no-pr-path.provider.json"
+}

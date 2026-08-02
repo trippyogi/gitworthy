@@ -1,0 +1,35 @@
+{
+  "schema_version": "1.0-draft.1",
+  "case_version": 1,
+  "suite": "frozen",
+  "classification": "frozen",
+  "provenance": {
+    "notes": "GW-024 promotion"
+  },
+  "time_sensitive": false,
+  "id": "frozen-worth-act-greenfield",
+  "name": "worth_check ACT on greenfield (no blockers)",
+  "function": "worth_check",
+  "input": {
+    "repo": "acme/widgets",
+    "issue_number": 301
+  },
+  "ground_truth": {
+    "verdict": "ACT",
+    "disposition": "greenfield",
+    "failure_mode": "worth_check_act_greenfield",
+    "adjudicator_rationale": "With no blocking or VERIFY-grade signals across sub-checks, policy returns ACT/greenfield (honest mechanism test).",
+    "evidence_urls": [
+      "https://github.com/acme/widgets/issues/301"
+    ],
+    "forbidden_signals": [
+      "linked_pr_open",
+      "duplicate",
+      "in_flight",
+      "released_fix",
+      "assigned"
+    ],
+    "required_findings": []
+  },
+  "provider_fixtures": "../fixtures/frozen-worth-act-greenfield.provider.json"
+}

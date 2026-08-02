@@ -294,17 +294,39 @@ export async function loadEffectiveConfig(options: {
   return { schema_version: CONFIG_SCHEMA_VERSION, values, provenance, paths: { user: userPath, repo: repoPath, ...(manifestPath ? { manifest: manifestPath } : {}) }, loaded };
 }
 
-export function resolveScanFromConfig(input: { repo: string } & Partial<EffectiveConfigValues>, effective: EffectiveConfig): { repo: string } & Partial<EffectiveConfigValues> {
-  return { repo: input.repo, label: input.label ?? effective.values.label, keywords: input.keywords ?? effective.values.keywords, since: input.since ?? effective.values.since, limit: input.limit ?? effective.values.limit, land_hints: input.land_hints ?? effective.values.land_hints, skill_profile: input.skill_profile ?? effective.values.skill_profile };
+export function resolveScanFromConfig(input: { repo: string } & Partial<EffectiveConfigValues> & { max_pages?: number; explain_ranking?: boolean }, effective: EffectiveConfig): { repo: string } & Partial<EffectiveConfigValues> & { max_pages?: number; explain_ranking?: boolean } {
+  return {
+    repo: input.repo,
+    label: input.label ?? effective.values.label,
+    keywords: input.keywords ?? effective.values.keywords,
+    since: input.since ?? effective.values.since,
+    limit: input.limit ?? effective.values.limit,
+    land_hints: input.land_hints ?? effective.values.land_hints,
+    skill_profile: input.skill_profile ?? effective.values.skill_profile,
+    ...(input.max_pages !== undefined ? { max_pages: input.max_pages } : {}),
+    ...(input.explain_ranking !== undefined ? { explain_ranking: input.explain_ranking } : {})
+  };
 }
 
-export function resolveOrgFromConfig(input: { org?: string } & Partial<EffectiveConfigValues>, effective: EffectiveConfig): { org: string } & Partial<EffectiveConfigValues> {
+export function resolveOrgFromConfig(input: { org?: string } & Partial<EffectiveConfigValues> & { max_pages?: number; explain_ranking?: boolean }, effective: EffectiveConfig): { org: string } & Partial<EffectiveConfigValues> & { max_pages?: number; explain_ranking?: boolean; target_manifest?: TargetManifest } {
   const org = input.org ?? (effective.values.target_manifest ? firstOrg(effective.values.target_manifest) : undefined);
   if (!org) throw inputError('invalid_org_ref', 'org requires an org/user login or a manifest containing exactly one org.');
-  return { org, label: input.label ?? effective.values.label, keywords: input.keywords ?? effective.values.keywords, since: input.since ?? effective.values.since, limit: input.limit ?? effective.values.limit, max_repos: input.max_repos ?? effective.values.max_repos, land_hints: input.land_hints ?? effective.values.land_hints, skill_profile: input.skill_profile ?? effective.values.skill_profile };
+  return {
+    org,
+    label: input.label ?? effective.values.label,
+    keywords: input.keywords ?? effective.values.keywords,
+    since: input.since ?? effective.values.since,
+    limit: input.limit ?? effective.values.limit,
+    max_repos: input.max_repos ?? effective.values.max_repos,
+    land_hints: input.land_hints ?? effective.values.land_hints,
+    skill_profile: input.skill_profile ?? effective.values.skill_profile,
+    ...(effective.values.target_manifest ? { target_manifest: effective.values.target_manifest } : {}),
+    ...(input.max_pages !== undefined ? { max_pages: input.max_pages } : {}),
+    ...(input.explain_ranking !== undefined ? { explain_ranking: input.explain_ranking } : {})
+  };
 }
 
-export function resolveHuntFromConfig(input: { repo?: string; org?: string } & Partial<EffectiveConfigValues>, effective: EffectiveConfig): { repo?: string; org?: string } & Partial<EffectiveConfigValues> {
+export function resolveHuntFromConfig(input: { repo?: string; org?: string } & Partial<EffectiveConfigValues> & { explain_ranking?: boolean; max_pages?: number }, effective: EffectiveConfig): { repo?: string; org?: string } & Partial<EffectiveConfigValues> & { explain_ranking?: boolean; max_pages?: number; target_manifest?: TargetManifest } {
   const manifest = effective.values.target_manifest;
   const repo = input.repo ?? (manifest ? firstRepo(manifest) : undefined);
   const org = input.org ?? (manifest ? firstOrg(manifest) : undefined);
@@ -312,7 +334,27 @@ export function resolveHuntFromConfig(input: { repo?: string; org?: string } & P
     throw inputError('hunt_ambiguous_manifest_target', 'hunt manifest resolved both one repo and one org; provide repo or org explicitly.');
   }
   if (!repo && !org) throw inputError('hunt_invalid_input', 'hunt requires either repo, org, or a manifest containing exactly one target.');
-  return { ...(repo ? { repo } : {}), ...(org ? { org } : {}), label: input.label ?? effective.values.label, keywords: input.keywords ?? effective.values.keywords, since: input.since ?? effective.values.since, scan_limit: input.scan_limit ?? input.limit ?? effective.values.scan_limit ?? effective.values.limit, max_repos: input.max_repos ?? effective.values.max_repos, max_checks: input.max_checks ?? effective.values.max_checks, land_hints: input.land_hints ?? effective.values.land_hints, skip_likely_land_only: input.skip_likely_land_only ?? effective.values.skip_likely_land_only, skip_soft_ask: input.skip_soft_ask ?? effective.values.skip_soft_ask, skip_assigned: input.skip_assigned ?? effective.values.skip_assigned, skip_ledger_skip: input.skip_ledger_skip ?? effective.values.skip_ledger_skip, skip_policy_gate: input.skip_policy_gate ?? effective.values.skip_policy_gate, npm_package: input.npm_package ?? effective.values.npm_package, skill_profile: input.skill_profile ?? effective.values.skill_profile };
+  return {
+    ...(repo ? { repo } : {}),
+    ...(org ? { org } : {}),
+    label: input.label ?? effective.values.label,
+    keywords: input.keywords ?? effective.values.keywords,
+    since: input.since ?? effective.values.since,
+    scan_limit: input.scan_limit ?? input.limit ?? effective.values.scan_limit ?? effective.values.limit,
+    max_repos: input.max_repos ?? effective.values.max_repos,
+    max_checks: input.max_checks ?? effective.values.max_checks,
+    land_hints: input.land_hints ?? effective.values.land_hints,
+    skip_likely_land_only: input.skip_likely_land_only ?? effective.values.skip_likely_land_only,
+    skip_soft_ask: input.skip_soft_ask ?? effective.values.skip_soft_ask,
+    skip_assigned: input.skip_assigned ?? effective.values.skip_assigned,
+    skip_ledger_skip: input.skip_ledger_skip ?? effective.values.skip_ledger_skip,
+    skip_policy_gate: input.skip_policy_gate ?? effective.values.skip_policy_gate,
+    npm_package: input.npm_package ?? effective.values.npm_package,
+    skill_profile: input.skill_profile ?? effective.values.skill_profile,
+    ...(manifest ? { target_manifest: manifest } : {}),
+    ...(input.max_pages !== undefined ? { max_pages: input.max_pages } : {}),
+    ...(input.explain_ranking !== undefined ? { explain_ranking: input.explain_ranking } : {})
+  };
 }
 
 export function assertEffectiveConfigSafeToShow(effective: EffectiveConfig): void {

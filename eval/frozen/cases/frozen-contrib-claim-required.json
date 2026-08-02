@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0-draft.1",
+  "case_version": 1,
+  "suite": "frozen",
+  "classification": "frozen",
+  "provenance": {
+    "notes": "GW-024 promotion"
+  },
+  "time_sensitive": false,
+  "id": "frozen-contrib-claim-required",
+  "name": "Contribution policy claim_required extraction",
+  "function": "contrib_policy",
+  "input": {
+    "repo": "acme/policy"
+  },
+  "ground_truth": {
+    "verdict": "VERIFY",
+    "disposition": "claim_first",
+    "failure_mode": "contrib_policy_claim_required",
+    "adjudicator_rationale": "CONTRIBUTING.md claim language must emit claim_required signal.",
+    "evidence_urls": [
+      "https://github.com/acme/policy/blob/main/CONTRIBUTING.md"
+    ],
+    "required_signals": [
+      "claim_required"
+    ],
+    "forbidden_signals": [
+      "no_pr_path"
+    ],
+    "required_findings": [
+      "claim_required"
+    ],
+    "forbidden_findings": []
+  },
+  "provider_fixtures": "../fixtures/frozen-contrib-claim-required.provider.json"
+}

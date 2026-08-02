@@ -25,6 +25,11 @@ vi.mock('../src/lib/cache.js', () => ({ readCache: mocks.readCache }));
 
 const { scan } = await import('../src/core/scan.js');
 
+const META_KINDS = new Set(['widen_hint', 'discovery', 'ranking_explain']);
+function candidatesOf(result: { evidence: Array<Record<string, unknown>> }) {
+  return result.evidence.filter((item) => !('kind' in item && typeof item.kind === 'string' && META_KINDS.has(item.kind)));
+}
+
 beforeEach(() => {
   mocks.githubJson.mockReset();
   mocks.githubJson.mockImplementation(async (path: string) => defaultGithubJson(path));
@@ -36,17 +41,22 @@ describe('scan', () => {
   it('lists tracker candidates without verdict signals', async () => {
     const result = await scan({ repo: 'o/r', label: 'good first issue', keywords: ['typed'], since: '90d', limit: 10 });
     expect(mocks.githubJson).toHaveBeenCalledWith(expect.stringContaining('labels=good+first+issue'));
-    expect(result.evidence.filter((item) => !('kind' in item && item.kind === 'widen_hint'))).toHaveLength(1);
-    expect(result.evidence[0]).toMatchObject({ number: 1, title: 'Add typed config', comments: 2, assignees: ['maintainer1'] });
-    expect(result.evidence[0]).toEqual(expect.objectContaining({
+    const candidates = candidatesOf(result);
+    expect(candidates).toHaveLength(1);
+    expect(candidates[0]).toMatchObject({ number: 1, title: 'Add typed config', comments: 2, assignees: ['maintainer1'] });
+    expect(candidates[0]).toEqual(expect.objectContaining({
       quality_score: expect.any(Number),
       quality_reasons: expect.any(Array),
       repro: expect.any(String),
-      soft_ask: expect.any(Boolean)
+      soft_ask: expect.any(Boolean),
+      rank_score: expect.any(Number),
+      ranking_version: '1',
+      availability_hint_score: expect.any(Number)
     }));
-    expect(JSON.stringify(result.evidence.filter((item) => !('kind' in item && item.kind === 'widen_hint')))).not.toContain('pull request');
-    expect(result.checked).toContain('excluded pull requests');
-    expect(result.checked).toContain('ranked candidates by quality_score (repro, labels, staleness, soft-ask, assignees)');
+    expect(JSON.stringify(candidates)).not.toContain('pull request');
+    expect(result.evidence.some((item) => item.kind === 'discovery')).toBe(true);
+    expect(result.checked.some((item) => item.includes('excluded pull requests'))).toBe(true);
+    expect(result.checked.some((item) => item.includes('ranking_version=1'))).toBe(true);
     expect(result.signals).toEqual([]);
     expect(result.not_checked.join(' ')).toContain('scan reflects the issue tracker only');
     expect(result.not_checked.join(' ')).toContain('not vetted contribution targets');
@@ -61,7 +71,7 @@ describe('scan', () => {
       return defaultGithubJson(path);
     });
     const result = await scan({ repo: 'o/r', keywords: ['crash'], limit: 10 });
-    const candidates = result.evidence.filter((item) => !('kind' in item && item.kind === 'widen_hint'));
+    const candidates = candidatesOf(result);
     expect(candidates).toHaveLength(1);
     expect(candidates[0]).toMatchObject({ number: 115339 });
     expect(result.checked).toContain('filtered titles and bodies by keywords: crash');
@@ -80,8 +90,8 @@ describe('scan', () => {
 
   it('adds a widen hint when a labeled scan is thin or fully assigned', async () => {
     const result = await scan({ repo: 'o/r', label: 'good first issue', keywords: ['typed'], since: '90d', limit: 10 });
-    expect(result.evidence).toHaveLength(2);
-    expect(result.evidence[1]).toMatchObject({
+    const hint = result.evidence.find((item) => item.kind === 'widen_hint');
+    expect(hint).toMatchObject({
       kind: 'widen_hint',
       reason: expect.stringContaining('after label "good first issue", keywords typed'),
       suggestions: expect.arrayContaining(['drop or relax the keyword filter and scan again', 'drop the label filter and scan again', 'try label "help wanted"'])
@@ -110,7 +120,56 @@ describe('scan', () => {
     let stdout = '';
     const code = await runCli(['scan', 'o/r', '--label', 'good first issue', '--keywords', 'typed', '--since', '90d', '--limit', '10', '--json'], (text) => { stdout += text; });
     expect(code).toBe(0);
-    expect(JSON.parse(stdout).evidence[0].number).toBe(1);
+    const evidence = JSON.parse(stdout).evidence as Array<Record<string, unknown>>;
+    expect(evidence.find((item) => item.number === 1)).toMatchObject({ number: 1 });
+  });
+
+  it('exposes explain-ranking lines when requested', async () => {
+    const result = await scan({ repo: 'o/r', limit: 5, explain_ranking: true, land_hints: false });
+    expect(result.evidence.some((item) => item.kind === 'ranking_explain')).toBe(true);
+    const primary = candidatesOf(result)[0];
+    expect(primary.ranking_explain?.some((line: string) => line.includes('rank_score='))).toBe(true);
+  });
+
+  it('paginates within max_pages and reports discovery meta', async () => {
+    const pageOf = (path: string) => new URL(path, 'https://api.github.com').searchParams.get('page');
+    mocks.githubJson.mockImplementation(async (path: string) => {
+      if (path.includes('/repos/o/r/issues?') && pageOf(path) === '1') {
+        return Array.from({ length: 100 }, (_, index) => ({
+          number: index + 1,
+          title: `Issue ${index + 1}`,
+          body: null,
+          state: 'open',
+          labels: [],
+          comments: 0,
+          html_url: `https://github.com/o/r/issues/${index + 1}`,
+          created_at: '2026-01-01T00:00:00Z',
+          updated_at: `2026-01-${String((index % 28) + 1).padStart(2, '0')}T00:00:00Z`,
+          closed_at: null
+        }));
+      }
+      if (path.includes('/repos/o/r/issues?') && pageOf(path) === '2') {
+        return Array.from({ length: 100 }, (_, index) => ({
+          number: 200 + index,
+          title: index === 0 ? 'Page two gem' : `Page two ${index}`,
+          body: index === 0 ? 'Steps to reproduce clearly.' : null,
+          state: 'open',
+          labels: index === 0 ? [{ name: 'good first issue' }] : [],
+          comments: index === 0 ? 3 : 0,
+          html_url: `https://github.com/o/r/issues/${200 + index}`,
+          created_at: '2026-01-01T00:00:00Z',
+          updated_at: '2026-02-01T00:00:00Z',
+          closed_at: null
+        }));
+      }
+      return defaultGithubJson(path);
+    });
+    const result = await scan({ repo: 'o/r', max_pages: 2, limit: 5, land_hints: false });
+    const discovery = result.evidence.find((item) => item.kind === 'discovery') as Record<string, unknown>;
+    expect(discovery).toMatchObject({ pages_fetched: 2, rows_considered: 200 });
+    expect(mocks.githubJson).toHaveBeenCalledWith(expect.stringContaining('page=2'));
+    // Page-two gem has repro + label; it must outrank empty page-one rows in the shortlist.
+    expect(candidatesOf(result)[0]).toMatchObject({ number: 200 });
   });
 });
 
@@ -159,7 +218,7 @@ describe('scan land_hints', () => {
       return defaultGithubJson(path);
     });
     const result = await scan({ repo: 'o/r', limit: 10 });
-    const ordered = result.evidence.filter((item) => !('kind' in item && item.kind === 'widen_hint'));
+    const ordered = candidatesOf(result);
     expect(ordered[0].quality_score).toBe(ordered[1].quality_score);
     expect(ordered[0]).toMatchObject({ number: 52 });
     expect(ordered[1]).toMatchObject({ number: 51, likely_land_only: true });

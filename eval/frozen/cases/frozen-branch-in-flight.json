@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0-draft.1",
+  "case_version": 1,
+  "suite": "frozen",
+  "classification": "frozen",
+  "provenance": {
+    "notes": "GW-024 promotion"
+  },
+  "time_sensitive": false,
+  "id": "frozen-branch-in-flight",
+  "name": "Branch scan in_flight issue-number match",
+  "function": "branch_scan",
+  "input": {
+    "repo": "acme/branches",
+    "keywords": [
+      "widget",
+      "cache"
+    ],
+    "issue_number": 200
+  },
+  "ground_truth": {
+    "verdict": "VERIFY",
+    "disposition": "review",
+    "failure_mode": "branch_scan_in_flight_match",
+    "adjudicator_rationale": "Issue-number branch hits must emit in_flight even when tip metadata is sparse.",
+    "evidence_urls": [
+      "https://github.com/acme/branches/tree/fix-200-widget-cache"
+    ],
+    "required_signals": [
+      "in_flight"
+    ],
+    "required_findings": [
+      "fix-200-widget-cache"
+    ],
+    "forbidden_findings": []
+  },
+  "provider_fixtures": "../fixtures/frozen-branch-in-flight.provider.json"
+}

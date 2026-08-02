@@ -1,0 +1,35 @@
+{
+  "schema_version": "1.0-draft.1",
+  "case_version": 1,
+  "suite": "frozen",
+  "classification": "frozen",
+  "provenance": {
+    "notes": "GW-024 promotion"
+  },
+  "time_sensitive": false,
+  "id": "frozen-linked-empty-timeline",
+  "name": "Empty timeline notes missing cross-references",
+  "function": "linked_work",
+  "input": {
+    "repo": "acme/widgets",
+    "issue_number": 110
+  },
+  "ground_truth": {
+    "verdict": "ACT",
+    "disposition": "greenfield",
+    "failure_mode": "missing_timeline_cross_references",
+    "adjudicator_rationale": "Empty timeline should note cross-reference gaps without inventing linked PRs.",
+    "evidence_urls": [
+      "https://github.com/acme/widgets/issues/110"
+    ],
+    "forbidden_signals": [
+      "linked_pr_open",
+      "linked_pr_closed"
+    ],
+    "required_findings": [
+      "timeline events observed: none"
+    ],
+    "forbidden_findings": []
+  },
+  "provider_fixtures": "../fixtures/frozen-linked-empty-timeline.provider.json"
+}

@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0-draft.1",
+  "case_version": 1,
+  "suite": "frozen",
+  "classification": "frozen",
+  "provenance": {
+    "notes": "GW-024 promotion"
+  },
+  "time_sensitive": false,
+  "id": "frozen-linked-merged-verify",
+  "name": "Merged linked PR while issue open (VERIFY close candidate)",
+  "function": "linked_work",
+  "input": {
+    "repo": "acme/widgets",
+    "issue_number": 115
+  },
+  "ground_truth": {
+    "verdict": "VERIFY",
+    "disposition": "review",
+    "failure_mode": "linked_pr_merged_verify_path",
+    "adjudicator_rationale": "Merged linked PR with open issue emits linked_pr_merged for CLOSE_CANDIDATE review.",
+    "evidence_urls": [
+      "https://github.com/acme/widgets/issues/115"
+    ],
+    "required_signals": [
+      "linked_pr_merged"
+    ],
+    "forbidden_signals": [
+      "linked_pr_open"
+    ],
+    "required_findings": [
+      "116"
+    ],
+    "forbidden_findings": []
+  },
+  "provider_fixtures": "../fixtures/frozen-linked-merged-verify.provider.json"
+}

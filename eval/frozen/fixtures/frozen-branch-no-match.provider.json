@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0-draft.1",
+  "fixture_version": 1,
+  "case_id": "frozen-branch-no-match",
+  "attributed_from": {
+    "notes": "GW-024 synthetic offline promotion pack"
+  },
+  "http_exchanges": [],
+  "git_probes": [
+    {
+      "sequence": 0,
+      "kind": "ls_remote_heads",
+      "match": {
+        "repo": "acme/branches"
+      },
+      "response": {
+        "heads": [
+          {
+            "name": "main",
+            "sha": "aaa111"
+          },
+          {
+            "name": "release/1.0",
+            "sha": "ddd444"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+{
+  "schema_version": "1.0-draft.1",
+  "fixture_version": 1,
+  "case_id": "frozen-release-released-fix",
+  "attributed_from": {
+    "notes": "GW-024 synthetic offline promotion pack"
+  },
+  "http_exchanges": [
+    {
+      "sequence": 0,
+      "provider": "npm",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://registry.npmjs.org/@acme%2Fwidgets-cli",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": {
+          "name": "@acme/widgets-cli",
+          "dist-tags": {
+            "latest": "2.0.0"
+          },
+          "versions": {
+            "2.0.0": {
+              "version": "2.0.0",
+              "dist": {
+                "tarball": "https://registry.npmjs.org/@acme%2Fwidgets-cli/-/widgets-cli-2.0.0.tgz"
+              }
+            }
+          },
+          "time": {
+            "2.0.0": "2026-01-01T00:00:00Z"
+          }
+        }
+      }
+    },
+    {
+      "sequence": 1,
+      "provider": "npm",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://registry.npmjs.org/@acme%2Fwidgets-cli/-/widgets-cli-2.0.0.tgz",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/octet-stream"
+        },
+        "body_encoding": "base64",
+        "body": "H4sIAAAAAAAACu3QSwqDMBAG4Kx7ijmB+TVOhJYeJpjQl1BJInj8oqsg3dXSLubbzGMzj9H1D3cJ2t9S1s776p7U3gBYa2mJALYRaJlUzY0xnWFmo1C3nWlIYfdN3phSdlHh41nb4/5A+dMyL4V5fMacqnQNw0BnynEKJ9Ka1sZxrQ8/u0AIIcS3vACL5Z3ZAAgAAA=="
+      }
+    }
+  ],
+  "git_probes": [
+    {
+      "sequence": 0,
+      "kind": "shallow_clone",
+      "match": {
+        "repo": "acme/npm-gap"
+      },
+      "response": {
+        "files": [
+          {
+            "path": "package.json",
+            "content": "{\"name\":\"@acme/widgets-cli\",\"version\":\"2.0.0\"}\n"
+          }
+        ]
+      }
+    }
+  ]
+}

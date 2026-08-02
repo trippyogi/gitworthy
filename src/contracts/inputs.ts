@@ -145,7 +145,9 @@ export const ScanInputSchema = z.object({
   limit: LimitSchema.optional(),
   land_hints: z.boolean().optional(),
   skill_profile: SkillProfileSchema,
-  manifest_path: z.string().optional()
+  manifest_path: z.string().optional(),
+  max_pages: z.number().int().min(1).max(5).optional(),
+  explain_ranking: z.boolean().optional()
 });
 
 export const OrgScanInputSchema = z.object({
@@ -157,7 +159,9 @@ export const OrgScanInputSchema = z.object({
   max_repos: LimitSchema.optional(),
   land_hints: z.boolean().optional(),
   skill_profile: SkillProfileSchema,
-  manifest_path: z.string().optional()
+  manifest_path: z.string().optional(),
+  max_pages: z.number().int().min(1).max(5).optional(),
+  explain_ranking: z.boolean().optional()
 });
 
 export const HuntInputObjectSchema = z.object({
@@ -179,7 +183,10 @@ export const HuntInputObjectSchema = z.object({
   npm_package: z.string().optional(),
   capture: z.boolean().optional(),
   capture_local_private: z.boolean().optional(),
-  manifest_path: z.string().optional()
+  manifest_path: z.string().optional(),
+  max_pages: z.number().int().min(1).max(5).optional(),
+  explain_ranking: z.boolean().optional(),
+  resume_run_id: z.string().min(1).optional()
 });
 
 /** hunt target resolution happens after config loading so config-only MCP calls can work. */
