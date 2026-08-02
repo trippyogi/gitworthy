@@ -26,8 +26,11 @@ Useful commands:
 | `pnpm test:package` | Pack tarball, install in a clean temp project, smoke CLI |
 | `pnpm release:verify` | Version sync + release metadata (set `GITWORTHY_RELEASE_ALLOW_DIRTY=1` while iterating) |
 | `pnpm eval:frozen` | Offline adjudicated corpus via provider replay (release-blocking) |
+| `pnpm eval:report` | Frozen quality metrics / release gates (GW-023) |
 | `pnpm eval:live` | Live/public case compare-only (needs network; `GITHUB_TOKEN` for GitHub cases) |
 | `pnpm eval` | Compatibility alias for `eval:live` |
+| `gitworthy contention` | In-flight claim / gap / swarm analysis (GW-040–042) |
+| `gitworthy check-scope` | Local draft scope_excess vs issue ask |
 
 ## Pull request rules
 

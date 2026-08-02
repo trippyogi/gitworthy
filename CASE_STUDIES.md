@@ -22,7 +22,7 @@ Calibration cases that shaped gitworthy v0.3.3. Each entry separates what the to
 
 **Human verification.** Confirmed live: #1659 is the issue; #1675 is the pull request (`pull_request` present on the issues API object).
 
-**Outcome.** v0.3.3 filters PRs out of duplicate clusters and only emits blocking `duplicate` at score ≥ 0.65. Medium-confidence lexical hits may still appear in evidence without forcing SKIP. Regression coverage is in the offline suite.
+**Outcome.** v0.3.3 filters PRs out of duplicate clusters and only emits blocking `duplicate` at score ≥ 0.65. Medium-confidence lexical hits may still appear in evidence without forcing SKIP. Offline regression: frozen case `frozen-dupe-ignores-pr-row` (see `eval/frozen/INVENTORY.md`).
 
 **Product lesson.** GitHub's issues list includes PRs; duplicate detection must not.
 

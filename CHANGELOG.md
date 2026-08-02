@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add in-flight contention analysis (GW-040–042 / #70–#72): CLI `contention` / `check-scope`, MCP `contention` / `scope_check`, diff-level claim overlap, gap/swarm heuristics, evidence budgets. Roadmap dig-quality track after 0.6 — not a 0.4 reset.
+- Add deterministic frozen eval quality report with versioned metrics contracts, milestone release gates, and `pnpm eval:report` artifacts under `eval/reports/` (GW-023 / #32).
 - Split evaluation into frozen / live / private suites with versioned case schemas, live classification, and release-blocking frozen CI (`pnpm eval:frozen`) (GW-021 / #30).
 - Add injectable provider replay transport and versioned HTTP/git fixture packs for offline frozen cases, plus capture→replay conversion (GW-022 / #31).
 - Add Streamable HTTP MCP transport (`gitworthy mcp --http`) with bearer auth, bind policy, serverless handler, and Cloud Agent/mobile docs (GW-039 / #67).

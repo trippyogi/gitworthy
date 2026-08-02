@@ -23,6 +23,7 @@
     "dev": "tsx src/cli/index.ts",
     "eval": "tsx eval/run-eval.ts",
     "eval:frozen": "tsx eval/run-suite.ts --suite=frozen",
+    "eval:report": "tsx eval/report.ts",
     "eval:live": "tsx eval/run-suite.ts --suite=live",
     "eval:private": "tsx eval/run-suite.ts --suite=private"
   },

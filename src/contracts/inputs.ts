@@ -209,6 +209,22 @@ export const BriefShowInputSchema = z.object({
   cwd: z.string().optional()
 }).strict();
 
+export const ContentionInputSchema = z.object({
+  repo: RepoRefSchema,
+  issue_number: IssueNumberSchema,
+  include_diffs: z.boolean().optional(),
+  include_gaps: z.boolean().optional(),
+  budget_bytes: z.number().int().positive().optional()
+}).strict();
+
+export const ScopeCheckInputSchema = z.object({
+  repo: RepoRefSchema,
+  issue_number: IssueNumberSchema,
+  diff_path: z.string().min(1).optional(),
+  diff_cwd: z.string().min(1).optional(),
+  base_ref: z.string().min(1).optional()
+}).strict();
+
 export const ConfigValidateInputSchema = z.object({
   path: z.string().optional(),
   user: z.boolean().optional(),

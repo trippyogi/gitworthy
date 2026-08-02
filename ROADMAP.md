@@ -45,6 +45,22 @@ Roadmap tickets use local IDs `GW-001` … `GW-038` (see GitHub milestones). Do 
 
 - **GW-039** — Streamable HTTP MCP for Cloud Agents / mobile (bearer auth, deployable handler). Land ahead of remaining hunt UX when remote access is blocking dogfood.
 
+## Contention / in-flight dig-quality (after 0.6)
+
+Not a reissue of roadmap `0.4.0` (trust boundary — already shipped). Extends the 1.0 question from *should I invest now?* to *what is already in flight, and what surface is still uncovered?*
+
+Origin lesson: an issue can be correctly scored worth working on while multiple overlapping PRs race; silent “someone is already covering this / they missed X / your draft exceeds scope” is the failure mode.
+
+| ID | Slice | Outcome |
+|---|---|---|
+| `GW-040` | P0 | Linked-PR claims + `contention.state` + CLI `contention` |
+| `GW-041` | P1 | Diff-level dedup, evidence budget/provenance, `check-scope` |
+| `GW-042` | P2 | Gap analysis, swarm risk, MCP `contention` / `scope_check` |
+
+**Invariants for this track:** read-only (no tracker writes); heuristic overlap/gap evidence caps at `VERIFY` unless definitive; every report declares budgets and truncation (`not_checked` / `low_confidence`). Prefer landing P0 after frozen eval gates (`0.6`) so contention paths can enter the corpus.
+
+Milestone: **Contention — In-flight dig-quality**.
+
 ## Post-1.0 (not started)
 
 Likely layers after the local engine is proven:

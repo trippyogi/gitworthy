@@ -93,7 +93,17 @@ export {
   EvalCaseSchema,
   EvalCaseCatalogSchema,
   EvalRowStatusSchema,
-  EvalSuiteReportSchema
+  EvalSuiteReportRowSchema,
+  EvalSuiteReportSchema,
+  EVAL_REPORT_VERSION,
+  EvalMilestoneSchema,
+  EvalReleaseGateStatusSchema,
+  EvalReleaseGateSchema,
+  EvalPrecisionMetricsSchema,
+  EvalQualityMetricsSchema,
+  EvalCaseTraceSchema,
+  EvalQualityReportSchema,
+  EVAL_MILESTONE_THRESHOLDS
 } from './eval.js';
 export type {
   EvalSuite,
@@ -101,8 +111,39 @@ export type {
   EvalCaseCatalog,
   EvalGroundTruth,
   EvalSuiteReport,
-  EvalRowStatus
+  EvalSuiteReportRow,
+  EvalRowStatus,
+  EvalMilestone,
+  EvalReleaseGate,
+  EvalReleaseGateStatus,
+  EvalQualityMetrics,
+  EvalQualityReport,
+  EvalCaseTrace
 } from './eval.js';
+
+export {
+  CONTENTION_SCHEMA_VERSION,
+  ContentionStateSchema,
+  SwarmRiskSchema,
+  ContentionPostureSchema,
+  GapKindSchema,
+  EquivalenceRelationSchema,
+  ContentionClaimSchema,
+  EquivalenceClassSchema,
+  ContentionGapSchema,
+  ContentionProvenanceSchema,
+  ContentionReportSchema
+} from './contention.js';
+export type {
+  ContentionState,
+  ContentionClaim,
+  EquivalenceClass,
+  ContentionGap,
+  ContentionProvenance,
+  ContentionReport,
+  SwarmRisk,
+  ContentionPosture
+} from './contention.js';
 
 export {
   PROVIDER_FIXTURE_VERSION,
@@ -155,6 +196,8 @@ export {
   CaptureListInputSchema,
   CasePromoteInputSchema,
   BriefShowInputSchema,
+  ContentionInputSchema,
+  ScopeCheckInputSchema,
   ConfigShowInputSchema,
   ConfigValidateInputSchema,
   ProfileShowInputSchema,

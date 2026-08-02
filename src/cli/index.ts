@@ -18,6 +18,8 @@ import {
   ledger_lookup,
   ledger_record,
   linked_work,
+  contention,
+  check_scope,
   listProbeTemplates,
   org_scan,
   related_cluster,
@@ -93,6 +95,8 @@ Usage:
   gitworthy dupes owner/repo 123 [--json]
   gitworthy related owner/repo [123] [--label ...] [--keywords ...] [--limit 40] [--json]
   gitworthy linked owner/repo 123 [--json]
+  gitworthy contention owner/repo 123 [--no-diffs] [--no-gaps] [--json]
+  gitworthy check-scope owner/repo 123 [--diff path] [--base-ref ref] [--json]
   gitworthy policy owner/repo [--json]
   gitworthy scan owner/repo [--label "good first issue"] [--keywords term,term] [--since 90d] [--limit 25] [--skill-profile ...] [--no-land-hints] [--json]
   gitworthy org org-or-user [--manifest path] [--label ...] [--keywords ...] [--since 90d] [--limit 25] [--max-repos 8] [--skill-profile ...] [--no-land-hints] [--json]
@@ -249,6 +253,10 @@ const CLI_OPTIONS = {
   overwrite: { type: 'boolean' },
   'skip-policy-gate': { type: 'boolean' },
   'force-refresh': { type: 'boolean' },
+  'no-diffs': { type: 'boolean' },
+  'no-gaps': { type: 'boolean' },
+  diff: { type: 'string' },
+  'base-ref': { type: 'string' },
   label: { type: 'string' },
   keywords: { type: 'string' },
   since: { type: 'string' },
@@ -551,6 +559,26 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
       const repo = repoArg(first, 'linked requires owner/repo and issue number.');
       const issue_number = issueNumberArg(second, 'linked requires owner/repo and issue number.');
       output = toStampedLegacyResult('linked_work', await linked_work({ repo, issue_number }) as Record<string, unknown>);
+    } else if (command === 'contention') {
+      commandName = 'contention';
+      const repo = repoArg(first, 'contention requires owner/repo and issue number.');
+      const issue_number = issueNumberArg(second, 'contention requires owner/repo and issue number.');
+      output = toStampedLegacyResult('contention', await contention({
+        repo,
+        issue_number,
+        include_diffs: parsed.values['no-diffs'] === true ? false : undefined,
+        include_gaps: parsed.values['no-gaps'] === true ? false : undefined
+      }) as Record<string, unknown>);
+    } else if (command === 'check-scope') {
+      commandName = 'scope_check';
+      const repo = repoArg(first, 'check-scope requires owner/repo and issue number.');
+      const issue_number = issueNumberArg(second, 'check-scope requires owner/repo and issue number.');
+      output = toStampedLegacyResult('scope_check', await check_scope({
+        repo,
+        issue_number,
+        diff_path: stringValue(parsed.values.diff),
+        base_ref: stringValue(parsed.values['base-ref'])
+      }) as Record<string, unknown>);
     } else if (command === 'policy') {
       commandName = 'contrib_policy';
       const repo = repoArg(first, 'policy requires owner/repo.');

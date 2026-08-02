@@ -16,6 +16,8 @@ import {
   ledger_lookup,
   ledger_record,
   linked_work,
+  contention,
+  check_scope,
   listProbeTemplates,
   org_scan,
   related_cluster,
@@ -57,6 +59,8 @@ import {
   LedgerLookupInputSchema,
   LedgerRecordInputSchema,
   LinkedWorkInputSchema,
+  ContentionInputSchema,
+  ScopeCheckInputSchema,
   OrgScanInputSchema,
   parseToolInput,
   ProfileShowInputSchema,
@@ -160,6 +164,10 @@ export function createMcpServer(): McpServer {
     withToolErrors('related_cluster', () => related_cluster(parseToolInput(RelatedClusterInputSchema, input)), stamp('related_cluster')));
   server.registerTool('linked_work', { title: 'Linked work', inputSchema: { repo: z.string(), issue_number: z.number() } }, async (input) =>
     withToolErrors('linked_work', () => linked_work(parseToolInput(LinkedWorkInputSchema, input)), stamp('linked_work')));
+  server.registerTool('contention', { title: 'Contention analysis', inputSchema: { repo: z.string(), issue_number: z.number(), include_diffs: z.boolean().optional(), include_gaps: z.boolean().optional(), budget_bytes: z.number().optional() } }, async (input) =>
+    withToolErrors('contention', () => contention(parseToolInput(ContentionInputSchema, input)), stamp('contention')));
+  server.registerTool('scope_check', { title: 'Scope check', inputSchema: { repo: z.string(), issue_number: z.number(), diff_path: z.string().optional(), diff_cwd: z.string().optional(), base_ref: z.string().optional() } }, async (input) =>
+    withToolErrors('scope_check', () => check_scope(parseToolInput(ScopeCheckInputSchema, input)), stamp('scope_check')));
   server.registerTool('contrib_policy', { title: 'Contribution policy', inputSchema: { repo: z.string(), force_refresh: z.boolean().optional() } }, async (input) =>
     withToolErrors('contrib_policy', () => contrib_policy(parseToolInput(ContribPolicyInputSchema, input)), stamp('contrib_policy')));
   server.registerTool('config_validate', { title: 'Validate config', inputSchema: { path: z.string().optional(), user: z.boolean().optional(), repo: z.boolean().optional(), manifest_path: z.string().optional() } }, async (input) =>

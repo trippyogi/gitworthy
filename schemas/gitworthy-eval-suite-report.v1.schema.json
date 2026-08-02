@@ -113,6 +113,79 @@
           },
           "failure_mode": {
             "type": "string"
+          },
+          "function": {
+            "type": "string",
+            "enum": [
+              "branch_scan",
+              "issue_vs_main",
+              "release_gap",
+              "dupe_cluster",
+              "contrib_policy",
+              "linked_work",
+              "worth_check"
+            ]
+          },
+          "repo": {
+            "type": "string",
+            "minLength": 1
+          },
+          "expected_verdict": {
+            "type": "string",
+            "enum": [
+              "ACT",
+              "VERIFY",
+              "SKIP"
+            ]
+          },
+          "observed_verdict": {
+            "type": "string",
+            "enum": [
+              "ACT",
+              "VERIFY",
+              "SKIP"
+            ]
+          },
+          "expected_disposition": {
+            "type": "string",
+            "enum": [
+              "greenfield",
+              "land_only",
+              "claim_first",
+              "blocked",
+              "crowded",
+              "review"
+            ]
+          },
+          "observed_disposition": {
+            "type": "string",
+            "enum": [
+              "greenfield",
+              "land_only",
+              "claim_first",
+              "blocked",
+              "crowded",
+              "review"
+            ]
+          },
+          "hard_skip": {
+            "type": "boolean"
+          },
+          "verify_reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "duration_ms": {
+            "type": "number",
+            "minimum": 0
+          },
+          "github_requests": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "schema_valid": {
+            "type": "boolean"
           }
         },
         "required": [

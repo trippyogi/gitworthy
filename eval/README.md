@@ -15,6 +15,7 @@ Generated machine-readable reports land in `eval/reports/` (gitignored). Latest 
 
 ```sh
 pnpm eval:frozen    # offline; fails CI on fixture/ground-truth mismatch
+pnpm eval:report    # quality metrics + release gates from frozen-latest.json
 pnpm eval:live      # needs network + GITHUB_TOKEN for GitHub cases
 pnpm eval:private -- --allow-private
 pnpm eval           # compatibility alias → live suite
