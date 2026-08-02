@@ -1,0 +1,122 @@
+{
+  "verdict_summary": "ask appears shipped on main, verify intent.",
+  "evidence": [
+    {
+      "issue": 49,
+      "title": "Add FastAPI Python example",
+      "state": "open",
+      "labels": [],
+      "comments": 0,
+      "url": "https://github.com/PostHog/context-mill/issues/49"
+    },
+    {
+      "tree_matches": [
+        "example-apps/fastapi/.env.example",
+        "example-apps/fastapi/.gitignore",
+        "example-apps/fastapi/README.md",
+        "example-apps/fastapi/app/__init__.py",
+        "example-apps/fastapi/app/config.py",
+        "example-apps/fastapi/app/database.py",
+        "example-apps/fastapi/app/dependencies.py",
+        "example-apps/fastapi/app/main.py",
+        "example-apps/fastapi/app/middleware.py",
+        "example-apps/fastapi/app/models.py",
+        "example-apps/fastapi/app/routers/__init__.py",
+        "example-apps/fastapi/app/routers/api.py",
+        "example-apps/fastapi/app/routers/main.py",
+        "example-apps/fastapi/app/templates/base.html",
+        "example-apps/fastapi/app/templates/burrito.html",
+        "example-apps/fastapi/app/templates/dashboard.html",
+        "example-apps/fastapi/app/templates/errors/404.html",
+        "example-apps/fastapi/app/templates/errors/500.html",
+        "example-apps/fastapi/app/templates/home.html",
+        "example-apps/fastapi/app/templates/profile.html",
+        "example-apps/fastapi/app/templates/signup.html",
+        "example-apps/fastapi/requirements.txt",
+        "example-apps/fastapi/run.py",
+        "example-apps/python/.env.example",
+        "example-apps/python/.gitignore",
+        "example-apps/python/README.md",
+        "example-apps/python/requirements.txt",
+        "example-apps/python/todo.py"
+      ]
+    },
+    {
+      "grep_matches": [
+        {
+          "path": ".gitignore",
+          "line": 30,
+          "term": "python",
+          "sample": "# Python"
+        },
+        {
+          "path": "context/commandments.yaml",
+          "line": 63,
+          "term": "python",
+          "sample": "  python:"
+        },
+        {
+          "path": "context/commandments.yaml",
+          "line": 65,
+          "term": "python",
+          "sample": "    - posthog is the Python SDK package name"
+        },
+        {
+          "path": "context/commandments.yaml",
+          "line": 73,
+          "term": "python",
+          "sample": "    - The Python SDK has NO identify() method - use posthog_client.set(distinct_id=user_id, properties={...}) to set person properties, or use identify_context(user_id) within a context"
+        },
+        {
+          "path": "context/commandments.yaml",
+          "line": 126,
+          "term": "fastapi",
+          "sample": "  fastapi:"
+        },
+        {
+          "path": "context/commandments.yaml",
+          "line": 130,
+          "term": "fastapi",
+          "sample": "    - Use FastAPI dependency injection (Depends) for accessing current_user and settings in route handlers"
+        },
+        {
+          "path": "context/skills/audit/references/1-version.md",
+          "line": 25,
+          "term": "fastapi",
+          "sample": "- `requirements.txt`, `pyproject.toml`, `Pipfile`, `setup.py` - Python (Django, Flask, FastAPI, etc.)"
+        },
+        {
+          "path": "context/skills/audit/references/1-version.md",
+          "line": 53,
+          "term": "python",
+          "sample": "- **PyPI** (Python): `pip index versions <pkg>` (or `pip show <pkg>` if `index` is unavailable)"
+        },
+        {
+          "path": "context/skills/audit-attribution/references/engagement-provenance.md",
+          "line": 24,
+          "term": "python",
+          "sample": "- **posthog-python `$os` auto-attach** corrupting person properties (24% of profiles with `$os = \"Linux\"` on a macOS-heavy product)."
+        },
+        {
+          "path": "context/skills/audit-events/references/3-events-optimize.md",
+          "line": 176,
+          "term": "python",
+          "sample": "   - `$lib` values that mismatch the project's known runtime mix (e.g. a Python lib appearing in a JS-only project - possibly a misrouted server-side capture)."
+        }
+      ]
+    }
+  ],
+  "signals": [
+    "shipped"
+  ],
+  "checked": [
+    "fetched issue PostHog/context-mill#49",
+    "shallow cloned PostHog/context-mill",
+    "searched candidate terms in tree and file contents"
+  ],
+  "not_checked": [
+    "directory or string existence does not prove the issue's intent is satisfied; read both before making any public claim."
+  ],
+  "cached": false,
+  "fetched_at": "2026-07-08T22:20:04.571Z"
+}

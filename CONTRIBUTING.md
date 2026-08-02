@@ -25,7 +25,9 @@ Useful commands:
 | `pnpm test:unit` | Vitest only (expects `pnpm build` first for compiled-entry coverage) |
 | `pnpm test:package` | Pack tarball, install in a clean temp project, smoke CLI |
 | `pnpm release:verify` | Version sync + release metadata (set `GITWORTHY_RELEASE_ALLOW_DIRTY=1` while iterating) |
-| `pnpm eval` | Live/public case compare-only (needs network; `GITHUB_TOKEN` for GitHub cases) |
+| `pnpm eval:frozen` | Offline adjudicated corpus via provider replay (release-blocking) |
+| `pnpm eval:live` | Live/public case compare-only (needs network; `GITHUB_TOKEN` for GitHub cases) |
+| `pnpm eval` | Compatibility alias for `eval:live` |
 
 ## Pull request rules
 

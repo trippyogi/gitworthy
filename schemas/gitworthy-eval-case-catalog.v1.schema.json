@@ -1,0 +1,265 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "default": "1.0-draft.1",
+      "type": "string",
+      "const": "1.0-draft.1"
+    },
+    "case_version": {
+      "type": "number",
+      "const": 1
+    },
+    "suite": {
+      "type": "string",
+      "enum": [
+        "frozen",
+        "live",
+        "private"
+      ]
+    },
+    "cases": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "schema_version": {
+            "default": "1.0-draft.1",
+            "type": "string",
+            "const": "1.0-draft.1"
+          },
+          "case_version": {
+            "type": "number",
+            "const": 1
+          },
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "suite": {
+            "type": "string",
+            "enum": [
+              "frozen",
+              "live",
+              "private"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "function": {
+            "type": "string",
+            "enum": [
+              "branch_scan",
+              "issue_vs_main",
+              "release_gap",
+              "dupe_cluster",
+              "contrib_policy",
+              "linked_work",
+              "worth_check"
+            ]
+          },
+          "input": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          },
+          "classification": {
+            "type": "string",
+            "enum": [
+              "frozen",
+              "promote_candidate",
+              "live_only",
+              "retired"
+            ]
+          },
+          "expect": {
+            "type": "object",
+            "properties": {
+              "signal": {
+                "type": "string",
+                "minLength": 1
+              },
+              "no_signal": {
+                "type": "string",
+                "minLength": 1
+              },
+              "verdict": {
+                "type": "string",
+                "enum": [
+                  "ACT",
+                  "VERIFY",
+                  "SKIP"
+                ]
+              },
+              "summary_contains": {
+                "type": "string",
+                "minLength": 1
+              },
+              "evidence_contains": {
+                "type": "string",
+                "minLength": 1
+              },
+              "evidence_contains_all": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          "ground_truth": {
+            "type": "object",
+            "properties": {
+              "verdict": {
+                "type": "string",
+                "enum": [
+                  "ACT",
+                  "VERIFY",
+                  "SKIP"
+                ]
+              },
+              "disposition": {
+                "type": "string",
+                "enum": [
+                  "greenfield",
+                  "land_only",
+                  "claim_first",
+                  "blocked",
+                  "crowded",
+                  "review"
+                ]
+              },
+              "failure_mode": {
+                "type": "string",
+                "minLength": 1
+              },
+              "adjudicator_rationale": {
+                "type": "string",
+                "minLength": 1
+              },
+              "evidence_urls": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              },
+              "required_findings": {
+                "default": [],
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "forbidden_findings": {
+                "default": [],
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required_signals": {
+                "default": [],
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "forbidden_signals": {
+                "default": [],
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "required": [
+              "verdict",
+              "disposition",
+              "failure_mode",
+              "adjudicator_rationale",
+              "evidence_urls",
+              "required_findings",
+              "forbidden_findings",
+              "required_signals",
+              "forbidden_signals"
+            ],
+            "additionalProperties": false
+          },
+          "provenance": {
+            "type": "object",
+            "properties": {
+              "capture_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "capture_created_at": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+              },
+              "source_issue_urls": {
+                "default": [],
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              },
+              "notes": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "source_issue_urls"
+            ],
+            "additionalProperties": false
+          },
+          "time_sensitive": {
+            "default": false,
+            "type": "boolean"
+          },
+          "provider_fixtures": {
+            "type": "string",
+            "minLength": 1
+          },
+          "note": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema_version",
+          "case_version",
+          "id",
+          "suite",
+          "name",
+          "function",
+          "input",
+          "classification",
+          "time_sensitive"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "case_version",
+    "suite",
+    "cases"
+  ],
+  "additionalProperties": false
+}

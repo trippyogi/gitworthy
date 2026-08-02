@@ -1,7 +1,7 @@
 import { Readable } from 'node:stream';
 import { list as tarList, type ReadEntry } from 'tar';
 import { GitworthyError } from '../core/envelope.js';
-import { createHttpClient, HttpClient, HttpClientError } from './http-client.js';
+import { createHttpClient, HttpClient, HttpClientError, type HttpClientOptions, type HttpTransport, type RequestBudget } from './http-client.js';
 import { listTreeFiles, readTreeFile } from './git.js';
 
 export type NpmMetadata = {
@@ -103,11 +103,36 @@ export type TarballInspectResult = {
   bytesRead: number;
 };
 
+type NpmHttpTestOverrides = {
+  transport?: HttpTransport;
+  budget?: RequestBudget;
+  maxRetries?: number;
+  timeoutMs?: number;
+};
+
+let npmHttpOverrides: NpmHttpTestOverrides = {};
 let defaultNpmHttp: HttpClient | undefined;
 
+function createNpmHttpClient(): HttpClient {
+  const options: HttpClientOptions = {
+    userAgent: 'gitworthy',
+    transport: npmHttpOverrides.transport,
+    budget: npmHttpOverrides.budget,
+    maxRetries: npmHttpOverrides.maxRetries,
+    timeoutMs: npmHttpOverrides.timeoutMs
+  };
+  return createHttpClient(options);
+}
+
 function npmHttpClient(): HttpClient {
-  defaultNpmHttp ??= createHttpClient({ userAgent: 'gitworthy' });
+  defaultNpmHttp ??= createNpmHttpClient();
   return defaultNpmHttp;
+}
+
+/** Test/eval-only: replace npm HTTP client knobs and rebuild the singleton. */
+export function configureNpmHttpForTests(overrides: NpmHttpTestOverrides | null = null): void {
+  npmHttpOverrides = overrides ?? {};
+  defaultNpmHttp = createNpmHttpClient();
 }
 
 /**

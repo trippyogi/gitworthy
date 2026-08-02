@@ -9,6 +9,19 @@ export type RemoteHead = { name: string; sha: string };
 /** A tracked file discovered via `git ls-tree`, never a working-tree fs entry. */
 export type ClonedFile = { path: string; sha: string; symlink: boolean };
 
+/** Eval/replay hooks for network-facing git operations (GW-022). Production defaults unchanged. */
+export type GitEvalHooks = {
+  lsRemoteHeads?: (repo: string, force_refresh?: boolean) => Promise<RemoteHead[]>;
+  shallowClone?: (repo: string) => Promise<{ dir: string; cleanup: () => Promise<void>; cached: boolean }>;
+};
+
+let gitEvalHooks: GitEvalHooks = {};
+
+/** Install or clear eval/replay overrides for git remote operations. */
+export function configureGitEvalHooks(hooks: GitEvalHooks | null): void {
+  gitEvalHooks = hooks ?? {};
+}
+
 const HEADS_TTL_MS = 5 * 60 * 1000;
 const CLONE_IDLE_MS = 10 * 60 * 1000;
 
@@ -32,6 +45,7 @@ const clonePool = new Map<string, CloneLease>();
 const cloneCreating = new Map<string, Promise<CloneLease>>();
 
 export async function lsRemoteHeads(repo: string, force_refresh = false): Promise<RemoteHead[]> {
+  if (gitEvalHooks.lsRemoteHeads) return gitEvalHooks.lsRemoteHeads(repo, force_refresh);
   const cached = headsCache.get(repo);
   if (!force_refresh && cached && Date.now() - cached.fetched_at < HEADS_TTL_MS) {
     return cached.heads;
@@ -100,6 +114,7 @@ async function acquireLease(repo: string): Promise<{ lease: CloneLease; cached: 
 
 /** Bare-clone with a per-repo pool so consecutive checks on the same repo reuse one object store. */
 export async function shallowClone(repo: string): Promise<{ dir: string; cleanup: () => Promise<void>; cached: boolean }> {
+  if (gitEvalHooks.shallowClone) return gitEvalHooks.shallowClone(repo);
   const { lease, cached } = await acquireLease(repo);
   lease.refs += 1;
   if (lease.idleTimer) {

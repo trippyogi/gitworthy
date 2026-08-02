@@ -1,0 +1,152 @@
+{
+  "schema_version": "1.0-draft.1",
+  "case_version": 1,
+  "suite": "live",
+  "cases": [
+    {
+      "case_version": 1,
+      "id": "live-001",
+      "suite": "live",
+      "name": "PostHog code sleep resume branch scan",
+      "function": "branch_scan",
+      "input": { "repo": "PostHog/code", "keywords": ["sleep", "resume"], "force_refresh": true },
+      "classification": "live_only",
+      "expect": { "signal": "in_flight", "evidence_contains": "recover-sleep-interrupted-turns" },
+      "time_sensitive": true,
+      "provenance": { "notes": "Migrated from legacy eval/cases.json (GW-021). Mutable public branch state — retain as live drift check pending GW-024." }
+    },
+    {
+      "case_version": 1,
+      "id": "live-002",
+      "suite": "live",
+      "name": "PostHog code close tab branch scan",
+      "function": "branch_scan",
+      "input": { "repo": "PostHog/code", "keywords": ["close-tab"], "force_refresh": true },
+      "classification": "live_only",
+      "expect": { "no_signal": "in_flight" },
+      "note": "Branch-scan keywords must be specific enough to survive normal repo activity; broad terms like cmd and window are intentionally avoided.",
+      "time_sensitive": true,
+      "provenance": { "notes": "Migrated from legacy eval/cases.json (GW-021). Live-only: absence signal against mutable branch names." }
+    },
+    {
+      "case_version": 1,
+      "id": "live-003",
+      "suite": "live",
+      "name": "PostHog context-mill issue 49 shipped example",
+      "function": "issue_vs_main",
+      "input": { "repo": "PostHog/context-mill", "issue_number": 49 },
+      "classification": "promote_candidate",
+      "expect": { "signal": "shipped", "evidence_contains": "example-apps/fastapi" },
+      "time_sensitive": false,
+      "provenance": { "notes": "Migrated from legacy eval/cases.json (GW-021). Strong shipped-on-main candidate for frozen promotion (GW-024)." }
+    },
+    {
+      "case_version": 1,
+      "id": "live-004",
+      "suite": "live",
+      "name": "PostHog context-mill issue 24 partial overlap",
+      "function": "issue_vs_main",
+      "input": { "repo": "PostHog/context-mill", "issue_number": 24 },
+      "classification": "promote_candidate",
+      "expect": { "summary_contains": "partial overlap" },
+      "time_sensitive": false,
+      "provenance": { "notes": "Migrated from legacy eval/cases.json (GW-021). Partial-overlap VERIFY path candidate for GW-024." }
+    },
+    {
+      "case_version": 1,
+      "id": "live-005",
+      "suite": "live",
+      "name": "ElevenLabs CLI release gap add shell true",
+      "function": "release_gap",
+      "input": { "repo": "elevenlabs/cli", "npm_package": "@elevenlabs/cli", "probe": { "file_glob": "dist/**/add.js", "contains": "shell: true" }, "force_refresh": true },
+      "classification": "live_only",
+      "expect": { "signal": "released_fix", "evidence_contains": "shell: true" },
+      "time_sensitive": true,
+      "provenance": { "notes": "Migrated from legacy eval/cases.json (GW-021). npm latest drifts — live-only until captured fixture exists." }
+    },
+    {
+      "case_version": 1,
+      "id": "live-006",
+      "suite": "live",
+      "name": "ElevenLabs UI duplicate cluster",
+      "function": "dupe_cluster",
+      "input": { "repo": "elevenlabs/ui", "issue_number": 32 },
+      "classification": "promote_candidate",
+      "expect": { "signal": "duplicate", "evidence_contains": "65" },
+      "time_sensitive": false,
+      "provenance": { "notes": "Migrated from legacy eval/cases.json (GW-021). Lexical duplicate candidate for GW-024 promotion." }
+    },
+    {
+      "case_version": 1,
+      "id": "live-007",
+      "suite": "live",
+      "name": "OpenClaw contribution policy extraction",
+      "function": "contrib_policy",
+      "input": { "repo": "openclaw/openclaw", "force_refresh": true },
+      "classification": "promote_candidate",
+      "expect": { "evidence_contains_all": ["evidence_requirements", "pr_caps_or_rate_limits", "forbidden_pr_types"] },
+      "time_sensitive": false,
+      "provenance": { "notes": "Migrated from legacy eval/cases.json (GW-021). Policy extraction candidate for GW-024." }
+    },
+    {
+      "case_version": 1,
+      "id": "live-008",
+      "suite": "live",
+      "name": "PostHog code worth check issue 2886",
+      "function": "worth_check",
+      "input": { "repo": "PostHog/code", "issue_number": 2886 },
+      "classification": "live_only",
+      "expect": { "verdict": "VERIFY", "signal": "in_flight", "evidence_contains": "recover-sleep-interrupted-turns" },
+      "time_sensitive": true,
+      "provenance": { "notes": "Migrated from legacy eval/cases.json (GW-021). Depends on mutable branch evidence." }
+    },
+    {
+      "case_version": 1,
+      "id": "live-009",
+      "suite": "live",
+      "name": "MCP servers issue 4487 linked open PR",
+      "function": "worth_check",
+      "input": { "repo": "modelcontextprotocol/servers", "issue_number": 4487 },
+      "classification": "promote_candidate",
+      "expect": { "verdict": "SKIP", "signal": "linked_pr_open", "evidence_contains": "4499" },
+      "time_sensitive": true,
+      "provenance": { "notes": "Migrated from legacy eval/cases.json (GW-021). Open-PR hard SKIP — promote with capture when PR state stabilizes or freeze via replay (GW-024)." }
+    },
+    {
+      "case_version": 1,
+      "id": "live-010",
+      "suite": "live",
+      "name": "Temporal TypeScript issue 2151 assigned maintainer",
+      "function": "worth_check",
+      "input": { "repo": "temporalio/sdk-typescript", "issue_number": 2151 },
+      "classification": "live_only",
+      "expect": { "verdict": "VERIFY", "signal": "assigned", "evidence_contains": "cconstable" },
+      "time_sensitive": true,
+      "provenance": { "notes": "Migrated from legacy eval/cases.json (GW-021). Assignment state drifts." }
+    },
+    {
+      "case_version": 1,
+      "id": "live-011",
+      "suite": "live",
+      "name": "Shopify app JS issue 3110 in-thread PR reference",
+      "function": "worth_check",
+      "input": { "repo": "Shopify/shopify-app-js", "issue_number": 3110 },
+      "classification": "promote_candidate",
+      "expect": { "verdict": "VERIFY", "signal": "linked_pr_merged", "evidence_contains": "3111" },
+      "time_sensitive": true,
+      "provenance": { "notes": "Migrated from legacy eval/cases.json (GW-021). Merged linked-PR VERIFY path — promote candidate for GW-024." }
+    },
+    {
+      "case_version": 1,
+      "id": "live-012",
+      "suite": "live",
+      "name": "LiveKit agents issue 6291 linked open PR over shipped",
+      "function": "worth_check",
+      "input": { "repo": "livekit/agents", "issue_number": 6291 },
+      "classification": "promote_candidate",
+      "expect": { "verdict": "SKIP", "signal": "linked_pr_open", "evidence_contains": "6298" },
+      "time_sensitive": true,
+      "provenance": { "notes": "Migrated from legacy eval/cases.json (GW-021). Open-PR precedence over shipped — promote candidate for GW-024." }
+    }
+  ]
+}

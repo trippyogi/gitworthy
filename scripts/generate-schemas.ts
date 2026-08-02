@@ -14,6 +14,8 @@ import { BriefSchema } from '../src/contracts/brief.js';
 import { RunRecordSchema, DecisionRecordSchema, TargetIndexSchema } from '../src/contracts/store.js';
 import { CaptureManifestSchema, CasePromotionFixtureSchema } from '../src/contracts/capture.js';
 import { ConfigFileSchema, TargetManifestSchema, SkillProfileV1Schema } from '../src/contracts/config.js';
+import { EvalCaseSchema, EvalCaseCatalogSchema, EvalSuiteReportSchema } from '../src/contracts/eval.js';
+import { ProviderFixturePackSchema } from '../src/contracts/provider-fixtures.js';
 
 const outDir = join(process.cwd(), 'schemas');
 mkdirSync(outDir, { recursive: true });
@@ -36,7 +38,11 @@ const docs: Array<{ file: string; schema: z.ZodType }> = [
   { file: 'gitworthy-case-promotion-fixture.v1.schema.json', schema: CasePromotionFixtureSchema },
   { file: 'gitworthy-config.v1.schema.json', schema: ConfigFileSchema },
   { file: 'gitworthy-target-manifest.v1.schema.json', schema: TargetManifestSchema },
-  { file: 'gitworthy-skill-profile.v1.schema.json', schema: SkillProfileV1Schema }
+  { file: 'gitworthy-skill-profile.v1.schema.json', schema: SkillProfileV1Schema },
+  { file: 'gitworthy-eval-case.v1.schema.json', schema: EvalCaseSchema },
+  { file: 'gitworthy-eval-case-catalog.v1.schema.json', schema: EvalCaseCatalogSchema },
+  { file: 'gitworthy-eval-suite-report.v1.schema.json', schema: EvalSuiteReportSchema },
+  { file: 'gitworthy-provider-fixture-pack.v1.schema.json', schema: ProviderFixturePackSchema }
 ];
 
 const checkOnly = process.argv.includes('--check');
