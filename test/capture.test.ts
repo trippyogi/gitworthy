@@ -1,12 +1,12 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { CaptureManifestSchema, type CaptureManifest } from '../src/contracts/capture.js';
 import { createHttpClient, redactHeaders, redactUrl } from '../src/lib/http-client.js';
-import { scrubSecretText } from '../src/lib/redaction.js';
+import { scrubJsonSecrets, scrubSecretText } from '../src/lib/redaction.js';
 import { withCaptureSession } from '../src/lib/capture-session.js';
-import { putCaptureManifest, promoteCapture, captureBundleDir } from '../src/lib/capture-store.js';
+import { putCaptureManifest, promoteCapture, captureBundleDir, captureManifestPath } from '../src/lib/capture-store.js';
 import { captureTargetForRepoIssue } from '../src/lib/capture-policy.js';
 import { clearGithubCachesForTests, configureGithubHttpForTests } from '../src/lib/github.js';
 import { capture_show, case_promote } from '../src/core/capture-commands.js';
@@ -83,19 +83,32 @@ describe('capture redaction and manifests (GW-018)', () => {
     expect(redactHeaders({
       authorization: 'Bearer secret',
       cookie: 'sid=secret',
+      'x-access-token': 'opaque-access-token',
       'x-github-request-id': 'ABC:123',
       accept: 'application/json'
     })).toEqual({
       authorization: '[redacted]',
       cookie: '[redacted]',
+      'x-access-token': '[redacted]',
       'x-github-request-id': '[redacted]',
       accept: 'application/json'
     });
-    expect(redactUrl('https://user:pass@example.test/path?b=2&access_token=secret&request_id=abc')).toBe('https://%5Bredacted%5D:%5Bredacted%5D@example.test/path?access_token=%5Bredacted%5D&b=2&request_id=%5Bredacted%5D');
-    const scrubbed = scrubSecretText('Authorization: Bearer abcdefghijklmnopqrstuvwxyz token=secret request_id=req-1 Cookie: sid=secret');
+    expect(redactUrl('https://user:pass@example.test/path?b=2&access_token=secret&x-access-token=abc&request_id=abc')).toBe('https://%5Bredacted%5D:%5Bredacted%5D@example.test/path?access_token=%5Bredacted%5D&b=2&request_id=%5Bredacted%5D&x-access-token=%5Bredacted%5D');
+    const scrubbed = scrubSecretText('Authorization: token abcdefghijklmnopqrstuvwxyz token=secret x-access-token=opaque npm_abcdefghijklmnopqrstuvwxyz request_id=req-1 Cookie: sid=secret');
     expect(scrubbed).not.toContain('abcdefghijklmnopqrstuvwxyz');
     expect(scrubbed).not.toContain('secret');
+    expect(scrubbed).not.toContain('opaque');
+    expect(scrubbed).not.toContain('npm_');
     expect(scrubbed).not.toContain('req-1');
+    expect(scrubJsonSecrets({
+      private_key: 'pem',
+      api_key: 'api',
+      nested: { keep: 'ok' }
+    })).toEqual({
+      private_key: '[redacted]',
+      api_key: '[redacted]',
+      nested: { keep: 'ok' }
+    });
   });
 
   it('captures minimal redacted response fields through the HTTP boundary', async () => {
@@ -167,6 +180,8 @@ describe('capture redaction and manifests (GW-018)', () => {
 
   it('requires adjudication, writes deterministic promotion output, and refuses silent overwrite', async () => {
     const manifest = await putCaptureManifest(publicManifest('capture_promote'));
+    const mode = (await stat(captureManifestPath(manifest.capture_id))).mode & 0o777;
+    expect(mode).toBe(0o600);
     const outPath = path.join(dir, 'case.json');
     await expect(case_promote({
       capture_id: manifest.capture_id,
@@ -204,6 +219,61 @@ describe('capture redaction and manifests (GW-018)', () => {
     });
     expect(await readFile(outPath, 'utf8')).toBe(firstBytes);
     expect(first.fixture.source.capture_id).toBe(manifest.capture_id);
+  });
+
+  it('rejects forged private/local-only promotion eligibility', async () => {
+    const forgedPrivate = {
+      ...publicManifest('capture_forged_private'),
+      target: { ...publicManifest('capture_forged_private').target, is_private: true },
+      promotable: true
+    };
+    expect(CaptureManifestSchema.safeParse(forgedPrivate).success).toBe(false);
+    const bundle = captureBundleDir('capture_forged_private');
+    await mkdir(bundle, { recursive: true });
+    await writeFile(path.join(bundle, 'manifest.json'), `${JSON.stringify(forgedPrivate, null, 2)}\n`, 'utf8');
+    await expect(promoteCapture({
+      capture_id: 'capture_forged_private',
+      verdict: 'ACT',
+      disposition: 'greenfield',
+      adjudicator_rationale: 'reviewed',
+      evidence_urls: ['https://github.com/o/r/issues/1'],
+      out_path: path.join(dir, 'forged.json')
+    })).rejects.toMatchObject({ code: 'capture_malformed' });
+
+    const localOnly = await putCaptureManifest({
+      ...publicManifest('capture_local_only'),
+      capture_mode: 'local_only',
+      promotable: false
+    });
+    await expect(promoteCapture({
+      capture_id: localOnly.capture_id,
+      verdict: 'ACT',
+      disposition: 'greenfield',
+      adjudicator_rationale: 'reviewed',
+      evidence_urls: ['https://github.com/o/r/issues/1'],
+      out_path: path.join(dir, 'local.json')
+    })).rejects.toMatchObject({ code: 'capture_not_promotable' });
+
+    const unknownVisibility = await putCaptureManifest({
+      ...publicManifest('capture_unknown_visibility'),
+      target: { ...publicManifest('capture_unknown_visibility').target, is_private: null },
+      promotable: false
+    });
+    await expect(promoteCapture({
+      capture_id: unknownVisibility.capture_id,
+      verdict: 'ACT',
+      disposition: 'greenfield',
+      adjudicator_rationale: 'reviewed',
+      evidence_urls: ['https://github.com/o/r/issues/1'],
+      out_path: path.join(dir, 'unknown.json')
+    })).rejects.toMatchObject({ code: 'capture_not_promotable' });
+  });
+
+  it('rejects capture ids that could traverse or collide with reserved directories', async () => {
+    for (const id of ['.', '..', '../escape', 'nested/id', 'nested\\id', 'quarantine', 'bad id']) {
+      expect(() => captureBundleDir(id)).toThrow(expect.objectContaining({ code: 'invalid_capture_id' }));
+    }
+    await expect(capture_show({ capture_id: '../escape' })).rejects.toMatchObject({ code: 'invalid_capture_id' });
   });
 
   it('rejects and quarantines malformed captures', async () => {

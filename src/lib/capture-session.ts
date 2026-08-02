@@ -146,7 +146,11 @@ export async function maybeCaptureHttpExchange(input: {
 }): Promise<void> {
   const session = currentCaptureSession();
   if (!session) return;
-  await session.recordHttpExchange(input);
+  try {
+    await session.recordHttpExchange(input);
+  } catch (error) {
+    session.noteError(error);
+  }
 }
 
 function providerForUrl(url: string): CapturedExchange['provider'] {

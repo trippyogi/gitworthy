@@ -31,7 +31,7 @@ export function captureManifestPath(captureId: string): string {
 export async function putCaptureManifest(manifest: CaptureManifest): Promise<CaptureManifest> {
   const parsed = CaptureManifestSchema.parse(manifest);
   return withStoreLock(`capture:${parsed.capture_id}`, async () => {
-    await writeJsonAtomic(captureManifestPath(parsed.capture_id), parsed);
+    await writeJsonAtomic(captureManifestPath(parsed.capture_id), parsed, { mode: 0o600 });
     return parsed;
   });
 }
@@ -95,7 +95,7 @@ export async function promoteCapture(input: {
       not_checked: [`capture ${input.capture_id}`]
     });
   }
-  if (!manifest.promotable || manifest.capture_mode !== 'public') {
+  if (!isPromotableCapture(manifest)) {
     throw new GitworthyError({
       code: 'capture_not_promotable',
       message: `Capture ${input.capture_id} is local-only/private and cannot be promoted.`,
@@ -145,6 +145,10 @@ export async function promoteCapture(input: {
   return { out_path: input.out_path, fixture };
 }
 
+function isPromotableCapture(manifest: CaptureManifest): boolean {
+  return manifest.capture_mode === 'public' && manifest.target.is_private === false;
+}
+
 async function quarantineCapture(captureId: string): Promise<void> {
   const from = captureBundleDir(captureId);
   const suffix = new Date().toISOString().replace(/[^0-9TZ]/g, '');
@@ -168,5 +172,19 @@ async function exists(file: string): Promise<boolean> {
 }
 
 function safeCaptureId(captureId: string): string {
-  return captureId.replace(/[^a-zA-Z0-9._-]+/g, '_');
+  if (
+    captureId === '.'
+    || captureId === '..'
+    || captureId === 'quarantine'
+    || captureId.includes('/')
+    || captureId.includes('\\')
+    || !/^[a-zA-Z0-9._-]+$/.test(captureId)
+  ) {
+    throw new GitworthyError({
+      code: 'invalid_capture_id',
+      message: `Invalid capture id ${captureId}.`,
+      not_checked: ['capture id must be a non-reserved basename without path separators']
+    });
+  }
+  return captureId;
 }

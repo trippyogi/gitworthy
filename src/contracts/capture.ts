@@ -54,6 +54,9 @@ export const CaptureManifestSchema = z.object({
   promotable: z.boolean(),
   exchanges: z.array(CapturedExchangeSchema).default([]),
   errors: z.array(z.string()).default([])
+}).refine((manifest) => manifest.promotable === (manifest.capture_mode === 'public' && manifest.target.is_private === false), {
+  path: ['promotable'],
+  message: 'promotable must be true only for public captures with target.is_private=false'
 });
 
 export const CasePromotionFixtureSchema = z.object({
