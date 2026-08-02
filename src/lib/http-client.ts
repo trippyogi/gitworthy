@@ -1,5 +1,10 @@
 /** Shared bounded HTTP client for GitHub / npm providers (GW-011). */
 
+import { maybeCaptureHttpExchange } from './capture-session.js';
+import { redactHeaders, redactUrl } from './redaction.js';
+
+export { redactHeaders, redactUrl } from './redaction.js';
+
 export const DEFAULT_HTTP_TIMEOUT_MS = 20_000;
 export const DEFAULT_HTTP_MAX_RETRIES = 2;
 export const DEFAULT_GITHUB_API_VERSION = '2022-11-28';
@@ -7,7 +12,6 @@ export const DEFAULT_USER_AGENT = 'gitworthy';
 
 const RETRYABLE_5XX = new Set([500, 502, 503, 504]);
 const IDEMPOTENT_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
-const SENSITIVE_HEADER = /^(authorization|proxy-authorization|cookie|set-cookie|x-api-key)$/i;
 
 export type HttpTransport = (input: string | URL, init?: RequestInit) => Promise<Response>;
 
@@ -105,16 +109,6 @@ export function parseRateLimit(headers: Headers): RateLimitMeta {
   };
 }
 
-export function redactHeaders(headers: RequestInit['headers'] | undefined): Record<string, string> {
-  const out: Record<string, string> = {};
-  if (!headers) return out;
-  const normalized = headers instanceof Headers ? headers : new Headers(headers);
-  normalized.forEach((value, key) => {
-    out[key] = SENSITIVE_HEADER.test(key) ? '[redacted]' : value;
-  });
-  return out;
-}
-
 export function githubApiHeaders(token?: string, apiVersion = DEFAULT_GITHUB_API_VERSION): Record<string, string> {
   const headers: Record<string, string> = {
     accept: 'application/vnd.github+json',
@@ -194,6 +188,13 @@ export class HttpClient {
       }
 
       const rateLimit = parseRateLimit(response.headers);
+      await maybeCaptureHttpExchange({
+        url,
+        method,
+        requestHeaders: headers,
+        requestBody: options.body,
+        response
+      });
 
       if (response.ok) {
         return { response, rateLimit, attempts: attempt };
@@ -314,16 +315,4 @@ function defaultSleep(ms: number): Promise<void> {
 
 function isAbortError(error: unknown): boolean {
   return error instanceof Error && (error.name === 'AbortError' || error.name === 'TimeoutError');
-}
-
-function redactUrl(url: string): string {
-  try {
-    const parsed = new URL(url);
-    if (parsed.searchParams.has('access_token')) parsed.searchParams.set('access_token', '[redacted]');
-    if (parsed.username) parsed.username = '[redacted]';
-    if (parsed.password) parsed.password = '[redacted]';
-    return parsed.toString();
-  } catch {
-    return url.replace(/([?&](?:access_token|token)=)[^&]*/gi, '$1[redacted]');
-  }
 }

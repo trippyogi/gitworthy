@@ -128,7 +128,9 @@ export const WorthCheckInputSchema = z.object({
   issue_number: IssueNumberSchema,
   npm_package: z.string().optional(),
   probe: ProbeSchema.optional(),
-  probe_template: z.string().optional()
+  probe_template: z.string().optional(),
+  capture: z.boolean().optional(),
+  capture_local_private: z.boolean().optional()
 });
 
 export const ScanInputSchema = z.object({
@@ -168,12 +170,32 @@ export const HuntInputObjectSchema = z.object({
   skip_ledger_skip: z.boolean().optional(),
   skip_policy_gate: z.boolean().optional(),
   skill_profile: SkillProfileSchema,
-  npm_package: z.string().optional()
+  npm_package: z.string().optional(),
+  capture: z.boolean().optional(),
+  capture_local_private: z.boolean().optional()
 });
 
 /** hunt requires at least one of repo/org to be present; both may still be supplied (org wins). */
 export const HuntInputSchema = HuntInputObjectSchema.refine((value) => Boolean(value.repo) || Boolean(value.org), {
   message: 'hunt requires either repo or org.'
+});
+
+export const CaptureShowInputSchema = z.object({
+  capture_id: z.string().min(1)
+});
+
+export const CaptureListInputSchema = z.object({
+  limit: LimitSchema.optional()
+});
+
+export const CasePromoteInputSchema = z.object({
+  capture_id: z.string().min(1),
+  verdict: VerdictSchema,
+  disposition: DispositionSchema,
+  adjudicator_rationale: z.string().min(1),
+  evidence_urls: z.array(z.string().url()).min(1),
+  out_path: z.string().min(1),
+  force: z.boolean().optional()
 });
 
 export const LedgerLookupInputSchema = z.object({

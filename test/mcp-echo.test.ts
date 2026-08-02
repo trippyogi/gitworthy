@@ -14,6 +14,9 @@ describe('MCP tools', () => {
     const listed = await client.listTools();
     expect(listed.tools.map((tool) => tool.name).sort()).toEqual([
       'branch_scan',
+      'capture_list',
+      'capture_show',
+      'case_promote',
       'contrib_policy',
       'doctor',
       'dupe_cluster',

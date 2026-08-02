@@ -6,6 +6,7 @@
 - Persist check results best-effort into the store from CLI and MCP (commands for browse/export land in GW-017).
 - Add safe legacy-ledger migration with quarantine + target-index rebuild (`gitworthy ledger migrate`, `gitworthy store rebuild-indexes`) (GW-016).
 - Add store browse/record/recheck/export commands: `run` / `decision` / `outcome` / `recheck` / `store target|export` (GW-017).
+- Add opt-in public-repo capture for `check`/`hunt` plus human-reviewed `case promote` for proposed fixtures (GW-018).
 
 ## 0.4.1
 

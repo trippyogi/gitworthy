@@ -3,6 +3,9 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import {
   branch_scan,
+  capture_list,
+  capture_show,
+  case_promote,
   contrib_policy,
   doctor,
   dupe_cluster,
@@ -29,6 +32,9 @@ import {
 import { packageVersion } from '../lib/package-meta.js';
 import {
   BranchScanInputSchema,
+  CaptureListInputSchema,
+  CaptureShowInputSchema,
+  CasePromoteInputSchema,
   ContribPolicyInputSchema,
   DoctorInputSchema,
   DupeClusterInputSchema,
@@ -49,12 +55,47 @@ import {
   WorthCheckInputSchema
 } from '../contracts/index.js';
 import { persistCheckResultBestEffort } from '../lib/store.js';
+import { captureTargetForOrg, captureTargetForRepo, captureTargetForRepoIssue } from '../lib/capture-policy.js';
+import { putCaptureManifest } from '../lib/capture-store.js';
+import { withCaptureSession } from '../lib/capture-session.js';
 
 function jsonText(value: unknown, isError = false) {
   return {
     content: [{ type: 'text' as const, text: JSON.stringify(value, null, 2) }],
     ...(isError ? { isError: true as const } : {})
   };
+}
+
+function captureRequested(input: { capture?: boolean; capture_local_private?: boolean }): boolean {
+  return input.capture === true || input.capture_local_private === true;
+}
+
+function captureMode(input: { capture_local_private?: boolean }): 'public' | 'local_only' {
+  return input.capture_local_private === true ? 'local_only' : 'public';
+}
+
+function withCaptureOutput<T extends Record<string, unknown>>(output: T, manifest: { capture_id: string; capture_mode: string; promotable: boolean }): T & { capture: { capture_id: string; capture_mode: string; promotable: boolean } } {
+  return {
+    ...output,
+    capture: {
+      capture_id: manifest.capture_id,
+      capture_mode: manifest.capture_mode,
+      promotable: manifest.promotable
+    }
+  };
+}
+
+function extractHuntDecisionIds(output: Record<string, unknown>): string[] {
+  const evidence = Array.isArray(output.evidence) ? output.evidence : [];
+  const ids: string[] = [];
+  for (const item of evidence) {
+    if (!item || typeof item !== 'object') continue;
+    const worth = (item as { worth_check?: unknown }).worth_check;
+    if (!worth || typeof worth !== 'object') continue;
+    const id = (worth as { decision_id?: unknown }).decision_id;
+    if (typeof id === 'string' && !ids.includes(id)) ids.push(id);
+  }
+  return ids;
 }
 
 async function withToolErrors<T>(command: string, run: () => Promise<T> | T, map?: (value: T) => unknown) {
@@ -103,21 +144,31 @@ export function createMcpServer(): McpServer {
     withToolErrors('linked_work', () => linked_work(parseToolInput(LinkedWorkInputSchema, input)), stamp('linked_work')));
   server.registerTool('contrib_policy', { title: 'Contribution policy', inputSchema: { repo: z.string(), force_refresh: z.boolean().optional() } }, async (input) =>
     withToolErrors('contrib_policy', () => contrib_policy(parseToolInput(ContribPolicyInputSchema, input)), stamp('contrib_policy')));
-  server.registerTool('worth_check', { title: 'Worth check', inputSchema: { repo: z.string(), issue_number: z.number(), npm_package: z.string().optional(), probe: z.object(probeShape).optional(), probe_template: z.string().optional() } }, async (input) => {
-    let parsed: ReturnType<typeof WorthCheckInputSchema.parse> | undefined;
-    return withToolErrors(
-      'check',
-      () => {
-        parsed = parseToolInput(WorthCheckInputSchema, input);
-        return worth_check(parsed);
-      },
-      (value) => {
-        const check = toCheckResult(value as Record<string, unknown>, { repo: parsed!.repo, issue_number: parsed!.issue_number });
-        void persistCheckResultBestEffort(check);
+  server.registerTool('worth_check', { title: 'Worth check', inputSchema: { repo: z.string(), issue_number: z.number(), npm_package: z.string().optional(), probe: z.object(probeShape).optional(), probe_template: z.string().optional(), capture: z.boolean().optional(), capture_local_private: z.boolean().optional() } }, async (input) =>
+    withToolErrors('check', async () => {
+      const parsed = parseToolInput(WorthCheckInputSchema, input);
+      const runCheck = async () => {
+        const legacy = await worth_check(parsed);
+        const check = toCheckResult(legacy as Record<string, unknown>, { repo: parsed.repo, issue_number: parsed.issue_number });
+        await persistCheckResultBestEffort(check);
         return check;
-      }
-    );
-  });
+      };
+      if (!captureRequested(parsed)) return runCheck();
+      const mode = captureMode(parsed);
+      const target = await captureTargetForRepoIssue({ repo: parsed.repo, issue_number: parsed.issue_number, capture_mode: mode });
+      const captured = await withCaptureSession({
+        command: 'check',
+        capture_mode: mode,
+        target,
+        source: { surface: 'mcp', attribution: 'worth_check capture' }
+      }, async (session) => {
+        const check = await runCheck();
+        session.linkRun({ run_id: check.run_id, decision_id: check.decision_id });
+        return check;
+      });
+      const manifest = await putCaptureManifest(captured.manifest);
+      return withCaptureOutput(captured.value, manifest);
+    }));
   server.registerTool('scan', { title: 'Scan issues', inputSchema: { repo: z.string(), label: z.string().optional(), keywords: z.array(z.string()).optional(), since: z.string().optional(), limit: z.number().optional(), land_hints: z.boolean().optional(), skill_profile: skillProfileSchema } }, async (input) =>
     withToolErrors('scan', () => scan(parseToolInput(ScanInputSchema, input)), stamp('scan')));
   server.registerTool('org_scan', { title: 'Org scan', inputSchema: { org: z.string(), label: z.string().optional(), keywords: z.array(z.string()).optional(), since: z.string().optional(), limit: z.number().optional(), max_repos: z.number().optional(), land_hints: z.boolean().optional(), skill_profile: skillProfileSchema } }, async (input) =>
@@ -140,9 +191,33 @@ export function createMcpServer(): McpServer {
       skip_ledger_skip: z.boolean().optional(),
       skip_policy_gate: z.boolean().optional(),
       skill_profile: skillProfileSchema,
-      npm_package: z.string().optional()
+      npm_package: z.string().optional(),
+      capture: z.boolean().optional(),
+      capture_local_private: z.boolean().optional()
     }
-  }, async (input) => withToolErrors('hunt', () => hunt(parseToolInput(HuntInputSchema, input)), stamp('hunt')));
+  }, async (input) => withToolErrors('hunt', async () => {
+    const parsed = parseToolInput(HuntInputSchema, input);
+    if (!captureRequested(parsed)) return stamp('hunt')(await hunt(parsed));
+    const mode = captureMode(parsed);
+    const target = parsed.repo
+      ? await captureTargetForRepo({ repo: parsed.repo, capture_mode: mode })
+      : captureTargetForOrg(parsed.org!);
+    const captured = await withCaptureSession({
+      command: 'hunt',
+      capture_mode: mode,
+      target,
+      source: { surface: 'mcp', attribution: 'hunt capture' }
+    }, async (session) => {
+      const stamped = stamp('hunt')(await hunt({ ...parsed, capture_persist_checks: true })) as Record<string, unknown>;
+      session.linkRun({
+        run_id: typeof stamped.run_id === 'string' ? stamped.run_id : undefined,
+        decision_ids: extractHuntDecisionIds(stamped)
+      });
+      return stamped;
+    });
+    const manifest = await putCaptureManifest(captured.manifest);
+    return withCaptureOutput(captured.value, manifest);
+  }));
   server.registerTool('list_probe_templates', { title: 'List probe templates', inputSchema: {} }, async () => withToolErrors('probes', async () => ({
     verdict_summary: `listed ${listProbeTemplates().length} probe templates.`,
     evidence: listProbeTemplates(),
@@ -172,6 +247,12 @@ export function createMcpServer(): McpServer {
     withToolErrors('store_recheck', () => store_recheck(input), stamp('store_recheck')));
   server.registerTool('store_export', { title: 'Export store slice', inputSchema: { out_dir: z.string(), repo: z.string().optional(), issue_number: z.number().optional() } }, async (input) =>
     withToolErrors('store_export', () => store_export(input), stamp('store_export')));
+  server.registerTool('capture_show', { title: 'Show capture', inputSchema: { capture_id: z.string() } }, async (input) =>
+    withToolErrors('capture_show', () => capture_show(parseToolInput(CaptureShowInputSchema, input)), stamp('capture_show')));
+  server.registerTool('capture_list', { title: 'List captures', inputSchema: { limit: z.number().optional() } }, async (input) =>
+    withToolErrors('capture_list', () => capture_list(parseToolInput(CaptureListInputSchema, input)), stamp('capture_list')));
+  server.registerTool('case_promote', { title: 'Promote capture to proposed case fixture', inputSchema: { capture_id: z.string(), verdict: z.string(), disposition: z.string(), adjudicator_rationale: z.string(), evidence_urls: z.array(z.string()), out_path: z.string(), force: z.boolean().optional() } }, async (input) =>
+    withToolErrors('case_promote', () => case_promote(parseToolInput(CasePromoteInputSchema, input)), stamp('case_promote')));
   return server;
 }
 

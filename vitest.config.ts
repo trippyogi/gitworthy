@@ -10,10 +10,12 @@ export default defineConfig({
     // slower filesystems/CI runners. This only widens the allowance for slow
     // environments — it does not mask genuine hangs (timeouts inside
     // gitworthy's own git/http/tar code paths remain far smaller than this).
-    testTimeout: 20_000,
+    testTimeout: 40_000,
+    hookTimeout: 40_000,
     // Capping concurrent test-file worker processes avoids exhausting OS
     // process/handle limits when many files each spawn real `git` subprocesses
-    // in parallel (observed as intermittent "spawn UNKNOWN" fork failures).
-    maxWorkers: 4
+    // in parallel (observed as intermittent "spawn UNKNOWN" fork failures and
+    // hook timeouts on constrained cloud runners).
+    maxWorkers: 1
   }
 });

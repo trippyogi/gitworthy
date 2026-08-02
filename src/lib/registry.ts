@@ -13,7 +13,16 @@ export type NpmMetadata = {
 
 export async function npmMetadata(packageName: string): Promise<NpmMetadata> {
   const url = `https://registry.npmjs.org/${encodeURIComponent(packageName).replace('%40', '@')}`;
-  const response = await fetch(url, { headers: { 'user-agent': 'gitworthy' } });
+  let response: Response;
+  try {
+    const result = await npmHttpClient().request(url, { github: false, headers: { 'user-agent': 'gitworthy' } });
+    response = result.response;
+  } catch (error) {
+    if (error instanceof HttpClientError && error.code === 'http_timeout') {
+      throw new GitworthyError({ code: 'npm_metadata_timeout', message: error.message, not_checked: [`npm metadata was not checked for ${packageName}.`] });
+    }
+    throw error;
+  }
   if (!response.ok) {
     throw new GitworthyError({ code: 'npm_metadata_error', message: `npm metadata request failed with status ${response.status}.`, status: response.status, not_checked: [`npm metadata was not checked for ${packageName}.`] });
   }

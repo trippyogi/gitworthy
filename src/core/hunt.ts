@@ -5,6 +5,8 @@ import { org_scan } from './org-scan.js';
 import { scan } from './scan.js';
 import { SkillProfile } from './skill-fit.js';
 import { worth_check } from './worth-check.js';
+import { toCheckResult } from '../contracts/serialize.js';
+import { persistCheckResultBestEffort } from '../lib/store.js';
 
 type Input = {
   repo?: string;
@@ -23,6 +25,7 @@ type Input = {
   skip_policy_gate?: boolean;
   npm_package?: string;
   skill_profile?: SkillProfile | string;
+  capture_persist_checks?: boolean;
 };
 
 type PolicyGate = { blocked: boolean; claimRequired: boolean; feedbackChannel?: string };
@@ -215,6 +218,12 @@ export async function hunt(input: Input): Promise<Envelope> {
       }
     }
     const result = await worth_check({ repo, issue_number: candidate.number, npm_package: input.npm_package });
+    const capturedCheck = input.capture_persist_checks === true
+      ? toCheckResult(result as unknown as Record<string, unknown>, { repo, issue_number: candidate.number })
+      : undefined;
+    if (capturedCheck) {
+      await persistCheckResultBestEffort(capturedCheck);
+    }
     checksRun += 1;
     dispositionCounts.set(result.disposition, (dispositionCounts.get(result.disposition) ?? 0) + 1);
     evidence.push({
@@ -227,7 +236,8 @@ export async function hunt(input: Input): Promise<Envelope> {
       worth_check: {
         verdict: result.verdict,
         disposition: result.disposition,
-        reasons: result.reasons
+        reasons: result.reasons,
+        ...(capturedCheck ? { run_id: capturedCheck.run_id, decision_id: capturedCheck.decision_id } : {})
       }
     });
     checked.push(`worth_check ${repo}#${candidate.number} -> ${result.verdict}/${result.disposition} (checked: ${result.checked.join(', ') || 'none'})`);
