@@ -57,6 +57,16 @@ describe('scoreSkillFit', () => {
     expect(result.score).toBeCloseTo(0.7, 5);
   });
 
+  it('treats preferred ecosystems as ranking-only topic inputs', () => {
+    const result = scoreSkillFit({
+      profile: { preferred_ecosystems: ['node'] },
+      issue: { title: 'Improve package scripts', body: null },
+      repoHints: { topics: ['node'] }
+    });
+    expect(result.matched).toContain('node');
+    expect(result.score).toBeCloseTo(0.6, 5);
+  });
+
   it('subtracts 0.25 per avoid hit', () => {
     const result = scoreSkillFit({
       profile: { avoid: ['swift', 'ios'] },
@@ -64,6 +74,15 @@ describe('scoreSkillFit', () => {
     });
     expect(result.avoided).toEqual(expect.arrayContaining(['swift', 'ios']));
     expect(result.score).toBeCloseTo(0, 5);
+  });
+
+  it('combines expanded avoid lists with legacy avoid terms', () => {
+    const result = scoreSkillFit({
+      profile: { avoid_languages: ['swift'], avoid_topics: ['mobile'] },
+      issue: { title: 'Fix Swift mobile crash', body: null }
+    });
+    expect(result.avoided).toEqual(expect.arrayContaining(['swift', 'mobile']));
+    expect(result.score).toBe(0);
   });
 
   it('floors the score at 0 when avoid penalties exceed the base score', () => {

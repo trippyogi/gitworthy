@@ -192,6 +192,9 @@ function categorize(code: string, status?: number): ErrorDetail['category'] {
   }
   if (
     normalized.includes('invalid')
+    || normalized.startsWith('config_')
+    || normalized.startsWith('manifest_')
+    || normalized.startsWith('hunt_ambiguous')
     || normalized.includes('parse')
     || normalized.includes('input')
     || normalized.includes('requires')

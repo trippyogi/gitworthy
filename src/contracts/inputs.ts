@@ -65,8 +65,12 @@ export const SkillProfileSchema = z.union([
   z.object({
     languages: z.array(z.string()).optional(),
     topics: z.array(z.string()).optional(),
-    avoid: z.array(z.string()).optional()
-  })
+    preferred_ecosystems: z.array(z.string()).optional(),
+    avoid: z.array(z.string()).optional(),
+    avoid_languages: z.array(z.string()).optional(),
+    avoid_topics: z.array(z.string()).optional(),
+    avoid_ecosystems: z.array(z.string()).optional()
+  }).strict()
 ]).optional();
 
 const KeywordsSchema = z.array(z.string()).optional();
@@ -140,18 +144,20 @@ export const ScanInputSchema = z.object({
   since: z.string().optional(),
   limit: LimitSchema.optional(),
   land_hints: z.boolean().optional(),
-  skill_profile: SkillProfileSchema
+  skill_profile: SkillProfileSchema,
+  manifest_path: z.string().optional()
 });
 
 export const OrgScanInputSchema = z.object({
-  org: OrgOrUserLoginSchema,
+  org: OrgOrUserLoginSchema.optional(),
   label: z.string().optional(),
   keywords: KeywordsSchema,
   since: z.string().optional(),
   limit: LimitSchema.optional(),
   max_repos: LimitSchema.optional(),
   land_hints: z.boolean().optional(),
-  skill_profile: SkillProfileSchema
+  skill_profile: SkillProfileSchema,
+  manifest_path: z.string().optional()
 });
 
 export const HuntInputObjectSchema = z.object({
@@ -172,13 +178,12 @@ export const HuntInputObjectSchema = z.object({
   skill_profile: SkillProfileSchema,
   npm_package: z.string().optional(),
   capture: z.boolean().optional(),
-  capture_local_private: z.boolean().optional()
+  capture_local_private: z.boolean().optional(),
+  manifest_path: z.string().optional()
 });
 
-/** hunt requires at least one of repo/org to be present; both may still be supplied (org wins). */
-export const HuntInputSchema = HuntInputObjectSchema.refine((value) => Boolean(value.repo) || Boolean(value.org), {
-  message: 'hunt requires either repo or org.'
-});
+/** hunt target resolution happens after config loading so config-only MCP calls can work. */
+export const HuntInputSchema = HuntInputObjectSchema;
 
 export const CaptureShowInputSchema = z.object({
   capture_id: z.string().min(1)
@@ -197,6 +202,24 @@ export const CasePromoteInputSchema = z.object({
   out_path: z.string().min(1),
   force: z.boolean().optional()
 });
+
+export const ConfigValidateInputSchema = z.object({
+  path: z.string().optional(),
+  user: z.boolean().optional(),
+  repo: z.boolean().optional(),
+  manifest_path: z.string().optional()
+}).strict();
+
+export const ConfigShowInputSchema = z.object({
+  effective: z.boolean().optional(),
+  path: z.string().optional(),
+  cwd: z.string().optional()
+}).strict();
+
+export const ProfileShowInputSchema = z.object({
+  path: z.string().optional(),
+  cwd: z.string().optional()
+}).strict();
 
 export const LedgerLookupInputSchema = z.object({
   repo: RepoRefSchema,

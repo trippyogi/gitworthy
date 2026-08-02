@@ -1,7 +1,11 @@
 export type SkillProfile = {
   languages?: string[];
   topics?: string[];
+  preferred_ecosystems?: string[];
   avoid?: string[];
+  avoid_languages?: string[];
+  avoid_topics?: string[];
+  avoid_ecosystems?: string[];
 };
 
 export type SkillFitInput = {
@@ -64,8 +68,13 @@ export function scoreSkillFit(input: SkillFitInput): SkillFitResult {
   const repoDescription = (repoHints?.description ?? '').toLowerCase();
 
   const languages = normalizeTerms(profile.languages);
-  const topics = normalizeTerms(profile.topics);
-  const avoid = normalizeTerms(profile.avoid);
+  const topics = normalizeTerms([...(profile.topics ?? []), ...(profile.preferred_ecosystems ?? [])]);
+  const avoid = normalizeTerms([
+    ...(profile.avoid ?? []),
+    ...(profile.avoid_languages ?? []),
+    ...(profile.avoid_topics ?? []),
+    ...(profile.avoid_ecosystems ?? [])
+  ]);
 
   const reasons: string[] = [];
   const matched: string[] = [];
@@ -115,18 +124,26 @@ function normalizeParsedProfile(parsed: Record<string, unknown>): SkillProfile |
   const profile: SkillProfile = {};
   const languages = toStringArray(parsed.languages ?? parsed.language);
   const topics = toStringArray(parsed.topics ?? parsed.topic);
+  const preferredEcosystems = toStringArray(parsed.preferred_ecosystems ?? parsed.ecosystems ?? parsed.ecosystem);
   const avoid = toStringArray(parsed.avoid);
+  const avoidLanguages = toStringArray(parsed.avoid_languages);
+  const avoidTopics = toStringArray(parsed.avoid_topics);
+  const avoidEcosystems = toStringArray(parsed.avoid_ecosystems);
   if (languages) profile.languages = languages;
   if (topics) profile.topics = topics;
+  if (preferredEcosystems) profile.preferred_ecosystems = preferredEcosystems;
   if (avoid) profile.avoid = avoid;
-  if (!profile.languages && !profile.topics && !profile.avoid) return null;
+  if (avoidLanguages) profile.avoid_languages = avoidLanguages;
+  if (avoidTopics) profile.avoid_topics = avoidTopics;
+  if (avoidEcosystems) profile.avoid_ecosystems = avoidEcosystems;
+  if (!profile.languages && !profile.topics && !profile.preferred_ecosystems && !profile.avoid && !profile.avoid_languages && !profile.avoid_topics && !profile.avoid_ecosystems) return null;
   return profile;
 }
 
 /**
  * Parses a skill profile from either a JSON object string or a compact
  * `key=value;key=value` string with comma-separated lists, e.g.
- * `languages=ts,go;topics=mcp,cli;avoid=swift`.
+ * `languages=ts,go;topics=mcp,cli;preferred_ecosystems=node;avoid=swift`.
  */
 export function parseSkillProfile(raw: string | undefined): SkillProfile | null {
   if (!raw) return null;
@@ -155,9 +172,13 @@ export function parseSkillProfile(raw: string | undefined): SkillProfile | null 
     if (list.length === 0) continue;
     if (key === 'languages' || key === 'language') profile.languages = list;
     else if (key === 'topics' || key === 'topic') profile.topics = list;
+    else if (key === 'preferred_ecosystems' || key === 'ecosystems' || key === 'ecosystem') profile.preferred_ecosystems = list;
     else if (key === 'avoid') profile.avoid = list;
+    else if (key === 'avoid_languages') profile.avoid_languages = list;
+    else if (key === 'avoid_topics') profile.avoid_topics = list;
+    else if (key === 'avoid_ecosystems') profile.avoid_ecosystems = list;
   }
-  if (!profile.languages && !profile.topics && !profile.avoid) return null;
+  if (!profile.languages && !profile.topics && !profile.preferred_ecosystems && !profile.avoid && !profile.avoid_languages && !profile.avoid_topics && !profile.avoid_ecosystems) return null;
   return profile;
 }
 
@@ -165,6 +186,6 @@ export function parseSkillProfile(raw: string | undefined): SkillProfile | null 
 export function resolveSkillProfile(input: SkillProfile | string | undefined): SkillProfile | null {
   if (!input) return null;
   if (typeof input === 'string') return parseSkillProfile(input);
-  if (!input.languages?.length && !input.topics?.length && !input.avoid?.length) return null;
+  if (!input.languages?.length && !input.topics?.length && !input.preferred_ecosystems?.length && !input.avoid?.length && !input.avoid_languages?.length && !input.avoid_topics?.length && !input.avoid_ecosystems?.length) return null;
   return input;
 }

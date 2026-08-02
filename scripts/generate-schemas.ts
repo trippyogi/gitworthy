@@ -12,6 +12,7 @@ import { LedgerResultSchema } from '../src/contracts/ledger.js';
 import { OutcomeEventSchema } from '../src/contracts/outcomes.js';
 import { RunRecordSchema, DecisionRecordSchema, TargetIndexSchema } from '../src/contracts/store.js';
 import { CaptureManifestSchema, CasePromotionFixtureSchema } from '../src/contracts/capture.js';
+import { ConfigFileSchema, TargetManifestSchema, SkillProfileV1Schema } from '../src/contracts/config.js';
 
 const outDir = join(process.cwd(), 'schemas');
 mkdirSync(outDir, { recursive: true });
@@ -30,7 +31,10 @@ const docs: Array<{ file: string; schema: z.ZodType }> = [
   { file: 'gitworthy-decision-record.v1.schema.json', schema: DecisionRecordSchema },
   { file: 'gitworthy-target-index.v1.schema.json', schema: TargetIndexSchema },
   { file: 'gitworthy-capture-manifest.v1.schema.json', schema: CaptureManifestSchema },
-  { file: 'gitworthy-case-promotion-fixture.v1.schema.json', schema: CasePromotionFixtureSchema }
+  { file: 'gitworthy-case-promotion-fixture.v1.schema.json', schema: CasePromotionFixtureSchema },
+  { file: 'gitworthy-config.v1.schema.json', schema: ConfigFileSchema },
+  { file: 'gitworthy-target-manifest.v1.schema.json', schema: TargetManifestSchema },
+  { file: 'gitworthy-skill-profile.v1.schema.json', schema: SkillProfileV1Schema }
 ];
 
 const checkOnly = process.argv.includes('--check');

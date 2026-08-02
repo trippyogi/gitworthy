@@ -38,6 +38,17 @@ import {
 import { GitworthyError } from '../core/envelope.js';
 import { packageVersion } from '../lib/package-meta.js';
 import {
+  assertEffectiveConfigSafeToShow,
+  loadEffectiveConfig,
+  profileForShow,
+  resolveHuntFromConfig,
+  resolveOrgFromConfig,
+  resolveScanFromConfig,
+  validateConfigSelection,
+  writeConfigSkeleton
+} from '../lib/config.js';
+import {
+  ConfigValidateInputSchema,
   DispositionSchema,
   IssueNumberStringSchema,
   OrgOrUserLoginSchema,
@@ -45,6 +56,7 @@ import {
   VerdictSchema,
   parseArg,
   parseIssueRef,
+  parseToolInput,
   toCheckResult,
   toErrorResult,
   toStampedLegacyResult
@@ -61,8 +73,12 @@ Usage:
   gitworthy --help
   gitworthy --version
   gitworthy doctor [--json]
+  gitworthy init [--user] [--repo] [--overwrite] [--json]
+  gitworthy config validate [--path path] [--manifest path] [--user] [--repo] [--json]
+  gitworthy config show --effective [--path path] [--json]
+  gitworthy profile show [--path path] [--json]
   gitworthy check owner/repo#123 [--npm-package name] [--probe-glob glob] [--probe-contains text] [--probe-template id] [--capture] [--capture-local-private] [--json]
-  gitworthy hunt owner/repo|org [--max-checks 3] [--label ...] [--keywords ...] [--since 90d] [--limit 25] [--max-repos 8] [--skill-profile ...] [--skip-policy-gate] [--no-land-hints] [--capture] [--capture-local-private] [--json]
+  gitworthy hunt owner/repo|org [--manifest path] [--max-checks 3] [--label ...] [--keywords ...] [--since 90d] [--limit 25] [--max-repos 8] [--skill-profile ...] [--skip-policy-gate] [--no-land-hints] [--capture] [--capture-local-private] [--json]
   gitworthy branches owner/repo keyword[,keyword] [--json] [--force-refresh]
   gitworthy issue owner/repo 123 [--json]
   gitworthy release owner/repo package-name [--probe-glob glob] [--probe-contains text] [--probe-template id] [--json]
@@ -71,7 +87,7 @@ Usage:
   gitworthy linked owner/repo 123 [--json]
   gitworthy policy owner/repo [--json]
   gitworthy scan owner/repo [--label "good first issue"] [--keywords term,term] [--since 90d] [--limit 25] [--skill-profile ...] [--no-land-hints] [--json]
-  gitworthy org org-or-user [--label ...] [--keywords ...] [--since 90d] [--limit 25] [--max-repos 8] [--skill-profile ...] [--no-land-hints] [--json]
+  gitworthy org org-or-user [--manifest path] [--label ...] [--keywords ...] [--since 90d] [--limit 25] [--max-repos 8] [--skill-profile ...] [--no-land-hints] [--json]
   gitworthy probes [--json]
   gitworthy ledger list [--repo owner/repo] [--limit 50] [--json]
   gitworthy ledger show owner/repo#123 [--json]
@@ -198,8 +214,13 @@ function scanFilters(values: Record<string, unknown>) {
     since: stringValue(values.since),
     limit: stringValue(values.limit) ? Number(stringValue(values.limit)) : undefined,
     land_hints: values['no-land-hints'] === true ? false : undefined,
-    skill_profile: stringValue(values['skill-profile'])
+    skill_profile: stringValue(values['skill-profile']),
+    manifest_path: stringValue(values.manifest)
   };
+}
+
+function compact<T extends Record<string, unknown>>(value: T): T {
+  return Object.fromEntries(Object.entries(value).filter(([, entry]) => entry !== undefined)) as T;
 }
 
 const CLI_OPTIONS = {
@@ -211,6 +232,11 @@ const CLI_OPTIONS = {
   'probe-contains': { type: 'string' },
   'probe-template': { type: 'string' },
   'skill-profile': { type: 'string' },
+  manifest: { type: 'string' },
+  path: { type: 'string' },
+  effective: { type: 'boolean' },
+  user: { type: 'boolean' },
+  overwrite: { type: 'boolean' },
   'skip-policy-gate': { type: 'boolean' },
   'force-refresh': { type: 'boolean' },
   label: { type: 'string' },
@@ -249,6 +275,113 @@ function parseCliArgs(argv: string[]) {
 
 export async function runCli(argv = process.argv.slice(2), stdout: Write = (text) => process.stdout.write(text), stderr: Write = (text) => process.stderr.write(text)): Promise<number> {
   const asJsonEarly = argv.includes('--json');
+  if (argv[0] === 'init') {
+    try {
+      const parsedInit = parseArgs({
+        args: argv.slice(1),
+        allowPositionals: true,
+        strict: true,
+        options: { json: { type: 'boolean' }, user: { type: 'boolean' }, repo: { type: 'boolean' }, overwrite: { type: 'boolean' } }
+      });
+      if (parsedInit.positionals.length > 0) usageError('init does not accept positional arguments.');
+      const targets: Array<'user' | 'repo'> = [];
+      if (parsedInit.values.user === true) targets.push('user');
+      if (parsedInit.values.repo === true || targets.length === 0) targets.push('repo');
+      const files = [];
+      for (const target of targets) files.push({ target, ...await writeConfigSkeleton(target, parsedInit.values.overwrite === true) });
+      print({
+        command: 'init',
+        verdict_summary: `initialized ${files.filter((file) => file.created).length} config file(s)`,
+        files,
+        checked: ['wrote secret-free config skeleton(s)'],
+        not_checked: ['tokens are never persisted; set GITHUB_TOKEN or GH_TOKEN in the environment when needed.']
+      }, parsedInit.values.json === true, stdout);
+      return 0;
+    } catch (error) {
+      const structured = toErrorResult({ command: 'init', error: toCliError(error) });
+      if (asJsonEarly) stdout(`${JSON.stringify(structured, null, 2)}\n`);
+      else stderr(`${structured.error.message}\n`);
+      return structured.error.category === 'input' ? 2 : 1;
+    }
+  }
+  if (argv[0] === 'config') {
+    try {
+      const parsedConfig = parseArgs({
+        args: argv.slice(1),
+        allowPositionals: true,
+        strict: true,
+        options: { json: { type: 'boolean' }, path: { type: 'string' }, manifest: { type: 'string' }, user: { type: 'boolean' }, repo: { type: 'boolean' }, effective: { type: 'boolean' } }
+      });
+      const [action] = parsedConfig.positionals;
+      let output: unknown;
+      if (action === 'validate') {
+        output = {
+          command: 'config_validate',
+          verdict_summary: 'config validation complete',
+          ...await validateConfigSelection(parseToolInput(ConfigValidateInputSchema, {
+            path: stringValue(parsedConfig.values.path),
+            user: parsedConfig.values.user === true ? true : undefined,
+            repo: parsedConfig.values.repo === true ? true : undefined,
+            manifest_path: stringValue(parsedConfig.values.manifest)
+          })),
+          checked: ['validated selected config file(s) and target manifest(s)'],
+          not_checked: ['tokens are not read from config; use GITHUB_TOKEN or GH_TOKEN environment variables.']
+        };
+      } else if (action === 'show') {
+        if (parsedConfig.values.effective !== true) usageError('config show currently requires --effective.');
+        const effective = await loadEffectiveConfig({ userPath: stringValue(parsedConfig.values.path) });
+        assertEffectiveConfigSafeToShow(effective);
+        output = {
+          command: 'config_show',
+          verdict_summary: 'resolved effective config',
+          effective: true,
+          values: effective.values,
+          provenance: effective.provenance,
+          paths: effective.paths,
+          loaded: effective.loaded,
+          checked: ['resolved config precedence: input > env > repo > user > defaults'],
+          not_checked: ['secret values are not shown; GitHub tokens remain env-only via GITHUB_TOKEN or GH_TOKEN.']
+        };
+      } else {
+        usageError('config requires validate or show.');
+      }
+      print(output, parsedConfig.values.json === true, stdout);
+      return 0;
+    } catch (error) {
+      const structured = toErrorResult({ command: 'config', error: toCliError(error) });
+      if (asJsonEarly) stdout(`${JSON.stringify(structured, null, 2)}\n`);
+      else stderr(`${structured.error.message}\n`);
+      return structured.error.category === 'input' ? 2 : 1;
+    }
+  }
+  if (argv[0] === 'profile') {
+    try {
+      const parsedProfile = parseArgs({
+        args: argv.slice(1),
+        allowPositionals: true,
+        strict: true,
+        options: { json: { type: 'boolean' }, path: { type: 'string' } }
+      });
+      if (parsedProfile.positionals[0] !== 'show') usageError('profile requires show.');
+      const effective = await loadEffectiveConfig({ userPath: stringValue(parsedProfile.values.path) });
+      assertEffectiveConfigSafeToShow(effective);
+      const profile = profileForShow(effective);
+      print({
+        command: 'profile_show',
+        verdict_summary: profile ? 'resolved skill profile' : 'no skill profile configured',
+        profile,
+        provenance: profile ? effective.provenance.skill_profile ?? null : null,
+        checked: ['resolved skill profile from config precedence'],
+        not_checked: ['skill profile affects scan/hunt ranking inputs only; it never changes hard verdict policy.']
+      }, parsedProfile.values.json === true, stdout);
+      return 0;
+    } catch (error) {
+      const structured = toErrorResult({ command: 'profile_show', error: toCliError(error) });
+      if (asJsonEarly) stdout(`${JSON.stringify(structured, null, 2)}\n`);
+      else stderr(`${structured.error.message}\n`);
+      return structured.error.category === 'input' ? 2 : 1;
+    }
+  }
   if (argv[0] === 'branches' && argv[2]?.startsWith('-')) {
     try {
       const repo = repoArg(argv[1], 'branches requires owner/repo and keywords.');
@@ -380,7 +513,7 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
       output = toStampedLegacyResult('contrib_policy', await contrib_policy({ repo, force_refresh: parsed.values['force-refresh'] === true }) as Record<string, unknown>);
     } else if (command === 'hunt') {
       commandName = 'hunt';
-      const huntTarget = required(first, 'hunt requires owner/repo or an org/user login.');
+      const huntTarget = first;
       const maxChecksRaw = stringValue(parsed.values['max-checks']);
       const maxChecks = maxChecksRaw ? Number(maxChecksRaw) : undefined;
       if (maxChecksRaw && (!Number.isFinite(maxChecks) || (maxChecks as number) < 1)) {
@@ -393,31 +526,34 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
       }
       const filters = scanFilters(parsed.values);
       // --org forces org mode; otherwise slash ⇒ repo, no slash ⇒ org/user.
-      if (parsed.values.org === true && huntTarget.includes('/')) {
+      if (parsed.values.org === true && huntTarget?.includes('/')) {
         usageError('hunt --org expects an org or user login, not owner/repo. Omit --org for a single repo.');
       }
-      const asOrg = parsed.values.org === true || !huntTarget.includes('/');
-      const target = asOrg
+      const asOrg = huntTarget ? parsed.values.org === true || !huntTarget.includes('/') : false;
+      const target = huntTarget ? (asOrg
         ? { org: orgArg(huntTarget, 'hunt requires owner/repo or an org/user login.') }
-        : { repo: repoArg(huntTarget, 'hunt requires owner/repo or an org/user login.') };
-      const huntInput = {
+        : { repo: repoArg(huntTarget, 'hunt requires owner/repo or an org/user login.') }) : {};
+      const rawInput = compact({
         ...target,
         label: filters.label,
         keywords: filters.keywords,
         since: filters.since,
-        scan_limit: filters.limit,
+        limit: filters.limit,
         land_hints: filters.land_hints,
         skill_profile: filters.skill_profile,
         max_checks: maxChecks,
         max_repos: maxRepos,
-        skip_policy_gate: parsed.values['skip-policy-gate'] === true,
-        npm_package: stringValue(parsed.values['npm-package'])
-      };
+        skip_policy_gate: parsed.values['skip-policy-gate'] === true ? true : undefined,
+        npm_package: stringValue(parsed.values['npm-package']),
+        manifest_path: filters.manifest_path
+      });
+      const effective = await loadEffectiveConfig({ input: rawInput });
+      const huntInput = resolveHuntFromConfig(rawInput, effective);
       if (captureRequested(parsed.values)) {
         const mode = captureMode(parsed.values);
-        const captureTarget = typeof target.repo === 'string'
-          ? await captureTargetForRepo({ repo: target.repo, capture_mode: mode })
-          : captureTargetForOrg(target.org as string);
+        const captureTarget = huntInput.repo
+          ? await captureTargetForRepo({ repo: huntInput.repo, capture_mode: mode })
+          : captureTargetForOrg(huntInput.org!);
         const captured = await withCaptureSession({
           command: 'hunt',
           capture_mode: mode,
@@ -437,16 +573,20 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
     } else if (command === 'scan') {
       commandName = 'scan';
       const repo = repoArg(first, 'scan requires owner/repo.');
-      output = toStampedLegacyResult('scan', await scan({ repo, ...scanFilters(parsed.values) }) as Record<string, unknown>);
+      const rawInput = compact({ repo, ...scanFilters(parsed.values) });
+      const effective = await loadEffectiveConfig({ input: rawInput });
+      output = toStampedLegacyResult('scan', await scan(resolveScanFromConfig(rawInput, effective)) as Record<string, unknown>);
     } else if (command === 'org') {
       commandName = 'org_scan';
-      const org = orgArg(first, 'org requires an org or user login.');
+      const org = first ? orgArg(first, 'org requires an org or user login.') : undefined;
       const maxRepos = stringValue(parsed.values['max-repos']);
-      output = toStampedLegacyResult('org_scan', await org_scan({
+      const rawInput = compact({
         org,
         ...scanFilters(parsed.values),
         max_repos: maxRepos ? Number(maxRepos) : undefined
-      }) as Record<string, unknown>);
+      });
+      const effective = await loadEffectiveConfig({ input: rawInput });
+      output = toStampedLegacyResult('org_scan', await org_scan(resolveOrgFromConfig(rawInput, effective)) as Record<string, unknown>);
     } else if (command === 'probes') {
       commandName = 'probes';
       const templates = listProbeTemplates();

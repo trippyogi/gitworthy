@@ -37,6 +37,19 @@ export { OutcomeEventNameSchema, OutcomeEventSchema } from './outcomes.js';
 export type { OutcomeEvent } from './outcomes.js';
 
 export {
+  CONFIG_SCHEMA_VERSION,
+  ConfigDefaultsSchema,
+  ConfigFileSchema,
+  SkillProfileV1Schema,
+  TargetManifestSchema,
+  TargetOverrideSchema,
+  TargetRepoEntrySchema,
+  TargetOrgEntrySchema,
+  PackageMappingSchema
+} from './config.js';
+export type { ConfigDefaults, ConfigFile, SkillProfileV1, TargetManifest, TargetRepoEntry, TargetOrgEntry } from './config.js';
+
+export {
   STORE_RECORD_VERSION,
   StoreTargetSchema,
   RunRecordSchema,
@@ -83,6 +96,9 @@ export {
   CaptureShowInputSchema,
   CaptureListInputSchema,
   CasePromoteInputSchema,
+  ConfigShowInputSchema,
+  ConfigValidateInputSchema,
+  ProfileShowInputSchema,
   LedgerLookupInputSchema,
   LedgerRecordInputSchema,
   LedgerListInputSchema,
