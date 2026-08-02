@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0-draft.1",
+  "case_version": 1,
+  "id": "frozen-dupe-closed-title-gate",
+  "suite": "frozen",
+  "name": "Closed issue needs title gate for duplicate evidence",
+  "function": "dupe_cluster",
+  "input": {
+    "repo": "acme/widgets",
+    "issue_number": 10
+  },
+  "classification": "frozen",
+  "ground_truth": {
+    "verdict": "ACT",
+    "disposition": "greenfield",
+    "failure_mode": "closed_duplicate_requires_title_gate",
+    "adjudicator_rationale": "Closed issues with weak title overlap must not enter the duplicate evidence set.",
+    "evidence_urls": [
+      "https://github.com/acme/widgets/issues/10"
+    ],
+    "required_findings": [],
+    "forbidden_findings": [],
+    "required_signals": [],
+    "forbidden_signals": [
+      "duplicate"
+    ]
+  },
+  "provider_fixtures": "../fixtures/frozen-dupe-closed-title-gate.provider.json",
+  "provenance": {
+    "notes": "GW-024 promotion"
+  },
+  "time_sensitive": false
+}

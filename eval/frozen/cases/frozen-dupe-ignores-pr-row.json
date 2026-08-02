@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0-draft.1",
+  "case_version": 1,
+  "id": "frozen-dupe-ignores-pr-row",
+  "suite": "frozen",
+  "name": "PR list row must not count as duplicate issue",
+  "function": "dupe_cluster",
+  "input": {
+    "repo": "acme/widgets",
+    "issue_number": 1659
+  },
+  "classification": "frozen",
+  "ground_truth": {
+    "verdict": "ACT",
+    "disposition": "greenfield",
+    "failure_mode": "pr_row_not_duplicate_issue",
+    "adjudicator_rationale": "Case study 2: issues API rows that are PRs must be filtered from lexical duplicate clusters.",
+    "evidence_urls": [
+      "https://github.com/acme/widgets/issues/1659"
+    ],
+    "required_findings": [],
+    "forbidden_findings": [],
+    "required_signals": [],
+    "forbidden_signals": [
+      "duplicate"
+    ]
+  },
+  "provider_fixtures": "../fixtures/frozen-dupe-ignores-pr-row.provider.json",
+  "provenance": {
+    "notes": "GW-024 promotion"
+  },
+  "time_sensitive": false
+}

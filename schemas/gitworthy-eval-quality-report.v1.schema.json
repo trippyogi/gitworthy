@@ -1,0 +1,591 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "default": "1.0-draft.1",
+      "type": "string",
+      "const": "1.0-draft.1"
+    },
+    "report_version": {
+      "type": "number",
+      "const": 1
+    },
+    "milestone": {
+      "type": "string",
+      "enum": [
+        "0.6.0",
+        "0.7.0",
+        "0.8.0",
+        "0.9.0",
+        "1.0.0"
+      ]
+    },
+    "suite": {
+      "type": "string",
+      "const": "frozen"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+    },
+    "gitworthy_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source": {
+      "type": "object",
+      "properties": {
+        "suite_report": {
+          "type": "string",
+          "minLength": 1
+        },
+        "case_catalog": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "suite_report",
+        "case_catalog"
+      ],
+      "additionalProperties": false
+    },
+    "release_status": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "fail",
+        "warn"
+      ]
+    },
+    "gates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pass",
+              "fail",
+              "warn"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          },
+          "threshold": {
+            "type": "string"
+          },
+          "observed": {
+            "type": "string"
+          },
+          "case_ids": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "message",
+          "case_ids"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "properties": {
+        "adjudicated_cases": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "verdict_cases": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "mechanism_only_cases": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "unadjudicated_cases": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "duplicate_case_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "stale_case_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "incomplete_case_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "hard_skip": {
+          "type": "object",
+          "properties": {
+            "true_positive": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "false_positive": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "false_negative": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "precision": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "denominator": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "true_positive",
+            "false_positive",
+            "false_negative",
+            "precision",
+            "denominator"
+          ],
+          "additionalProperties": false
+        },
+        "act": {
+          "type": "object",
+          "properties": {
+            "true_positive": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "false_positive": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "false_negative": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "precision": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "denominator": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "true_positive",
+            "false_positive",
+            "false_negative",
+            "precision",
+            "denominator"
+          ],
+          "additionalProperties": false
+        },
+        "false_hard_skip_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "false_act_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "verify_by_reason": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "schema_failure_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "counts_by_verdict": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "enum": [
+              "ACT",
+              "VERIFY",
+              "SKIP"
+            ]
+          },
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "required": [
+            "ACT",
+            "VERIFY",
+            "SKIP"
+          ]
+        },
+        "counts_by_disposition": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "enum": [
+              "greenfield",
+              "land_only",
+              "claim_first",
+              "blocked",
+              "crowded",
+              "review"
+            ]
+          },
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "required": [
+            "greenfield",
+            "land_only",
+            "claim_first",
+            "blocked",
+            "crowded",
+            "review"
+          ]
+        },
+        "counts_by_failure_mode": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "counts_by_repository": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "counts_by_row_status": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "enum": [
+              "passed",
+              "failed",
+              "drifted",
+              "blocked",
+              "provider_failure",
+              "auth_limitation",
+              "product_regression"
+            ]
+          },
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "required": [
+            "passed",
+            "failed",
+            "drifted",
+            "blocked",
+            "provider_failure",
+            "auth_limitation",
+            "product_regression"
+          ]
+        },
+        "duration_ms": {
+          "type": "object",
+          "properties": {
+            "available": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "median": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "p95": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "available",
+            "median",
+            "p95"
+          ],
+          "additionalProperties": false
+        },
+        "github_requests": {
+          "type": "object",
+          "properties": {
+            "available": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "median": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "p95": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "available",
+            "median",
+            "p95"
+          ],
+          "additionalProperties": false
+        },
+        "coverage_gaps": {
+          "type": "object",
+          "properties": {
+            "failure_modes": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "hard_skip_paths": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "error_classes": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "required": [
+            "failure_modes",
+            "hard_skip_paths",
+            "error_classes"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "adjudicated_cases",
+        "verdict_cases",
+        "mechanism_only_cases",
+        "unadjudicated_cases",
+        "duplicate_case_ids",
+        "stale_case_ids",
+        "incomplete_case_ids",
+        "hard_skip",
+        "act",
+        "false_hard_skip_count",
+        "false_act_count",
+        "verify_by_reason",
+        "schema_failure_count",
+        "counts_by_verdict",
+        "counts_by_disposition",
+        "counts_by_failure_mode",
+        "counts_by_repository",
+        "counts_by_row_status",
+        "duration_ms",
+        "github_requests",
+        "coverage_gaps"
+      ],
+      "additionalProperties": false
+    },
+    "cases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "passed",
+              "failed",
+              "drifted",
+              "blocked",
+              "provider_failure",
+              "auth_limitation",
+              "product_regression"
+            ]
+          },
+          "failure_mode": {
+            "type": "string"
+          },
+          "expected_verdict": {
+            "type": "string",
+            "enum": [
+              "ACT",
+              "VERIFY",
+              "SKIP"
+            ]
+          },
+          "observed_verdict": {
+            "type": "string",
+            "enum": [
+              "ACT",
+              "VERIFY",
+              "SKIP"
+            ]
+          },
+          "hard_skip": {
+            "type": "boolean"
+          },
+          "false_hard_skip": {
+            "type": "boolean"
+          },
+          "false_act": {
+            "type": "boolean"
+          },
+          "verify_reason": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "status",
+          "detail"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "summary_text": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "schema_version",
+    "report_version",
+    "milestone",
+    "suite",
+    "generated_at",
+    "gitworthy_version",
+    "source",
+    "release_status",
+    "gates",
+    "metrics",
+    "cases",
+    "summary_text"
+  ],
+  "additionalProperties": false
+}

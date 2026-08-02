@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0-draft.1",
+  "case_version": 1,
+  "id": "frozen-dupe-no-candidates",
+  "suite": "frozen",
+  "name": "Greenfield issue with no lexical duplicates",
+  "function": "dupe_cluster",
+  "input": {
+    "repo": "acme/widgets",
+    "issue_number": 42
+  },
+  "classification": "frozen",
+  "ground_truth": {
+    "verdict": "ACT",
+    "disposition": "greenfield",
+    "failure_mode": "greenfield_no_lexical_duplicate",
+    "adjudicator_rationale": "Genuinely unique title/body should emit no duplicate signal.",
+    "evidence_urls": [
+      "https://github.com/acme/widgets/issues/42"
+    ],
+    "required_findings": [],
+    "forbidden_findings": [],
+    "required_signals": [],
+    "forbidden_signals": [
+      "duplicate"
+    ]
+  },
+  "provider_fixtures": "../fixtures/frozen-dupe-no-candidates.provider.json",
+  "provenance": {
+    "notes": "GW-024 promotion"
+  },
+  "time_sensitive": false
+}

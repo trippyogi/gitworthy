@@ -117,6 +117,27 @@ export const EvalRowStatusSchema = z.enum([
   'product_regression'
 ]);
 
+/** Optional per-row adjudication fields populated by frozen suite runs (GW-023). */
+export const EvalSuiteReportRowSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  status: EvalRowStatusSchema,
+  detail: z.string(),
+  failure_mode: z.string().optional(),
+  function: EvalCommandSchema.optional(),
+  repo: z.string().min(1).optional(),
+  expected_verdict: VerdictSchema.optional(),
+  observed_verdict: VerdictSchema.optional(),
+  expected_disposition: DispositionSchema.optional(),
+  observed_disposition: DispositionSchema.optional(),
+  /** True when observed SKIP is backed by a definitive blocking finding. */
+  hard_skip: z.boolean().optional(),
+  verify_reason: z.string().min(1).optional(),
+  duration_ms: z.number().nonnegative().optional(),
+  github_requests: z.number().int().nonnegative().optional(),
+  schema_valid: z.boolean().optional()
+}).strict();
+
 export const EvalSuiteReportSchema = z.object({
   schema_version: SchemaVersionSchema.default(SCHEMA_VERSION),
   suite: EvalSuiteSchema,
@@ -133,19 +154,162 @@ export const EvalSuiteReportSchema = z.object({
     auth_limitation: z.number().int().nonnegative(),
     product_regression: z.number().int().nonnegative()
   }),
-  rows: z.array(z.object({
-    id: z.string().min(1),
-    name: z.string().min(1),
-    status: EvalRowStatusSchema,
-    detail: z.string(),
-    failure_mode: z.string().optional()
-  })),
+  rows: z.array(EvalSuiteReportRowSchema),
   notes: z.array(z.string()).default([])
 }).strict();
+
+/** Versioned eval quality report contract (GW-023). */
+export const EVAL_REPORT_VERSION = 1 as const;
+
+export const EvalMilestoneSchema = z.enum(['0.6.0', '0.7.0', '0.8.0', '0.9.0', '1.0.0']);
+
+export const EvalReleaseGateStatusSchema = z.enum(['pass', 'fail', 'warn']);
+
+export const EvalReleaseGateSchema = z.object({
+  id: z.string().min(1),
+  status: EvalReleaseGateStatusSchema,
+  message: z.string().min(1),
+  threshold: z.string().optional(),
+  observed: z.string().optional(),
+  case_ids: z.array(z.string().min(1)).default([])
+}).strict();
+
+export const EvalPrecisionMetricsSchema = z.object({
+  true_positive: z.number().int().nonnegative(),
+  false_positive: z.number().int().nonnegative(),
+  false_negative: z.number().int().nonnegative(),
+  /** null when denominator is zero (no observed decisions in class). */
+  precision: z.number().min(0).max(1).nullable(),
+  denominator: z.number().int().nonnegative()
+}).strict();
+
+export const EvalQualityMetricsSchema = z.object({
+  adjudicated_cases: z.number().int().nonnegative(),
+  verdict_cases: z.number().int().nonnegative(),
+  mechanism_only_cases: z.number().int().nonnegative(),
+  unadjudicated_cases: z.number().int().nonnegative(),
+  duplicate_case_ids: z.array(z.string().min(1)),
+  stale_case_ids: z.array(z.string().min(1)),
+  incomplete_case_ids: z.array(z.string().min(1)),
+  hard_skip: EvalPrecisionMetricsSchema,
+  act: EvalPrecisionMetricsSchema,
+  false_hard_skip_count: z.number().int().nonnegative(),
+  false_act_count: z.number().int().nonnegative(),
+  verify_by_reason: z.record(z.string(), z.number().int().nonnegative()),
+  schema_failure_count: z.number().int().nonnegative(),
+  counts_by_verdict: z.record(VerdictSchema, z.number().int().nonnegative()),
+  counts_by_disposition: z.record(DispositionSchema, z.number().int().nonnegative()),
+  counts_by_failure_mode: z.record(z.string(), z.number().int().nonnegative()),
+  counts_by_repository: z.record(z.string(), z.number().int().nonnegative()),
+  counts_by_row_status: z.record(EvalRowStatusSchema, z.number().int().nonnegative()),
+  duration_ms: z.object({
+    available: z.number().int().nonnegative(),
+    median: z.number().nonnegative().nullable(),
+    p95: z.number().nonnegative().nullable()
+  }).strict(),
+  github_requests: z.object({
+    available: z.number().int().nonnegative(),
+    median: z.number().nonnegative().nullable(),
+    p95: z.number().nonnegative().nullable()
+  }).strict(),
+  coverage_gaps: z.object({
+    failure_modes: z.array(z.string().min(1)),
+    hard_skip_paths: z.array(z.string().min(1)),
+    error_classes: z.array(z.string().min(1))
+  }).strict()
+}).strict();
+
+export const EvalCaseTraceSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  status: EvalRowStatusSchema,
+  failure_mode: z.string().optional(),
+  expected_verdict: VerdictSchema.optional(),
+  observed_verdict: VerdictSchema.optional(),
+  hard_skip: z.boolean().optional(),
+  false_hard_skip: z.boolean().optional(),
+  false_act: z.boolean().optional(),
+  verify_reason: z.string().optional(),
+  detail: z.string().min(1)
+}).strict();
+
+export const EvalQualityReportSchema = z.object({
+  schema_version: SchemaVersionSchema.default(SCHEMA_VERSION),
+  report_version: z.literal(EVAL_REPORT_VERSION),
+  milestone: EvalMilestoneSchema,
+  suite: z.literal('frozen'),
+  generated_at: z.string().datetime(),
+  gitworthy_version: z.string().min(1),
+  source: z.object({
+    suite_report: z.string().min(1),
+    case_catalog: z.string().min(1)
+  }).strict(),
+  release_status: EvalReleaseGateStatusSchema,
+  gates: z.array(EvalReleaseGateSchema),
+  metrics: EvalQualityMetricsSchema,
+  cases: z.array(EvalCaseTraceSchema),
+  summary_text: z.string().min(1)
+}).strict();
+
+/** Milestone release thresholds (GW-023). WARN until corpus grows; FAIL on false hard SKIP. */
+export const EVAL_MILESTONE_THRESHOLDS = {
+  '0.6.0': {
+    min_adjudicated_cases: 30,
+    min_repositories: 0,
+    min_act_precision: null,
+    max_false_hard_skip: 0,
+    required_hard_skip_paths: [] as string[],
+    required_failure_modes: [] as string[],
+    required_error_classes: [] as string[]
+  },
+  '0.7.0': {
+    min_adjudicated_cases: 60,
+    min_repositories: 10,
+    min_act_precision: null,
+    max_false_hard_skip: 0,
+    required_hard_skip_paths: ['released_fix', 'linked_pr_open'],
+    required_failure_modes: [] as string[],
+    required_error_classes: [] as string[]
+  },
+  '0.8.0': {
+    min_adjudicated_cases: 75,
+    min_repositories: 10,
+    min_act_precision: null,
+    max_false_hard_skip: 0,
+    required_hard_skip_paths: ['released_fix', 'linked_pr_open'],
+    required_failure_modes: [] as string[],
+    required_error_classes: [] as string[]
+  },
+  '0.9.0': {
+    min_adjudicated_cases: 125,
+    min_repositories: 20,
+    min_act_precision: null,
+    max_false_hard_skip: 0,
+    required_hard_skip_paths: ['released_fix', 'linked_pr_open'],
+    required_failure_modes: [] as string[],
+    required_error_classes: ['provider_failure', 'auth_limitation']
+  },
+  '1.0.0': {
+    min_adjudicated_cases: 150,
+    min_repositories: 20,
+    min_act_precision: 0.9,
+    max_false_hard_skip: 0,
+    required_hard_skip_paths: ['released_fix', 'linked_pr_open'],
+    required_failure_modes: [] as string[],
+    required_error_classes: ['provider_failure', 'auth_limitation']
+  }
+} as const;
 
 export type EvalSuite = z.infer<typeof EvalSuiteSchema>;
 export type EvalCase = z.infer<typeof EvalCaseSchema>;
 export type EvalCaseCatalog = z.infer<typeof EvalCaseCatalogSchema>;
 export type EvalGroundTruth = z.infer<typeof EvalGroundTruthSchema>;
 export type EvalSuiteReport = z.infer<typeof EvalSuiteReportSchema>;
+export type EvalSuiteReportRow = z.infer<typeof EvalSuiteReportRowSchema>;
 export type EvalRowStatus = z.infer<typeof EvalRowStatusSchema>;
+export type EvalMilestone = z.infer<typeof EvalMilestoneSchema>;
+export type EvalReleaseGate = z.infer<typeof EvalReleaseGateSchema>;
+export type EvalReleaseGateStatus = z.infer<typeof EvalReleaseGateStatusSchema>;
+export type EvalQualityMetrics = z.infer<typeof EvalQualityMetricsSchema>;
+export type EvalQualityReport = z.infer<typeof EvalQualityReportSchema>;
+export type EvalCaseTrace = z.infer<typeof EvalCaseTraceSchema>;

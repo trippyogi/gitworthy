@@ -7,6 +7,8 @@ export { issue_vs_main } from './issue-vs-main.js';
 export { dupe_cluster } from './dupe-cluster.js';
 export { related_cluster } from './related-cluster.js';
 export { linked_work } from './linked-work.js';
+export { contention } from './contention.js';
+export { check_scope } from './check-scope.js';
 export { worth_check } from './worth-check.js';
 export { scan } from './scan.js';
 export { org_scan } from './org-scan.js';
