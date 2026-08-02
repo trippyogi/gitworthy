@@ -82,6 +82,52 @@ export {
 } from './capture.js';
 export type { CaptureManifest, CapturedExchange, CaptureMode, CaptureTarget, CasePromotionFixture } from './capture.js';
 
+export {
+  EVAL_CASE_VERSION,
+  EvalSuiteSchema,
+  EvalCommandSchema,
+  EvalLiveExpectationSchema,
+  EvalGroundTruthSchema,
+  EvalCaseClassificationSchema,
+  EvalProvenanceSchema,
+  EvalCaseSchema,
+  EvalCaseCatalogSchema,
+  EvalRowStatusSchema,
+  EvalSuiteReportSchema
+} from './eval.js';
+export type {
+  EvalSuite,
+  EvalCase,
+  EvalCaseCatalog,
+  EvalGroundTruth,
+  EvalSuiteReport,
+  EvalRowStatus
+} from './eval.js';
+
+export {
+  PROVIDER_FIXTURE_VERSION,
+  FORBIDDEN_FIXTURE_HEADER_NAMES,
+  ProviderKindSchema,
+  HttpProviderKindSchema,
+  HttpBodyEncodingSchema,
+  HttpReplayErrorSchema,
+  NormalizedHttpMatchSchema,
+  HttpFixtureExchangeSchema,
+  GitProbeKindSchema,
+  GitTreeFileSchema,
+  GitFixtureProbeSchema,
+  ProviderFixtureAttributionSchema,
+  ProviderFixturePackSchema,
+  digestUtf8,
+  digestBytes
+} from './provider-fixtures.js';
+export type {
+  ProviderFixturePack,
+  HttpFixtureExchange,
+  GitFixtureProbe,
+  NormalizedHttpMatch
+} from './provider-fixtures.js';
+
 export { toCheckResult, toStampedLegacyResult, toErrorResult } from './serialize.js';
 
 export {

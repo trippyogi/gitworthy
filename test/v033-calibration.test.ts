@@ -163,23 +163,24 @@ describe('v0.3.3 calibration regressions', () => {
 });
 
 describe('eval compare-only mode', () => {
-  it('only writes fixtures when --update-fixtures is present', async () => {
-    const source = await readFile(new URL('../eval/run-eval.ts', import.meta.url), 'utf8');
-    expect(source).toContain("process.argv.includes('--update-fixtures')");
-    expect(source).toContain("mode: ${updateFixtures ? 'update-fixtures' : 'compare-only'}");
-    expect(source).toContain('if (updateFixtures) await writeFile');
+  it('only writes live snapshots when --update-snapshots/--update-fixtures is present', async () => {
+    const source = await readFile(new URL('../eval/run-suite.ts', import.meta.url), 'utf8');
+    expect(source).toContain("--update-snapshots");
+    expect(source).toContain("--update-fixtures");
+    expect(source).toContain('updateSnapshots');
+    expect(source).toMatch(/if \(updateSnapshots\) await writeFile/);
 
     const fixtureDir = await mkdtemp(path.join(tmpdir(), 'gitworthy-eval-'));
     const fixturePath = path.join(fixtureDir, 'case-1.json');
     const original = `${JSON.stringify({ keep: true }, null, 2)}\n`;
     await writeFile(fixturePath, original);
 
-    const updateFixtures = ['node', 'eval/run-eval.ts'].includes('--update-fixtures');
+    const updateFixtures = ['node', 'eval/run-suite.ts'].includes('--update-fixtures');
     expect(updateFixtures).toBe(false);
     if (updateFixtures) await writeFile(fixturePath, `${JSON.stringify({ mutated: true }, null, 2)}\n`);
     await expect(readFile(fixturePath, 'utf8')).resolves.toBe(original);
 
-    const updateArgv = ['node', 'eval/run-eval.ts', '--update-fixtures'];
+    const updateArgv = ['node', 'eval/run-suite.ts', '--update-fixtures'];
     expect(updateArgv.includes('--update-fixtures')).toBe(true);
     await rm(fixtureDir, { recursive: true, force: true });
   });

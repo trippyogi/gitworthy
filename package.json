@@ -21,7 +21,10 @@
     "check": "pnpm lint && pnpm typecheck && pnpm build && pnpm test:unit && pnpm schemas:check",
     "release:verify": "tsx scripts/release-verify.ts",
     "dev": "tsx src/cli/index.ts",
-    "eval": "tsx eval/run-eval.ts"
+    "eval": "tsx eval/run-eval.ts",
+    "eval:frozen": "tsx eval/run-suite.ts --suite=frozen",
+    "eval:live": "tsx eval/run-suite.ts --suite=live",
+    "eval:private": "tsx eval/run-suite.ts --suite=private"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.29.0",

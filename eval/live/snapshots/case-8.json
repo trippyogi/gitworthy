@@ -1,0 +1,318 @@
+{
+  "verdict_summary": "blocking evidence was found by completed checks.",
+  "evidence": [],
+  "signals": [
+    "in_flight"
+  ],
+  "checked": [
+    "issue_vs_main",
+    "branch_scan",
+    "dupe_cluster",
+    "contrib_policy"
+  ],
+  "not_checked": [
+    "directory or string existence does not prove the issue's intent is satisfied; read both before making any public claim.",
+    "fork branches are invisible to this remote branch scan.",
+    "branch name matching is lexical and can miss renamed or differently named work.",
+    "lexical similarity only; semantic duplicates with different vocabulary will be missed.",
+    "policy extraction is keyword and heading based; ambiguous sections are reported rather than inferred."
+  ],
+  "cached": false,
+  "fetched_at": "2026-07-08T22:20:18.860Z",
+  "verdict": "SKIP",
+  "reasons": [
+    "branch_scan: in_flight"
+  ],
+  "sub_results": [
+    {
+      "name": "issue_vs_main",
+      "ok": true,
+      "result": {
+        "verdict_summary": "partial overlap found.",
+        "evidence": [
+          {
+            "issue": 2886,
+            "title": "Local tasks break but appear to keep running when laptop sleeps",
+            "state": "open",
+            "labels": [
+              "Bug",
+              "High Priority"
+            ],
+            "comments": 0,
+            "url": "https://github.com/PostHog/code/issues/2886"
+          },
+          {
+            "tree_matches": [
+              "apps/code/public/hedgehog-mode/sprites.json",
+              "apps/code/public/hedgehog-mode/sprites.png",
+              "apps/code/src/renderer/features/dev-toolbar/devModeBoot.ts",
+              "apps/code/src/renderer/platform-adapters/hedgehog-mode-host.ts",
+              "apps/mobile/src/features/tasks/hooks/useMessagingMode.ts",
+              "apps/mobile/src/features/tasks/stores/messagingModeStore.test.ts",
+              "apps/mobile/src/features/tasks/stores/messagingModeStore.ts",
+              "packages/agent/src/adapters/claude/claude-agent.resume-model.test.ts",
+              "packages/agent/src/adapters/claude/session/model-config.test.ts",
+              "packages/agent/src/adapters/claude/session/model-config.ts",
+              "packages/agent/src/adapters/claude/session/models.test.ts",
+              "packages/agent/src/adapters/claude/session/models.ts",
+              "packages/agent/src/adapters/codex-app-server/models.test.ts",
+              "packages/agent/src/adapters/codex-app-server/models.ts",
+              "packages/agent/src/execution-mode.test.ts",
+              "packages/agent/src/execution-mode.ts",
+              "packages/agent/src/gateway-models.test.ts",
+              "packages/agent/src/gateway-models.ts",
+              "packages/core/src/billing/spendSuggestions.ts",
+              "packages/core/src/sessions/executionModes.ts",
+              "packages/core/src/sidebar/filterByWorkspaceMode.test.ts",
+              "packages/core/src/sleep/identifiers.ts",
+              "packages/core/src/sleep/sleep.test.ts",
+              "packages/core/src/sleep/sleep.ts",
+              "packages/harness/src/extensions/posthog-provider/models.test.ts",
+              "packages/harness/src/extensions/posthog-provider/models.ts",
+              "packages/host-router/src/routers/sleep.router.ts",
+              "packages/shared/src/execution-modes.ts",
+              "packages/ui/src/features/agent-applications/components/AgentModelConfig.tsx",
+              "packages/ui/src/features/agent-applications/hooks/useModelCatalog.ts",
+              "packages/ui/src/features/autoresearch/stageModels.tsx",
+              "packages/ui/src/features/inbox/hooks/resolveDefaultModel.ts",
+              "packages/ui/src/features/mcp-servers/components/parts/McpInstalledRail.tsx",
+              "packages/ui/src/features/message-editor/components/ModeSelector.tsx",
+              "packages/ui/src/features/permissions/SwitchModePermission.tsx",
+              "packages/ui/src/features/sessions/components/ModelSelector.tsx",
+              "packages/ui/src/features/sessions/components/UnifiedModelSelector.test.tsx",
+              "packages/ui/src/features/sessions/components/UnifiedModelSelector.tsx",
+              "packages/ui/src/features/sessions/hooks/useMessagingMode.ts",
+              "packages/ui/src/features/sessions/hooks/useToggleMessagingMode.ts",
+              "packages/ui/src/features/sessions/messagingModeStore.test.ts",
+              "packages/ui/src/features/sessions/messagingModeStore.ts",
+              "packages/ui/src/features/sessions/modeStyles.tsx",
+              "packages/ui/src/features/sessions/modelOptionFilters.ts",
+              "packages/ui/src/features/settings/devModeClient.ts",
+              "packages/ui/src/features/task-detail/components/WorkspaceModeBadge.tsx",
+              "packages/ui/src/features/task-detail/components/WorkspaceModeSelect.tsx",
+              "packages/ui/src/features/usage/components/ModelBreakdownCards.tsx",
+              "packages/ui/src/shell/HedgehogMode.test.tsx",
+              "packages/ui/src/shell/HedgehogMode.tsx"
+            ]
+          },
+          {
+            "grep_matches": [
+              {
+                "path": ".claude/skills/canvas-templates/SKILL.md",
+                "line": 8,
+                "term": "there",
+                "sample": "PostHog \"canvases\" are agent-built dashboards/apps. There are **two rendering"
+              },
+              {
+                "path": ".claude/skills/canvas-templates/SKILL.md",
+                "line": 25,
+                "term": "working",
+                "sample": "**there is no migration**, so both renderers must keep working."
+              },
+              {
+                "path": ".claude/skills/canvas-templates/SKILL.md",
+                "line": 29,
+                "term": "behavior",
+                "sample": "  per-template rules. This is where you steer agent behavior. Two prompt families:"
+              },
+              {
+                "path": ".claude/skills/canvas-templates/SKILL.md",
+                "line": 51,
+                "term": "ends",
+                "sample": "- **PREFERRED - a typed query node:** `ph.query({ kind: \"TrendsQuery\", series: [...], dateRange: {...} })`."
+              },
+              {
+                "path": ".claude/skills/canvas-templates/SKILL.md",
+                "line": 65,
+                "term": "ends",
+                "sample": "> - Typed node (TrendsQuery/etc.) → `results` is an array of **series objects**"
+              },
+              {
+                "path": ".claude/skills/canvas-templates/SKILL.md",
+                "line": 102,
+                "term": "mode",
+                "sample": "> the *view/published* tier's model: a shared canvas can't ship inline queries to"
+              },
+              {
+                "path": ".claude/skills/canvas-templates/SKILL.md",
+                "line": 104,
+                "term": "there",
+                "sample": "> an allowlist and the canvas references them by id. Implement it there, not in edit."
+              },
+              {
+                "path": ".claude/skills/canvas-templates/SKILL.md",
+                "line": 128,
+                "term": "there",
+                "sample": "the Quill version is `QUILL_VERSION` there (must match the CSS `<link>` URLs)."
+              },
+              {
+                "path": ".claude/skills/merging-prs/SKILL.md",
+                "line": 3,
+                "term": "failed",
+                "sample": "description: Merge a PR into main through the Trunk merge queue and babysit it until it lands. Enqueue with a \"/trunk merge\" comment, then poll the \"Trunk Merge Queue\" check run and the PR state until"
+              },
+              {
+                "path": ".claude/skills/merging-prs/SKILL.md",
+                "line": 4,
+                "term": "sleep",
+                "sample": "allowed-tools: Bash(gh pr view:*), Bash(gh pr checks:*), Bash(gh pr comment:*), Bash(gh pr ready:*), Bash(gh api:*), Bash(sleep:*)"
+              }
+            ]
+          }
+        ],
+        "signals": [],
+        "checked": [
+          "fetched issue PostHog/code#2886",
+          "shallow cloned PostHog/code",
+          "searched candidate terms in tree and file contents"
+        ],
+        "not_checked": [
+          "directory or string existence does not prove the issue's intent is satisfied; read both before making any public claim."
+        ],
+        "cached": false,
+        "fetched_at": "2026-07-08T22:20:13.646Z"
+      }
+    },
+    {
+      "name": "branch_scan",
+      "ok": true,
+      "result": {
+        "verdict_summary": "recent in-flight work found in 1 matching branch.",
+        "evidence": [
+          {
+            "branch": "posthog-code/recover-sleep-interrupted-turns",
+            "sha": "8ba042a454cc45908087044f943506b76710634a",
+            "url": "https://github.com/PostHog/code/commit/8ba042a454cc45908087044f943506b76710634a",
+            "date": "2026-07-05T19:19:29Z",
+            "subject": "fix(sessions): address review feedback on sleep-recovery logging and test"
+          }
+        ],
+        "signals": [
+          "in_flight"
+        ],
+        "checked": [
+          "listed remote heads for PostHog/code",
+          "matched branch names against keywords: laptop, sleep"
+        ],
+        "not_checked": [
+          "fork branches are invisible to this remote branch scan.",
+          "branch name matching is lexical and can miss renamed or differently named work."
+        ],
+        "cached": false,
+        "fetched_at": "2026-07-08T22:20:13.678Z"
+      }
+    },
+    {
+      "name": "dupe_cluster",
+      "ok": true,
+      "result": {
+        "verdict_summary": "no lexical duplicate candidates found.",
+        "evidence": [],
+        "signals": [],
+        "checked": [
+          "fetched target issue PostHog/code#2886",
+          "searched GitHub issues by distinctive title tokens",
+          "scored open issues by lexical overlap"
+        ],
+        "not_checked": [
+          "lexical similarity only; semantic duplicates with different vocabulary will be missed."
+        ],
+        "cached": false,
+        "fetched_at": "2026-07-08T22:20:17.176Z"
+      }
+    },
+    {
+      "name": "contrib_policy",
+      "ok": true,
+      "result": {
+        "verdict_summary": "found 10 contribution policy signals.",
+        "evidence": [
+          {
+            "category": "pr_caps_or_rate_limits",
+            "file": "CONTRIBUTING.md",
+            "url": "https://github.com/PostHog/code/blob/main/CONTRIBUTING.md",
+            "excerpt": "Create a branch (`feat/my-change`, `fix/that-bug`) 4. Make your changes and open a pull request",
+            "ambiguous": false
+          },
+          {
+            "category": "evidence_requirements",
+            "file": "CONTRIBUTING.md",
+            "url": "https://github.com/PostHog/code/blob/main/CONTRIBUTING.md",
+            "excerpt": "- Run `pnpm typecheck`, `pnpm lint` and `pnpm test` locally - Resolve merge conflicts before requesting review - Keep changes focused -- one logical change per PR - Add tests where they meaningfully improve confidence -",
+            "ambiguous": false
+          },
+          {
+            "category": "issue_first_or_alignment",
+            "file": "CONTRIBUTING.md",
+            "url": "https://github.com/PostHog/code/blob/main/CONTRIBUTING.md",
+            "excerpt": "If you're unsure whether something fits, open an issue first and we'll get back to you quickly.",
+            "ambiguous": false
+          },
+          {
+            "category": "ai_assistance_policy",
+            "file": "AGENTS.md",
+            "url": "https://github.com/PostHog/code/blob/main/AGENTS.md",
+            "excerpt": "| `@posthog/electron-trpc` | tRPC-over-Electron-IPC transport. | Feature code | | `@posthog/git`, `@posthog/enricher`, `@posthog/agent` | Reusable domain implementation packages. | Host-specific code |",
+            "ambiguous": false
+          },
+          {
+            "category": "evidence_requirements",
+            "file": "AGENTS.md",
+            "url": "https://github.com/PostHog/code/blob/main/AGENTS.md",
+            "excerpt": "- `apps/code`: Electron desktop host. - `apps/web`: web host and portability smoke test. - `apps/mobile`: React Native host. - `apps/cli`: thin shell over `@posthog/cli`.",
+            "ambiguous": false
+          },
+          {
+            "category": "evidence_requirements",
+            "file": "AGENTS.md",
+            "url": "https://github.com/PostHog/code/blob/main/AGENTS.md",
+            "excerpt": "packages/core/src/<feature>/ |-- <feature>.ts |-- <feature>.module.ts |-- <feature>Store.ts |-- identifiers.ts |-- schemas.ts `-- <feature>.test.ts",
+            "ambiguous": false
+          },
+          {
+            "category": "evidence_requirements",
+            "file": "AGENTS.md",
+            "url": "https://github.com/PostHog/code/blob/main/AGENTS.md",
+            "excerpt": "Biome lint and autofix. - `pnpm format`: run Biome format. - `pnpm test`: run unit tests. - `pnpm test:e2e`: run Playwright tests. - `pnpm --filter <pkg> typecheck|test|build`: run a scoped task. - `pnpm --filter code package|make`: package the Electron app.",
+            "ambiguous": false
+          },
+          {
+            "category": "ai_assistance_policy",
+            "file": "AGENTS.md",
+            "url": "https://github.com/PostHog/code/blob/main/AGENTS.md",
+            "excerpt": "## Agent Integration",
+            "ambiguous": false
+          },
+          {
+            "category": "ai_assistance_policy",
+            "file": "AGENTS.md",
+            "url": "https://github.com/PostHog/code/blob/main/AGENTS.md",
+            "excerpt": "- Use SDK types from `@anthropic-ai/claude-agent-sdk` and `@agentclientprotocol/sdk`. - Do not use Claude Code SDK `rawInput`. Use Zod-validated metadata. - User approvals are tool calls with permissions. Do not model approvals as custom",
+            "ambiguous": false
+          },
+          {
+            "category": "evidence_requirements",
+            "file": "AGENTS.md",
+            "url": "https://github.com/PostHog/code/blob/main/AGENTS.md",
+            "excerpt": "- Unit tests: Vitest. - E2E tests: Playwright. - Test core/UI services and stores with faked injected dependencies and explicit props. - Prefer a parameterised test shape (`it.each`/`test.each`) when several",
+            "ambiguous": false
+          }
+        ],
+        "signals": [],
+        "checked": [
+          "looked for CONTRIBUTING.md on main and master",
+          "looked for AGENTS.md on main and master",
+          "looked for AI_POLICY.md on main and master",
+          "looked for CODE_OF_CONDUCT.md on main and master",
+          "looked for .github/PULL_REQUEST_TEMPLATE.md on main and master",
+          "looked for SECURITY.md on main and master"
+        ],
+        "not_checked": [
+          "policy extraction is keyword and heading based; ambiguous sections are reported rather than inferred."
+        ],
+        "cached": false,
+        "fetched_at": "2026-07-08T22:20:17.177Z"
+      }
+    }
+  ]
+}

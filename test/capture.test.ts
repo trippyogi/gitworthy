@@ -181,7 +181,9 @@ describe('capture redaction and manifests (GW-018)', () => {
   it('requires adjudication, writes deterministic promotion output, and refuses silent overwrite', async () => {
     const manifest = await putCaptureManifest(publicManifest('capture_promote'));
     const mode = (await stat(captureManifestPath(manifest.capture_id))).mode & 0o777;
-    expect(mode).toBe(0o600);
+    if (process.platform !== 'win32') {
+      expect(mode).toBe(0o600);
+    }
     const outPath = path.join(dir, 'case.json');
     await expect(case_promote({
       capture_id: manifest.capture_id,

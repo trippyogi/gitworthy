@@ -12,6 +12,7 @@ response.json
 scan-*.json
 mcp-publisher.exe
 *.tgz
-eval/private/
+eval/private/*
+!eval/private/README.md
 eval/reports/
 docs/private/

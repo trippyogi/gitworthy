@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0-draft.1",
+  "case_version": 1,
+  "id": "frozen-smoke-dupe",
+  "suite": "frozen",
+  "name": "Offline dupe_cluster smoke (lexical duplicate signal)",
+  "function": "dupe_cluster",
+  "input": {
+    "repo": "acme/widgets",
+    "issue_number": 1
+  },
+  "classification": "frozen",
+  "ground_truth": {
+    "verdict": "VERIFY",
+    "disposition": "crowded",
+    "failure_mode": "lexical_duplicate_signal_present",
+    "adjudicator_rationale": "Hand-authored smoke case proving frozen offline replay exercises production dupe_cluster parsing and evidence extraction. A near-identical open issue must surface the duplicate signal.",
+    "evidence_urls": [
+      "https://github.com/acme/widgets/issues/1",
+      "https://github.com/acme/widgets/issues/2"
+    ],
+    "required_findings": [
+      "2"
+    ],
+    "forbidden_findings": [],
+    "required_signals": [
+      "duplicate"
+    ],
+    "forbidden_signals": []
+  },
+  "provider_fixtures": "../fixtures/frozen-smoke-dupe.provider.json",
+  "provenance": {
+    "notes": "Synthetic smoke case for GW-021/GW-022. Expand corpus under GW-024."
+  },
+  "time_sensitive": false
+}

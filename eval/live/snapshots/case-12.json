@@ -1,0 +1,459 @@
+{
+  "verdict_summary": "blocking evidence was found by completed checks.",
+  "evidence": [],
+  "signals": [
+    "linked_pr_open"
+  ],
+  "checked": [
+    "issue_vs_main",
+    "branch_scan",
+    "linked_work",
+    "dupe_cluster",
+    "contrib_policy"
+  ],
+  "not_checked": [
+    "directory or string existence does not prove the issue's intent is satisfied; read both before making any public claim.",
+    "fork branches are invisible to this remote branch scan.",
+    "branch name matching is lexical and can miss renamed or differently named work.",
+    "PR linkage depends on GitHub cross-reference events or explicit issue-number mentions; a PR that never mentions the issue number remains invisible.",
+    "lexical similarity only; semantic duplicates with different vocabulary will be missed.",
+    "policy extraction is keyword and heading based; ambiguous sections are reported rather than inferred."
+  ],
+  "cached": false,
+  "fetched_at": "2026-07-09T00:20:41.746Z",
+  "verdict": "SKIP",
+  "reasons": [
+    "linked_work: linked_pr_open",
+    "open linked PR found: #6298 https://github.com/livekit/agents/pull/6298"
+  ],
+  "sub_results": [
+    {
+      "name": "issue_vs_main",
+      "ok": true,
+      "result": {
+        "verdict_summary": "partial overlap found.",
+        "evidence": [
+          {
+            "issue": 6291,
+            "title": "MCP server process death is never detected: no reconnect, `initialized` stays True, tool calls raise raw `anyio.ClosedResourceError`",
+            "state": "open",
+            "labels": [
+              "bug"
+            ],
+            "comments": 2,
+            "url": "https://github.com/livekit/agents/issues/6291"
+          },
+          {
+            "tree_matches": [
+              "livekit-agents/livekit/agents/llm/mcp.py",
+              "examples/hotel_receptionist/tools_restaurant.py",
+              "examples/hotel_receptionist/tools_rooms.py",
+              "examples/hotel_receptionist/tools_services.py",
+              "examples/voice_agents/annotated_tool_args.py",
+              "examples/voice_agents/async_tool_agent.py",
+              "examples/voice_agents/dynamic_tool_creation.py",
+              "examples/voice_agents/mcp/server.py",
+              "examples/voice_agents/raw_function_description.py",
+              "examples/voice_agents/tool_search_agent.py",
+              "livekit-agents/livekit/agents/beta/tools/__init__.py",
+              "livekit-agents/livekit/agents/beta/tools/end_call.py",
+              "livekit-agents/livekit/agents/beta/tools/send_dtmf.py",
+              "livekit-agents/livekit/agents/beta/toolsets/__init__.py",
+              "livekit-agents/livekit/agents/beta/toolsets/tool_proxy.py",
+              "livekit-agents/livekit/agents/beta/toolsets/tool_search.py",
+              "livekit-agents/livekit/agents/llm/async_toolset.py",
+              "livekit-agents/livekit/agents/llm/tool_context.py",
+              "livekit-agents/livekit/agents/telemetry/http_server.py",
+              "livekit-agents/livekit/agents/utils/aio/itertools.py",
+              "livekit-agents/livekit/agents/utils/http_server.py",
+              "livekit-agents/livekit/agents/voice/tool_executor.py",
+              "livekit-agents/pyproject.toml",
+              "livekit-plugins/livekit-blockguard/pyproject.toml",
+              "livekit-plugins/livekit-durable/CMakeLists.txt",
+              "livekit-plugins/livekit-durable/pyproject.toml",
+              "livekit-plugins/livekit-plugins-anam/pyproject.toml",
+              "livekit-plugins/livekit-plugins-anthropic/livekit/plugins/anthropic/computer_tool.py",
+              "livekit-plugins/livekit-plugins-anthropic/livekit/plugins/anthropic/tools.py",
+              "livekit-plugins/livekit-plugins-anthropic/pyproject.toml",
+              "livekit-plugins/livekit-plugins-assemblyai/pyproject.toml",
+              "livekit-plugins/livekit-plugins-asyncai/pyproject.toml",
+              "livekit-plugins/livekit-plugins-avatario/pyproject.toml",
+              "livekit-plugins/livekit-plugins-avatartalk/pyproject.toml",
+              "livekit-plugins/livekit-plugins-aws/pyproject.toml",
+              "livekit-plugins/livekit-plugins-aws/tests/test_nova_sonic_tool_args.py",
+              "livekit-plugins/livekit-plugins-azure/pyproject.toml",
+              "livekit-plugins/livekit-plugins-baseten/pyproject.toml",
+              "livekit-plugins/livekit-plugins-bey/pyproject.toml",
+              "livekit-plugins/livekit-plugins-bithuman/pyproject.toml",
+              "livekit-plugins/livekit-plugins-browser/pyproject.toml",
+              "livekit-plugins/livekit-plugins-cambai/pyproject.toml",
+              "livekit-plugins/livekit-plugins-cartesia/pyproject.toml",
+              "livekit-plugins/livekit-plugins-cerebras/pyproject.toml",
+              "livekit-plugins/livekit-plugins-clova/pyproject.toml",
+              "livekit-plugins/livekit-plugins-deepgram/pyproject.toml",
+              "livekit-plugins/livekit-plugins-did/pyproject.toml",
+              "livekit-plugins/livekit-plugins-elevenlabs/pyproject.toml",
+              "livekit-plugins/livekit-plugins-fal/pyproject.toml",
+              "livekit-plugins/livekit-plugins-fireworksai/pyproject.toml"
+            ]
+          },
+          {
+            "grep_matches": [
+              {
+                "path": ".github/ISSUE_TEMPLATE/bug_report.yaml",
+                "line": 2,
+                "term": "description",
+                "sample": "description: Report a bug with the framework"
+              },
+              {
+                "path": ".github/ISSUE_TEMPLATE/bug_report.yaml",
+                "line": 12,
+                "term": "description",
+                "sample": "  id: bug_description"
+              },
+              {
+                "path": ".github/ISSUE_TEMPLATE/bug_report.yaml",
+                "line": 14,
+                "term": "description",
+                "sample": "    label: Bug Description"
+              },
+              {
+                "path": ".github/ISSUE_TEMPLATE/bug_report.yaml",
+                "line": 15,
+                "term": "description",
+                "sample": "    description: \"A clear and detailed description of what the bug and current behavior is.\""
+              },
+              {
+                "path": ".github/ISSUE_TEMPLATE/bug_report.yaml",
+                "line": 17,
+                "term": "true",
+                "sample": "    required: true"
+              },
+              {
+                "path": ".github/ISSUE_TEMPLATE/bug_report.yaml",
+                "line": 23,
+                "term": "description",
+                "sample": "    description: \"What is the expected behavior?\""
+              },
+              {
+                "path": ".github/ISSUE_TEMPLATE/bug_report.yaml",
+                "line": 25,
+                "term": "true",
+                "sample": "    required: true"
+              },
+              {
+                "path": ".github/ISSUE_TEMPLATE/bug_report.yaml",
+                "line": 31,
+                "term": "description",
+                "sample": "    description: \"Steps to reproduce this behavior, preferably with a minimal reproducible example\""
+              },
+              {
+                "path": ".github/ISSUE_TEMPLATE/bug_report.yaml",
+                "line": 40,
+                "term": "true",
+                "sample": "    required: true"
+              },
+              {
+                "path": ".github/ISSUE_TEMPLATE/bug_report.yaml",
+                "line": 52,
+                "term": "true",
+                "sample": "    required: true"
+              }
+            ]
+          }
+        ],
+        "signals": [],
+        "checked": [
+          "fetched issue livekit/agents#6291",
+          "shallow cloned livekit/agents",
+          "searched candidate terms in tree and file contents"
+        ],
+        "not_checked": [
+          "directory or string existence does not prove the issue's intent is satisfied; read both before making any public claim."
+        ],
+        "cached": false,
+        "fetched_at": "2026-07-09T00:20:36.777Z"
+      }
+    },
+    {
+      "name": "branch_scan",
+      "ok": true,
+      "result": {
+        "verdict_summary": "7 matching branches found, but no recent token-verified activity was established.",
+        "evidence": [
+          {
+            "branch": "devin/1767802804-add-processing-agent-state",
+            "sha": "3bb151b0974a454b1bfce1a3faa35321bafa197f",
+            "url": "https://github.com/livekit/agents/commit/3bb151b0974a454b1bfce1a3faa35321bafa197f",
+            "date": "2026-01-07T16:31:50Z",
+            "subject": "style: fix ruff format in test file"
+          },
+          {
+            "branch": "longc/reuse-process",
+            "sha": "b785195211052b73b66fc31b9180008cc3f6a5ed",
+            "url": "https://github.com/livekit/agents/commit/b785195211052b73b66fc31b9180008cc3f6a5ed",
+            "date": "2026-01-21T10:42:36Z",
+            "subject": "wip"
+          },
+          {
+            "branch": "nikita/v1.3-tts-preprocessing",
+            "sha": "04d01544bdf0e5a701237d66c7009ba0995688f6",
+            "url": "https://github.com/livekit/agents/commit/04d01544bdf0e5a701237d66c7009ba0995688f6",
+            "date": "2025-11-14T21:12:25Z",
+            "subject": "fix"
+          },
+          {
+            "branch": "sf/inference-gateway-reconnect",
+            "sha": "15605e6f6eedeaf33b2c994a415dab1828a5baf1",
+            "url": "https://github.com/livekit/agents/commit/15605e6f6eedeaf33b2c994a415dab1828a5baf1",
+            "date": "2026-04-09T19:33:07Z",
+            "subject": "feat(inference): make STT/TTS reconnect retries replayable"
+          },
+          {
+            "branch": "shawnfeldman/inference-reconnect",
+            "sha": "15605e6f6eedeaf33b2c994a415dab1828a5baf1",
+            "url": "https://github.com/livekit/agents/commit/15605e6f6eedeaf33b2c994a415dab1828a5baf1",
+            "date": "2026-04-09T19:33:07Z",
+            "subject": "feat(inference): make STT/TTS reconnect retries replayable"
+          },
+          {
+            "branch": "theo/disable-http-server",
+            "sha": "3717a228480eb7be86d53d24141191f66fe45799",
+            "url": "https://github.com/livekit/agents/commit/3717a228480eb7be86d53d24141191f66fe45799",
+            "date": "2024-08-07T12:54:12Z",
+            "subject": "Create afraid-actors-wonder.md"
+          },
+          {
+            "branch": "tina/add-processing-agentstate",
+            "sha": "7e6850113936e9e397ae6bd6d31b5fe3e40de1fd",
+            "url": "https://github.com/livekit/agents/commit/7e6850113936e9e397ae6bd6d31b5fe3e40de1fd",
+            "date": "2026-01-13T22:53:13Z",
+            "subject": "test"
+          }
+        ],
+        "signals": [],
+        "checked": [
+          "listed remote heads for livekit/agents",
+          "matched branch names against keywords: server, proces, death, never, detected, reconnect, initialized, stay"
+        ],
+        "not_checked": [
+          "fork branches are invisible to this remote branch scan.",
+          "branch name matching is lexical and can miss renamed or differently named work."
+        ],
+        "cached": true,
+        "fetched_at": "2026-07-09T00:19:36.143Z"
+      }
+    },
+    {
+      "name": "linked_work",
+      "ok": true,
+      "result": {
+        "verdict_summary": "found 1 linked pull request and 0 assignees.",
+        "evidence": [
+          {
+            "kind": "linked_pr",
+            "number": 6298,
+            "state": "open",
+            "draft": false,
+            "merged": false,
+            "date": "2026-07-02T17:21:45Z",
+            "author": "immuhammadfurqan",
+            "title": "fix(mcp): detect server death, fail loudly instead of raw ClosedResourceError",
+            "url": "https://github.com/livekit/agents/pull/6298",
+            "source": "search"
+          }
+        ],
+        "signals": [
+          "linked_pr_open"
+        ],
+        "checked": [
+          "fetched issue livekit/agents#6291",
+          "fetched issue timeline cross-reference and assignment events",
+          "fetched issue comments for pull request references",
+          "searched pull requests for explicit issue-number mentions"
+        ],
+        "not_checked": [
+          "PR linkage depends on GitHub cross-reference events or explicit issue-number mentions; a PR that never mentions the issue number remains invisible."
+        ],
+        "cached": false,
+        "fetched_at": "2026-07-09T00:20:38.981Z"
+      }
+    },
+    {
+      "name": "dupe_cluster",
+      "ok": true,
+      "result": {
+        "verdict_summary": "no lexical duplicate candidates found.",
+        "evidence": [],
+        "signals": [],
+        "checked": [
+          "fetched target issue livekit/agents#6291",
+          "searched GitHub issues by distinctive title tokens",
+          "scored open issues by lexical overlap"
+        ],
+        "not_checked": [
+          "lexical similarity only; semantic duplicates with different vocabulary will be missed."
+        ],
+        "cached": false,
+        "fetched_at": "2026-07-09T00:20:41.745Z"
+      }
+    },
+    {
+      "name": "contrib_policy",
+      "ok": true,
+      "result": {
+        "verdict_summary": "found 19 contribution policy signals.",
+        "evidence": [
+          {
+            "category": "ai_assistance_policy",
+            "file": "CONTRIBUTING.md",
+            "url": "https://github.com/livekit/agents/blob/main/CONTRIBUTING.md",
+            "excerpt": "- **Write a plugin**: if there is a TTS/STT/LLM provider you use that isn't on our plugins list, feel free to write a plugin for it! Refer to the source code of similar plugins to see",
+            "ambiguous": false
+          },
+          {
+            "category": "issue_first_or_alignment",
+            "file": "CONTRIBUTING.md",
+            "url": "https://github.com/livekit/agents/blob/main/CONTRIBUTING.md",
+            "excerpt": "new features to the framework, though we ask that you open an issue first to discuss the viability and scope of the new functionality before starting work.",
+            "ambiguous": false
+          },
+          {
+            "category": "pr_caps_or_rate_limits",
+            "file": "CONTRIBUTING.md",
+            "url": "https://github.com/livekit/agents/blob/main/CONTRIBUTING.md",
+            "excerpt": "Our continuous integration requires a few additional code quality steps for your pull request to be approved:",
+            "ambiguous": false
+          },
+          {
+            "category": "cla_requirement",
+            "file": "CONTRIBUTING.md",
+            "url": "https://github.com/livekit/agents/blob/main/CONTRIBUTING.md",
+            "excerpt": "- On your first pull request, the CLA Assistant bot will give you a link to sign this project's Contributor License Agreement, required to add your code to the repository.",
+            "ambiguous": false
+          },
+          {
+            "category": "contacts_or_channels",
+            "file": "CONTRIBUTING.md",
+            "url": "https://github.com/livekit/agents/blob/main/CONTRIBUTING.md",
+            "excerpt": "package manifests - we have a bot handle that for us. A maintainer will add the necessary notes before merging.",
+            "ambiguous": false
+          },
+          {
+            "category": "contacts_or_channels",
+            "file": "CONTRIBUTING.md",
+            "url": "https://github.com/livekit/agents/blob/main/CONTRIBUTING.md",
+            "excerpt": "questions about the framework and how to use it. Join the `#agents` channel on [our Slack](https://livekit.io/join-slack).",
+            "ambiguous": false
+          },
+          {
+            "category": "evidence_requirements",
+            "file": "AGENTS.md",
+            "url": "https://github.com/livekit/agents/blob/main/AGENTS.md",
+            "excerpt": "### Testing ```bash uv run pytest --unit # Run all unit tests uv run pytest tests/test_tools.py # Run a single test file make unit-tests # Run unit tests that",
+            "ambiguous": false
+          },
+          {
+            "category": "evidence_requirements",
+            "file": "AGENTS.md",
+            "url": "https://github.com/livekit/agents/blob/main/AGENTS.md",
+            "excerpt": "#### Test categories",
+            "ambiguous": false
+          },
+          {
+            "category": "evidence_requirements",
+            "file": "AGENTS.md",
+            "url": "https://github.com/livekit/agents/blob/main/AGENTS.md",
+            "excerpt": "Every test module declares exactly one category via a module-level marker, and each category has a matching `--<category>` selection flag. Selection happens *before* import, so a category run never",
+            "ambiguous": false
+          },
+          {
+            "category": "evidence_requirements",
+            "file": "AGENTS.md",
+            "url": "https://github.com/livekit/agents/blob/main/AGENTS.md",
+            "excerpt": "| Marker | Flag | Meaning | |--------|------|---------| | `pytest.mark.unit` | `--unit` | fast, hermetic, no external providers/credentials/network | | `pytest.mark.audio_eot` | `--audio_eot` | hermetic audio end-of-turn / turn-detection suite | | `pytest.mark.plugin(\"name\")` | `--plugin [name]` |",
+            "ambiguous": false
+          },
+          {
+            "category": "evidence_requirements",
+            "file": "AGENTS.md",
+            "url": "https://github.com/livekit/agents/blob/main/AGENTS.md",
+            "excerpt": "cloud accounts) uv run pytest --plugin openai # only the openai provider tests uv run pytest --list-categories # list every module grouped by category, then exit ```",
+            "ambiguous": false
+          },
+          {
+            "category": "evidence_requirements",
+            "file": "AGENTS.md",
+            "url": "https://github.com/livekit/agents/blob/main/AGENTS.md",
+            "excerpt": "**Adding a test:** give the new module a category marker (`pytestmark = pytest.mark.unit`, etc.) - collection fails with a hint if it lacks one. Run pytest with the `--allow-uncategorized` option",
+            "ambiguous": false
+          },
+          {
+            "category": "ai_assistance_policy",
+            "file": "AGENTS.md",
+            "url": "https://github.com/livekit/agents/blob/main/AGENTS.md",
+            "excerpt": "### Core Concepts - **AgentServer** (formerly known as **Worker**) (`worker.py`): Main process coordinating job scheduling, launches agents for user sessions - **JobContext** (`job.py`): Context provided to entrypoint functions for connecting to LiveKit",
+            "ambiguous": false
+          },
+          {
+            "category": "ai_assistance_policy",
+            "file": "AGENTS.md",
+            "url": "https://github.com/livekit/agents/blob/main/AGENTS.md",
+            "excerpt": "### Key Directories ``` livekit-agents/livekit/agents/ ├── voice/ # Core voice agent: AgentSession, Agent, room I/O, transcription ├── llm/ # LLM integration: chat context, tool definitions, MCP support ├── stt/ # Speech-to-text with",
+            "ambiguous": false
+          },
+          {
+            "category": "evidence_requirements",
+            "file": "AGENTS.md",
+            "url": "https://github.com/livekit/agents/blob/main/AGENTS.md",
+            "excerpt": "livekit-plugins/ # 50+ provider plugins (openai, anthropic, google, deepgram, etc.) tests/ # Test suite with mock implementations (fake_stt.py, fake_vad.py) examples/ # Example agents and use cases ```",
+            "ambiguous": false
+          },
+          {
+            "category": "ai_assistance_policy",
+            "file": "AGENTS.md",
+            "url": "https://github.com/livekit/agents/blob/main/AGENTS.md",
+            "excerpt": "### Plugin System Plugins in `livekit-plugins/` provide STT, TTS, LLM, and specialized services. Each plugin is a separate package following the pattern `livekit-plugins-<provider>`. Plugins register via the `Plugin` base class in `plugin.py`.",
+            "ambiguous": false
+          },
+          {
+            "category": "ai_assistance_policy",
+            "file": "AGENTS.md",
+            "url": "https://github.com/livekit/agents/blob/main/AGENTS.md",
+            "excerpt": "### Model Interface Pattern STT, TTS, LLM, Realtime models have provider-agnostic interfaces with: - Base classes defining the interface (`stt/stt.py`, `tts/tts.py`, `llm/llm.py`, `llm/realtime.py`) - Fallback adapters for resilience - Stream adapters for different streaming",
+            "ambiguous": false
+          },
+          {
+            "category": "ai_assistance_policy",
+            "file": "AGENTS.md",
+            "url": "https://github.com/livekit/agents/blob/main/AGENTS.md",
+            "excerpt": "is dispatched to process/thread pool (`ipc/proc_pool.py`) 3. Entrypoint function receives `JobContext` 4. Agent connects to room via `ctx.connect()` 5. `AgentSession` manages the conversation lifecycle",
+            "ambiguous": false
+          },
+          {
+            "category": "ai_assistance_policy",
+            "file": "AGENTS.md",
+            "url": "https://github.com/livekit/agents/blob/main/AGENTS.md",
+            "excerpt": "`LIVEKIT_API_KEY`: API key for authentication - `LIVEKIT_API_SECRET`: API secret for authentication - `LIVEKIT_AGENT_NAME`: Agent name for explicit dispatch (optional) - Provider-specific keys: `OPENAI_API_KEY`, `DEEPGRAM_API_KEY`, `ANTHROPIC_API_KEY`, etc.",
+            "ambiguous": false
+          }
+        ],
+        "signals": [],
+        "checked": [
+          "looked for CONTRIBUTING.md on main and master",
+          "looked for .github/CONTRIBUTING.md on main and master",
+          "looked for AGENTS.md on main and master",
+          "looked for AI_POLICY.md on main and master",
+          "looked for CODE_OF_CONDUCT.md on main and master",
+          "looked for .github/PULL_REQUEST_TEMPLATE.md on main and master",
+          "looked for SECURITY.md on main and master"
+        ],
+        "not_checked": [
+          "policy extraction is keyword and heading based; ambiguous sections are reported rather than inferred."
+        ],
+        "cached": true,
+        "fetched_at": "2026-07-09T00:19:43.768Z"
+      }
+    }
+  ]
+}

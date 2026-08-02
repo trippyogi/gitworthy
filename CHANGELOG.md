@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Split evaluation into frozen / live / private suites with versioned case schemas, live classification, and release-blocking frozen CI (`pnpm eval:frozen`) (GW-021 / #30).
+- Add injectable provider replay transport and versioned HTTP/git fixture packs for offline frozen cases, plus capture→replay conversion (GW-022 / #31).
 - Add Streamable HTTP MCP transport (`gitworthy mcp --http`) with bearer auth, bind policy, serverless handler, and Cloud Agent/mobile docs (GW-039 / #67).
 - Add versioned local store under `~/.gitworthy/store` (override with `GITWORTHY_STORE_DIR`): run/decision/outcome records, per-target indexes, and cross-process lockfiles (GW-015).
 - Persist check results best-effort into the store from CLI and MCP (commands for browse/export land in GW-017).
