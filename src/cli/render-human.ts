@@ -15,6 +15,7 @@ type HumanResult = {
   not_checked?: string[];
   metrics?: Record<string, unknown>;
   signals?: string[];
+  capabilities?: Array<{ id?: string; status?: string; summary?: string; remediation?: string }>;
 };
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -104,13 +105,30 @@ export function renderHuman(output: unknown, options: { verbose?: boolean } = {}
     ''
   ];
 
+  const capabilities = (result.capabilities ?? [])
+    .filter((item) => typeof item.id === 'string' && typeof item.status === 'string')
+    .map((item) => {
+      const summary = typeof item.summary === 'string' ? item.summary : '';
+      const remediation = typeof item.remediation === 'string' && item.status !== 'pass'
+        ? ` → ${item.remediation}`
+        : '';
+      return `  ${item.status} · ${item.id}: ${summary}${remediation}`;
+    });
+  if (capabilities.length > 0) {
+    lines.push(...bulletSection('Capabilities', capabilities));
+    const remediations = (result.capabilities ?? [])
+      .filter((item) => item.status && item.status !== 'pass' && item.status !== 'skipped' && typeof item.remediation === 'string')
+      .map((item) => `  ${item.id}: ${item.remediation}`);
+    if (remediations.length > 0) lines.push(...bulletSection('Remediation', remediations));
+  }
+
   const next = nextActionLines(result);
   if (next.length > 0) lines.push(...bulletSection('Next', next));
 
   const evidence = findingLines(result);
   if (evidence.length > 0) lines.push(...bulletSection('Evidence', evidence));
 
-  if (Array.isArray(result.checked) && result.checked.length > 0) {
+  if (capabilities.length === 0 && Array.isArray(result.checked) && result.checked.length > 0) {
     lines.push(...bulletSection('Checked', result.checked.slice(0, 12).map((item) => `  ${item}`)));
   }
   if (Array.isArray(result.not_checked) && result.not_checked.length > 0) {

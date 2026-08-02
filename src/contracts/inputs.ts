@@ -77,6 +77,7 @@ const KeywordsSchema = z.array(z.string()).optional();
 const LimitSchema = z.number().int().positive();
 
 export const DoctorInputSchema = z.object({
+  full: z.boolean().optional(),
   probe_repo: RepoRefSchema.optional(),
   probe_issue_number: IssueNumberSchema.optional()
 });

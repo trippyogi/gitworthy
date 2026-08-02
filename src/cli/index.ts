@@ -85,7 +85,8 @@ const help = `gitworthy
 Usage:
   gitworthy --help
   gitworthy --version
-  gitworthy doctor [--json]
+  gitworthy [--quiet|-q] [--verbose|-v] <command> …
+  gitworthy doctor [--full] [--json]
   gitworthy init [--user] [--repo] [--overwrite] [--json]
   gitworthy config validate [--path path] [--manifest path] [--user] [--repo] [--json]
   gitworthy config show --effective [--path path] [--json]
@@ -249,6 +250,7 @@ const CLI_OPTIONS = {
   json: { type: 'boolean' },
   quiet: { type: 'boolean', short: 'q' },
   verbose: { type: 'boolean', short: 'v' },
+  full: { type: 'boolean' },
   'npm-package': { type: 'string' },
   'probe-glob': { type: 'string' },
   'probe-contains': { type: 'string' },
@@ -498,7 +500,9 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
     let output: unknown;
     if (command === 'doctor') {
       commandName = 'doctor';
-      output = toStampedLegacyResult('doctor', await doctor() as Record<string, unknown>);
+      output = toStampedLegacyResult('doctor', await doctor({
+        full: parsed.values.full === true
+      }) as Record<string, unknown>);
     } else if (command === 'check') {
       commandName = 'check';
       const ref = parseIssueRef(required(first, 'check requires owner/repo#123.'));

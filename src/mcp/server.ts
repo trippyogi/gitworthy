@@ -155,7 +155,7 @@ const probeShape = { file_glob: z.string().optional(), contains: z.string().opti
 export function createMcpServer(): McpServer {
   const server = new McpServer({ name: 'gitworthy', version: packageVersion() });
   const stamp = (command: string) => (value: unknown) => toStampedLegacyResult(command, value as Record<string, unknown>);
-  server.registerTool('doctor', { title: 'Doctor', inputSchema: { probe_repo: z.string().optional(), probe_issue_number: z.number().optional() } }, async (input) =>
+  server.registerTool('doctor', { title: 'Doctor', inputSchema: { probe_repo: z.string().optional(), probe_issue_number: z.number().optional(), full: z.boolean().optional() } }, async (input) =>
     withToolErrors('doctor', () => doctor(parseToolInput(DoctorInputSchema, input)), stamp('doctor')));
   server.registerTool('branch_scan', { title: 'Branch scan', inputSchema: { repo: z.string(), keywords: z.array(z.string()), issue_number: z.number().optional(), max_age_days: z.number().optional(), force_refresh: z.boolean().optional() } }, async (input) =>
     withToolErrors('branch_scan', () => branch_scan(parseToolInput(BranchScanInputSchema, input)), stamp('branch_scan')));

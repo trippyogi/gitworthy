@@ -207,7 +207,8 @@ export class HttpClient {
       }
 
       const delayMs = this.retryDelayMs(rateLimit, attempt);
-      noteGithubRetry();
+      // Only count GitHub API retries; npm/raw use `github: false`.
+      if (options.github !== false) noteGithubRetry();
       this.logger?.({
         level: 'warn',
         message: 'retrying HTTP request after transient failure',

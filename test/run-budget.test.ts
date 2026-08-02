@@ -45,3 +45,27 @@ describe('run budget counters', () => {
     expect(merged.duration_ms).toBeGreaterThanOrEqual(999);
   });
 });
+
+describe('http client github retry accounting', () => {
+  it('counts retries only for github requests', async () => {
+    const { createHttpClient } = await import('../src/lib/http-client.js');
+    const budget = createRunBudget();
+    let calls = 0;
+    const transport = async () => {
+      calls += 1;
+      if (calls === 1) return new Response('fail', { status: 503, headers: { 'retry-after': '0' } });
+      return new Response('ok', { status: 200 });
+    };
+    const client = createHttpClient({ transport, sleep: async () => undefined, maxRetries: 2 });
+    await withRunBudget(budget, async () => {
+      await client.request('https://example.test/npm', { github: false });
+    });
+    expect(budget.counters.github_retries).toBe(0);
+
+    calls = 0;
+    await withRunBudget(budget, async () => {
+      await client.request('https://api.github.com/rate_limit');
+    });
+    expect(budget.counters.github_retries).toBe(1);
+  });
+});

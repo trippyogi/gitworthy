@@ -39,4 +39,21 @@ describe('renderHuman', () => {
     expect(text).toContain('Counters');
     expect(text).toContain('github_requests=2');
   });
+
+  it('renders doctor capability matrix and remediations', () => {
+    const text = renderHuman({
+      command: 'doctor',
+      verdict: 'SKIP',
+      verdict_summary: 'not ready: GITHUB_TOKEN (or GH_TOKEN) is missing.',
+      capabilities: [
+        { id: 'github_token', status: 'fail', summary: 'GITHUB_TOKEN (or GH_TOKEN) is missing.', remediation: 'Export GITHUB_TOKEN or GH_TOKEN.' },
+        { id: 'cache_dir', status: 'pass', summary: 'Cache directory is writable.' }
+      ],
+      not_checked: ['baseline limitation']
+    });
+    expect(text).toContain('Capabilities');
+    expect(text).toContain('fail · github_token');
+    expect(text).toContain('Remediation');
+    expect(text).toContain('Export GITHUB_TOKEN');
+  });
 });

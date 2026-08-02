@@ -8,7 +8,7 @@
 |---|---|
 | `duration_ms` | Wall time for the active run budget |
 | `github_requests` | Networked GitHub/raw HTTP requests (cache hits excluded) |
-| `github_retries` | Transient HTTP retries |
+| `github_retries` | Transient retries for GitHub API requests only (`github: false` npm/raw retries are excluded) |
 | `cache_hits` | TTL / in-flight coalesced GitHub responses |
 | `git_commands` | Git subprocess invocations (when instrumented) |
 | `bytes_read` | Bytes counted from instrumented readers |
