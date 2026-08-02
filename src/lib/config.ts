@@ -48,8 +48,18 @@ const SECRET_KEY_PATTERN = /(?:^|[_-])(token|secret|password|authorization|crede
 const SECRET_VALUE_PATTERNS = [
   /\bgh[pousr]_[A-Za-z0-9_]{20,}\b/,
   /\bgithub_pat_[A-Za-z0-9_]{20,}\b/,
-  /\bBearer\s+[A-Za-z0-9._~+/=-]{20,}\b/i
+  /\bBearer\s+[A-Za-z0-9._~+/=-]{20,}\b/i,
+  /\b(?=[A-Za-z0-9_+=/-]{40,}\b)(?=.*[A-Za-z])(?=.*\d)[A-Za-z0-9_+=/-]{40,}\b/
 ];
+
+const LAYER_RANK: Record<ConfigLayer, number> = {
+  defaults: 0,
+  user: 1,
+  repo: 2,
+  manifest: 3,
+  env: 4,
+  input: 5
+};
 
 export function userConfigPath(homeDir = homedir(), pathImpl: PathJoin = path): string {
   return pathImpl.join(homeDir, '.gitworthy', 'config.json');
@@ -225,11 +235,17 @@ function applyTargetOverrides(values: EffectiveConfigValues, provenance: Record<
     if (!row || typeof row === 'string') continue;
     const rowValues = row as Partial<EffectiveConfigValues>;
     for (const key of ['label', 'keywords', 'since', 'limit', 'max_repos', 'land_hints', 'npm_package'] as const) {
-      if (values[key] === undefined && rowValues[key] !== undefined) setValue(values, provenance, key, rowValues[key], source);
+      const currentLayer = provenance[key]?.layer ?? 'defaults';
+      if (rowValues[key] !== undefined && LAYER_RANK[currentLayer] < LAYER_RANK[source.layer]) {
+        setValue(values, provenance, key, rowValues[key], source);
+      }
     }
-    if (values.skill_profile === undefined && rowValues.skill_profile !== undefined) setValue(values, provenance, 'skill_profile', rowValues.skill_profile, source);
+    const profileLayer = provenance.skill_profile?.layer ?? 'defaults';
+    if (rowValues.skill_profile !== undefined && LAYER_RANK[profileLayer] < LAYER_RANK[source.layer]) {
+      setValue(values, provenance, 'skill_profile', rowValues.skill_profile, source);
+    }
   }
-  if (target.repo && values.npm_package === undefined) {
+  if (target.repo && LAYER_RANK[provenance.npm_package?.layer ?? 'defaults'] < LAYER_RANK[source.layer]) {
     const mapping = manifest.package_mappings?.find((item) => item.repo === target.repo);
     if (mapping) setValue(values, provenance, 'npm_package', mapping.npm_package, source);
   }
@@ -292,8 +308,23 @@ export function resolveHuntFromConfig(input: { repo?: string; org?: string } & P
   const manifest = effective.values.target_manifest;
   const repo = input.repo ?? (manifest ? firstRepo(manifest) : undefined);
   const org = input.org ?? (manifest ? firstOrg(manifest) : undefined);
+  if (!input.repo && !input.org && repo && org) {
+    throw inputError('hunt_ambiguous_manifest_target', 'hunt manifest resolved both one repo and one org; provide repo or org explicitly.');
+  }
   if (!repo && !org) throw inputError('hunt_invalid_input', 'hunt requires either repo, org, or a manifest containing exactly one target.');
   return { ...(repo ? { repo } : {}), ...(org ? { org } : {}), label: input.label ?? effective.values.label, keywords: input.keywords ?? effective.values.keywords, since: input.since ?? effective.values.since, scan_limit: input.scan_limit ?? input.limit ?? effective.values.scan_limit ?? effective.values.limit, max_repos: input.max_repos ?? effective.values.max_repos, max_checks: input.max_checks ?? effective.values.max_checks, land_hints: input.land_hints ?? effective.values.land_hints, skip_likely_land_only: input.skip_likely_land_only ?? effective.values.skip_likely_land_only, skip_soft_ask: input.skip_soft_ask ?? effective.values.skip_soft_ask, skip_assigned: input.skip_assigned ?? effective.values.skip_assigned, skip_ledger_skip: input.skip_ledger_skip ?? effective.values.skip_ledger_skip, skip_policy_gate: input.skip_policy_gate ?? effective.values.skip_policy_gate, npm_package: input.npm_package ?? effective.values.npm_package, skill_profile: input.skill_profile ?? effective.values.skill_profile };
+}
+
+export function assertEffectiveConfigSafeToShow(effective: EffectiveConfig): void {
+  assertSecretFree(effective.values, 'effective config');
+}
+
+export function profileForShow(effective: EffectiveConfig): SkillProfileV1 | string | null {
+  const profile = effective.values.skill_profile;
+  if (!profile) return null;
+  if (typeof profile === 'string') return profile.trim().length > 0 ? profile : null;
+  const hasTerms = Object.values(profile).some((value) => Array.isArray(value) && value.length > 0);
+  return hasTerms ? profile : null;
 }
 
 export async function validateConfigSelection(input: { path?: string; user?: boolean; repo?: boolean; manifest_path?: string } = {}): Promise<{ ok: true; checked: Array<{ path: string; kind: 'config' | 'manifest'; present: boolean }> }> {

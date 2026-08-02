@@ -6,7 +6,16 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { afterEach, describe, expect, it } from 'vitest';
 import { runCli } from '../src/cli/index.js';
 import { createMcpServer } from '../src/mcp/server.js';
-import { assertSecretFree, loadEffectiveConfig, repoConfigPath, userConfigPath, validateConfigSelection } from '../src/lib/config.js';
+import {
+  assertSecretFree,
+  loadEffectiveConfig,
+  profileForShow,
+  repoConfigPath,
+  resolveHuntFromConfig,
+  resolveScanFromConfig,
+  userConfigPath,
+  validateConfigSelection
+} from '../src/lib/config.js';
 
 let tempDirs: string[] = [];
 
@@ -82,6 +91,86 @@ describe('loadEffectiveConfig', () => {
     expect(effective.values.max_checks).toBe(3);
     expect(effective.provenance.max_checks.layer).toBe('defaults');
   });
+
+  it('lets target manifest overrides beat built-in defaults', async () => {
+    const dir = await tempDir('gitworthy-config-manifest-override-');
+    const manifestPath = path.join(dir, 'targets.json');
+    await writeJson(manifestPath, {
+      schema_version: '1.0-draft.1',
+      repos: [{ repo: 'owner/repo', limit: 2, land_hints: false }]
+    });
+
+    const effective = await loadEffectiveConfig({
+      userPath: path.join(dir, 'missing-user.json'),
+      repoPath: path.join(dir, 'missing-repo.json'),
+      env: {},
+      input: { repo: 'owner/repo', manifest_path: manifestPath }
+    });
+    const scanInput = resolveScanFromConfig({ repo: 'owner/repo' }, effective);
+
+    expect(effective.values.limit).toBe(2);
+    expect(effective.values.land_hints).toBe(false);
+    expect(effective.provenance.limit.layer).toBe('manifest');
+    expect(scanInput.limit).toBe(2);
+    expect(scanInput.land_hints).toBe(false);
+  });
+
+  it('keeps env and explicit input above target manifest overrides', async () => {
+    const dir = await tempDir('gitworthy-config-manifest-order-');
+    const manifestPath = path.join(dir, 'targets.json');
+    await writeJson(manifestPath, {
+      schema_version: '1.0-draft.1',
+      repos: [{ repo: 'owner/repo', limit: 2, land_hints: false }]
+    });
+
+    const envEffective = await loadEffectiveConfig({
+      userPath: path.join(dir, 'missing-user.json'),
+      repoPath: path.join(dir, 'missing-repo.json'),
+      env: { GITWORTHY_LIMIT: '9', GITWORTHY_LAND_HINTS: 'true' },
+      input: { repo: 'owner/repo', manifest_path: manifestPath }
+    });
+    expect(envEffective.values.limit).toBe(9);
+    expect(envEffective.values.land_hints).toBe(true);
+    expect(envEffective.provenance.limit.layer).toBe('env');
+
+    const inputEffective = await loadEffectiveConfig({
+      userPath: path.join(dir, 'missing-user.json'),
+      repoPath: path.join(dir, 'missing-repo.json'),
+      env: {},
+      input: { repo: 'owner/repo', manifest_path: manifestPath, limit: 6, land_hints: true }
+    });
+    expect(inputEffective.values.limit).toBe(6);
+    expect(inputEffective.values.land_hints).toBe(true);
+    expect(inputEffective.provenance.limit.layer).toBe('input');
+  });
+
+  it('fails hunt target resolution when a manifest implies both one repo and one org', async () => {
+    const dir = await tempDir('gitworthy-config-ambiguous-');
+    const manifestPath = path.join(dir, 'targets.json');
+    await writeJson(manifestPath, {
+      schema_version: '1.0-draft.1',
+      repos: ['owner/repo'],
+      orgs: ['owner']
+    });
+    const effective = await loadEffectiveConfig({
+      userPath: path.join(dir, 'missing-user.json'),
+      repoPath: path.join(dir, 'missing-repo.json'),
+      env: {},
+      input: { manifest_path: manifestPath }
+    });
+
+    expect(() => resolveHuntFromConfig({}, effective)).toThrow(/resolved both one repo and one org/);
+  });
+
+  it('treats an empty init skeleton profile as no profile for show', async () => {
+    const effective = await loadEffectiveConfig({
+      userPath: '/tmp/gitworthy-does-not-exist-user.json',
+      repoPath: '/tmp/gitworthy-does-not-exist-repo.json',
+      env: {},
+      input: { skill_profile: { languages: [], topics: [], preferred_ecosystems: [], avoid: [] } }
+    });
+    expect(profileForShow(effective)).toBeNull();
+  });
 });
 
 describe('config validation safety', () => {
@@ -149,5 +238,39 @@ describe('CLI/MCP config parity', () => {
     expect((cliPayload.values as Record<string, unknown>).label).toBe('help wanted');
     expect(cliPayload.values).toEqual(mcpPayload.values);
     expect(cliPayload.provenance.label.layer).toBe((mcpPayload.provenance as Record<string, Record<string, unknown>>).label.layer);
+  });
+
+  it('rejects token-like effective env values before CLI config show prints them', async () => {
+    const previous = process.env.GITWORTHY_SKILL_PROFILE;
+    process.env.GITWORTHY_SKILL_PROFILE = 'languages=ghp_abcdefghijklmnopqrstuvwxyz123456';
+    try {
+      const result = await run(['config', 'show', '--effective', '--json']);
+      expect(result.code).toBe(2);
+      const payload = JSON.parse(result.stdout);
+      expect(payload.error.code).toBe('config_secret_detected');
+    } finally {
+      if (previous === undefined) delete process.env.GITWORTHY_SKILL_PROFILE;
+      else process.env.GITWORTHY_SKILL_PROFILE = previous;
+    }
+  });
+
+  it('returns structured MCP errors for manifest_path-only ambiguous hunt targets', async () => {
+    const dir = await tempDir('gitworthy-mcp-ambiguous-');
+    const manifestPath = path.join(dir, 'targets.json');
+    await writeJson(manifestPath, {
+      schema_version: '1.0-draft.1',
+      repos: ['owner/repo'],
+      orgs: ['owner']
+    });
+
+    const payload = await callMcpTool('hunt', { manifest_path: manifestPath });
+    expect(payload.ok).toBe(false);
+    expect((payload.error as Record<string, unknown>).code).toBe('hunt_ambiguous_manifest_target');
+  });
+
+  it('returns structured MCP errors after config resolution when org remains unresolved', async () => {
+    const payload = await callMcpTool('org_scan', {});
+    expect(payload.ok).toBe(false);
+    expect((payload.error as Record<string, unknown>).code).toBe('invalid_org_ref');
   });
 });

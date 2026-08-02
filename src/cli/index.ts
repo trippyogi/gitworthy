@@ -38,7 +38,9 @@ import {
 import { GitworthyError } from '../core/envelope.js';
 import { packageVersion } from '../lib/package-meta.js';
 import {
+  assertEffectiveConfigSafeToShow,
   loadEffectiveConfig,
+  profileForShow,
   resolveHuntFromConfig,
   resolveOrgFromConfig,
   resolveScanFromConfig,
@@ -328,6 +330,7 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
       } else if (action === 'show') {
         if (parsedConfig.values.effective !== true) usageError('config show currently requires --effective.');
         const effective = await loadEffectiveConfig({ userPath: stringValue(parsedConfig.values.path) });
+        assertEffectiveConfigSafeToShow(effective);
         output = {
           command: 'config_show',
           verdict_summary: 'resolved effective config',
@@ -361,11 +364,13 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
       });
       if (parsedProfile.positionals[0] !== 'show') usageError('profile requires show.');
       const effective = await loadEffectiveConfig({ userPath: stringValue(parsedProfile.values.path) });
+      assertEffectiveConfigSafeToShow(effective);
+      const profile = profileForShow(effective);
       print({
         command: 'profile_show',
-        verdict_summary: effective.values.skill_profile ? 'resolved skill profile' : 'no skill profile configured',
-        profile: effective.values.skill_profile ?? null,
-        provenance: effective.provenance.skill_profile ?? null,
+        verdict_summary: profile ? 'resolved skill profile' : 'no skill profile configured',
+        profile,
+        provenance: profile ? effective.provenance.skill_profile ?? null : null,
         checked: ['resolved skill profile from config precedence'],
         not_checked: ['skill profile affects scan/hunt ranking inputs only; it never changes hard verdict policy.']
       }, parsedProfile.values.json === true, stdout);

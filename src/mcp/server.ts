@@ -30,7 +30,9 @@ import {
   worth_check
 } from '../core/index.js';
 import {
+  assertEffectiveConfigSafeToShow,
   loadEffectiveConfig,
+  profileForShow,
   resolveHuntFromConfig,
   resolveOrgFromConfig,
   resolveScanFromConfig,
@@ -170,6 +172,7 @@ export function createMcpServer(): McpServer {
     withToolErrors('config_show', async () => {
       const parsed = parseToolInput(ConfigShowInputSchema, input);
       const effective = await loadEffectiveConfig({ cwd: parsed.cwd, userPath: parsed.path });
+      assertEffectiveConfigSafeToShow(effective);
       return {
         command: 'config_show',
         verdict_summary: 'resolved effective config',
@@ -186,11 +189,13 @@ export function createMcpServer(): McpServer {
     withToolErrors('profile_show', async () => {
       const parsed = parseToolInput(ProfileShowInputSchema, input);
       const effective = await loadEffectiveConfig({ cwd: parsed.cwd, userPath: parsed.path });
+      assertEffectiveConfigSafeToShow(effective);
+      const profile = profileForShow(effective);
       return {
         command: 'profile_show',
-        verdict_summary: effective.values.skill_profile ? 'resolved skill profile' : 'no skill profile configured',
-        profile: effective.values.skill_profile ?? null,
-        provenance: effective.provenance.skill_profile ?? null,
+        verdict_summary: profile ? 'resolved skill profile' : 'no skill profile configured',
+        profile,
+        provenance: profile ? effective.provenance.skill_profile ?? null : null,
         checked: ['resolved skill profile from config precedence'],
         not_checked: ['skill profile affects scan/hunt ranking inputs only; it never changes hard verdict policy.']
       };

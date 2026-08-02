@@ -158,8 +158,6 @@ export const OrgScanInputSchema = z.object({
   land_hints: z.boolean().optional(),
   skill_profile: SkillProfileSchema,
   manifest_path: z.string().optional()
-}).refine((value) => Boolean(value.org) || Boolean(value.manifest_path), {
-  message: 'org_scan requires org or manifest_path.'
 });
 
 export const HuntInputObjectSchema = z.object({
@@ -184,10 +182,8 @@ export const HuntInputObjectSchema = z.object({
   manifest_path: z.string().optional()
 });
 
-/** hunt requires repo/org or a target manifest; both repo/org may still be supplied (org wins). */
-export const HuntInputSchema = HuntInputObjectSchema.refine((value) => Boolean(value.repo) || Boolean(value.org) || Boolean(value.manifest_path), {
-  message: 'hunt requires either repo, org, or manifest_path.'
-});
+/** hunt target resolution happens after config loading so config-only MCP calls can work. */
+export const HuntInputSchema = HuntInputObjectSchema;
 
 export const CaptureShowInputSchema = z.object({
   capture_id: z.string().min(1)
