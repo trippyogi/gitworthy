@@ -10,7 +10,7 @@ The host agent owns the conversation, planning, repository operations, and execu
 |---|---|
 | **User** | Defines the goal, constraints, preferred technologies, and final selection. |
 | **Host agent** | Calls Gitworthy, interprets results, maintains the queue, performs named verification, and executes selected work. Examples: Cursor, ChatGPT, Hermes, Claude Code, Codex, or OpenClaw. |
-| **Gitworthy MCP** | Scans, filters, ranks, preflights, and returns structured evidence and limitations. |
+| **Gitworthy MCP** | Scans, filters, ranks, preflights, and returns structured evidence and limitations. Available over local stdio or Streamable HTTP (Cloud Agents / mobile); see `docs/HTTP_MCP.md`. |
 | **Repository / GitHub** | Source of issue state, contribution policy, branches, linked work, releases, and current implementation. |
 
 The intended relationship is:

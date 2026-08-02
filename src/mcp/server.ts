@@ -326,8 +326,20 @@ export function createMcpServer(): McpServer {
   return server;
 }
 
+/** Default local transport: stdio (Cursor desktop / `npx gitworthy mcp`). */
 export async function startMcpServer(): Promise<void> {
   const server = createMcpServer();
   const transport = new StdioServerTransport();
   await server.connect(transport);
 }
+
+export { startHttpMcpServer, resolveHttpMcpListenOptions, httpMcpStartupMessage } from './http-server.js';
+export { handleMcpHttpRequest } from './http-handler.js';
+export {
+  MCP_TOKEN_ENV,
+  assertHttpBindAllowed,
+  authorizeMcpRequest,
+  isLoopbackHost,
+  requiresMcpTokenForBind,
+  resolveMcpToken
+} from './auth.js';

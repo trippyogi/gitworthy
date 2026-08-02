@@ -69,7 +69,12 @@ import { persistCheckResultBestEffort } from '../lib/store.js';
 import { captureTargetForOrg, captureTargetForRepo, captureTargetForRepoIssue } from '../lib/capture-policy.js';
 import { putCaptureManifest } from '../lib/capture-store.js';
 import { withCaptureSession } from '../lib/capture-session.js';
-import { startMcpServer } from '../mcp/server.js';
+import {
+  httpMcpStartupMessage,
+  resolveMcpToken,
+  startHttpMcpServer,
+  startMcpServer
+} from '../mcp/server.js';
 
 const help = `gitworthy
 
@@ -113,6 +118,7 @@ Usage:
   gitworthy brief <decision_id> [--format human|json|markdown] [--out file] [--json]
   gitworthy recheck owner/repo#123 [--npm-package name] [--json]
   gitworthy mcp
+  gitworthy mcp --http [--host 127.0.0.1] [--port 8787] [--path /mcp] [--stateless]
 `;
 
 type Write = (text: string) => void;
@@ -267,7 +273,12 @@ const CLI_OPTIONS = {
   rationale: { type: 'string' },
   'evidence-url': { type: 'string', multiple: true },
   format: { type: 'string' },
-  issue: { type: 'string' }
+  issue: { type: 'string' },
+  http: { type: 'boolean' },
+  host: { type: 'string' },
+  port: { type: 'string' },
+  path: { type: 'string' },
+  stateless: { type: 'boolean' }
 } as const;
 
 function parseCliArgs(argv: string[]) {
@@ -428,8 +439,37 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
     return 0;
   }
   if (command === 'mcp') {
-    await startMcpServer();
-    return 0;
+    try {
+      if (parsed.values.http === true) {
+        const portRaw = stringValue(parsed.values.port);
+        const port = portRaw === undefined ? undefined : Number(portRaw);
+        if (portRaw !== undefined && (!Number.isFinite(port) || !Number.isInteger(port) || (port as number) <= 0)) {
+          usageError('mcp --http --port requires a positive integer.');
+        }
+        const started = await startHttpMcpServer({
+          host: stringValue(parsed.values.host),
+          port,
+          path: stringValue(parsed.values.path),
+          stateless: parsed.values.stateless === true
+        });
+        stderr(`${httpMcpStartupMessage(started, Boolean(resolveMcpToken()))}\n`);
+        await new Promise<void>((resolve) => {
+          const shutdown = () => {
+            void started.close().finally(() => resolve());
+          };
+          process.once('SIGINT', shutdown);
+          process.once('SIGTERM', shutdown);
+        });
+        return 0;
+      }
+      await startMcpServer();
+      return 0;
+    } catch (error) {
+      const structured = toErrorResult({ command: 'mcp', error: toCliError(error) });
+      if (asJsonEarly) stdout(`${JSON.stringify(structured, null, 2)}\n`);
+      else stderr(`${structured.error.message}\n`);
+      return structured.error.category === 'input' ? 2 : 1;
+    }
   }
   const asJson = parsed.values.json === true;
   let commandName = command ?? 'unknown';

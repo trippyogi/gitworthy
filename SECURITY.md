@@ -27,6 +27,7 @@ You should receive an acknowledgement within 7 days.
 Gitworthy is a local-first decision engine. Please treat these as security-sensitive:
 
 - **Tokens** — accepted only via environment / external credential tooling. Never write tokens into config, captures, logs, fixtures, or exports.
+- **HTTP MCP** — Streamable HTTP endpoints are hostile-network surfaces. Non-loopback binds require `GITWORTHY_MCP_TOKEN` (Authorization Bearer). Do not expose unauthenticated MCP HTTP. See `docs/HTTP_MCP.md`.
 - **Hostile input** — remote repositories, issue text, branch names, API bodies, package metadata, and tarballs are untrusted. Gitworthy must not execute code from a target repository or package.
 - **Filesystem / archive inspection** — symlink escape, path traversal, archive bombs, and unbounded clones/downloads are in-scope defect classes.
 - **Local outcome store** — corruption, race conditions between CLI and MCP processes, and silent data loss are treated as security/reliability bugs for 1.0.

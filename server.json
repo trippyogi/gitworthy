@@ -24,6 +24,31 @@
           "name": "GITHUB_TOKEN"
         }
       ]
+    },
+    {
+      "registryType": "npm",
+      "identifier": "gitworthy",
+      "version": "0.4.1",
+      "transport": {
+        "type": "streamable-http",
+        "url": "http://127.0.0.1:8787/mcp"
+      },
+      "environmentVariables": [
+        {
+          "description": "GitHub personal access token (fine-grained, read-only public repos). Optional; raises API rate limit from 60 to 5000 requests/hour.",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": true,
+          "name": "GITHUB_TOKEN"
+        },
+        {
+          "description": "Bearer token required for Streamable HTTP MCP (mandatory for non-loopback binds).",
+          "isRequired": true,
+          "format": "string",
+          "isSecret": true,
+          "name": "GITWORTHY_MCP_TOKEN"
+        }
+      ]
     }
   ]
 }
