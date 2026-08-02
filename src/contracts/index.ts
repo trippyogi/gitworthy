@@ -37,6 +37,18 @@ export { OutcomeEventNameSchema, OutcomeEventSchema } from './outcomes.js';
 export type { OutcomeEvent } from './outcomes.js';
 
 export {
+  BRIEF_SCHEMA_VERSION,
+  BRIEF_RENDERING_VERSION,
+  BriefFormatSchema,
+  BriefStalenessWarningSchema,
+  BriefConfigProvenanceSchema,
+  BriefSourceRecordsSchema,
+  BriefSchema,
+  BriefInputSchema
+} from './brief.js';
+export type { Brief, BriefFormat, BriefInput } from './brief.js';
+
+export {
   CONFIG_SCHEMA_VERSION,
   ConfigDefaultsSchema,
   ConfigFileSchema,
@@ -96,6 +108,7 @@ export {
   CaptureShowInputSchema,
   CaptureListInputSchema,
   CasePromoteInputSchema,
+  BriefShowInputSchema,
   ConfigShowInputSchema,
   ConfigValidateInputSchema,
   ProfileShowInputSchema,

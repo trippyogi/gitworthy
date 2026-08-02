@@ -85,7 +85,7 @@ export async function listOutcomes(input: { repo?: string; issue_number?: number
     if (!targetMatches(input.repo, input.issue_number, event.target.repo, event.target.issue_number)) continue;
     rows.push(event);
   }
-  rows.sort((a, b) => b.occurred_at.localeCompare(a.occurred_at));
+  rows.sort((a, b) => b.occurred_at.localeCompare(a.occurred_at) || a.event_id.localeCompare(b.event_id));
   return typeof input.limit === 'number' ? rows.slice(0, Math.max(0, input.limit)) : rows;
 }
 

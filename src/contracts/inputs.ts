@@ -203,6 +203,12 @@ export const CasePromoteInputSchema = z.object({
   force: z.boolean().optional()
 });
 
+export const BriefShowInputSchema = z.object({
+  decision_id: z.string().min(1),
+  config_path: z.string().optional(),
+  cwd: z.string().optional()
+}).strict();
+
 export const ConfigValidateInputSchema = z.object({
   path: z.string().optional(),
   user: z.boolean().optional(),

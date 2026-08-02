@@ -9,6 +9,7 @@ import {
   contrib_policy,
   doctor,
   dupe_cluster,
+  generateBrief,
   hunt,
   issue_vs_main,
   ledger_list,
@@ -41,6 +42,7 @@ import {
 import { packageVersion } from '../lib/package-meta.js';
 import {
   BranchScanInputSchema,
+  BriefShowInputSchema,
   CaptureListInputSchema,
   CaptureShowInputSchema,
   CasePromoteInputSchema,
@@ -317,6 +319,10 @@ export function createMcpServer(): McpServer {
     withToolErrors('capture_list', () => capture_list(parseToolInput(CaptureListInputSchema, input)), stamp('capture_list')));
   server.registerTool('case_promote', { title: 'Promote capture to proposed case fixture', inputSchema: { capture_id: z.string(), verdict: z.string(), disposition: z.string(), adjudicator_rationale: z.string(), evidence_urls: z.array(z.string()), out_path: z.string(), force: z.boolean().optional() } }, async (input) =>
     withToolErrors('case_promote', () => case_promote(parseToolInput(CasePromoteInputSchema, input)), stamp('case_promote')));
+  server.registerTool('brief_show', { title: 'Show stored decision brief', inputSchema: { decision_id: z.string(), config_path: z.string().optional(), cwd: z.string().optional() } }, async (input) =>
+    withToolErrors('brief', () => generateBrief(parseToolInput(BriefShowInputSchema, input))));
+  server.registerTool('brief', { title: 'Brief stored decision', inputSchema: { decision_id: z.string(), config_path: z.string().optional(), cwd: z.string().optional() } }, async (input) =>
+    withToolErrors('brief', () => generateBrief(parseToolInput(BriefShowInputSchema, input))));
   return server;
 }
 
