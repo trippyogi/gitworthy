@@ -52,7 +52,6 @@ export async function vercelMcpHandler(request: Request): Promise<Response> {
     allowedHosts: allowedHostsFromEnv(),
     // Default to the invoked path so /api/mcp and custom rewrites both work.
     path: process.env.GITWORTHY_MCP_PATH?.trim() || pathname || '/mcp',
-    stateless: true,
     enableJsonResponse: true
   });
 }

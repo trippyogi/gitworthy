@@ -27,7 +27,9 @@ Useful flags:
 Bind policy:
 
 - Loopback (`127.0.0.1`, `localhost`, `::1`) may start without a token for local dev.
+  Tokenless loopback still enforces a localhost **Host allow-list** (DNS-rebinding protection).
 - Any non-loopback bind (`0.0.0.0`, public host) **refuses to start** without `GITWORTHY_MCP_TOKEN`.
+- Shared/serverless handlers **fail closed** without a token (no unauthenticated mode).
 - When a token is configured, every MCP request must send:
 
   `Authorization: Bearer <GITWORTHY_MCP_TOKEN>`
@@ -61,15 +63,15 @@ Notes:
 
 ## Deploy on Vercel
 
-1. Build the package (`pnpm build`).
-2. Expose `api/mcp.ts` (repo includes a thin re-export of `dist/mcp/vercel-handler.js`).
-3. Set project env:
-   - `GITWORTHY_MCP_TOKEN` (required)
+1. Expose `api/mcp.ts` (thin re-export of `src/mcp/vercel-handler.ts` for Vercel bundling).
+2. Set project env:
+   - `GITWORTHY_MCP_TOKEN` (required — handler fails closed without it)
    - `GITHUB_TOKEN` (recommended)
-   - optional `GITWORTHY_MCP_ALLOWED_HOSTS`, `GITWORTHY_STORE_DIR` if using durable disk (ephemeral serverless disks are not a durable store)
-4. Point Cloud Agents at `https://<deployment>/api/mcp`.
+   - optional `GITWORTHY_MCP_ALLOWED_HOSTS`
+   - optional `GITWORTHY_MCP_PATH` (defaults to the invoked URL path, e.g. `/api/mcp`)
+3. Point Cloud Agents at `https://<deployment>/api/mcp`.
 
-The serverless handler is **stateless** Streamable HTTP with JSON responses.
+The serverless handler is **stateless** Streamable HTTP with JSON responses. Ephemeral serverless disks are not a durable outcome store.
 
 ## Security
 

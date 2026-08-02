@@ -9,6 +9,8 @@ import {
   authorizeMcpRequest,
   hostHeaderAllowed,
   isLoopbackHost,
+  isPublicBindHost,
+  resolveAllowedHosts,
   resolveMcpToken
 } from './auth.js';
 import { createMcpServer } from './server.js';
@@ -35,6 +37,7 @@ export type StartedHttpMcpServer = {
   port: number;
   path: string;
   url: string;
+  tokenConfigured: boolean;
   tokenRequired: boolean;
   close: () => Promise<void>;
   server: Server;
@@ -132,10 +135,17 @@ export function resolveHttpMcpListenOptions(options: StartHttpMcpServerOptions =
   const port = Number.isFinite(portRaw) ? Number(portRaw) : 8787;
   const path = normalizePath(options.path?.trim() || env.GITWORTHY_MCP_PATH?.trim() || '/mcp');
   const token = options.token ?? resolveMcpToken(env);
-  const allowedHosts = parseAllowedHosts(options.allowedHosts, env);
+  const configuredHosts = parseAllowedHosts(options.allowedHosts, env);
+  const allowedHosts = resolveAllowedHosts({ host, token, allowedHosts: configuredHosts });
   const stateless = options.stateless === true || env.GITWORTHY_MCP_STATELESS === '1';
   const enableJsonResponse = options.enableJsonResponse ?? (stateless || env.GITWORTHY_MCP_JSON_RESPONSE === '1');
   assertHttpBindAllowed({ host, token });
+  if (isPublicBindHost(host) && !allowedHosts?.length) {
+    console.warn(
+      `Warning: MCP HTTP binding ${host} without GITWORTHY_MCP_ALLOWED_HOSTS. ` +
+        'Bearer auth is required; consider setting an explicit Host allow-list.'
+    );
+  }
   return { host, port, path, token, allowedHosts, stateless, enableJsonResponse };
 }
 
@@ -173,11 +183,14 @@ export async function startHttpMcpServer(options: StartHttpMcpServerOptions = {}
         return;
       }
 
+      const allowUnauthenticated = !resolved.token && isLoopbackHost(resolved.host);
       const auth = authorizeMcpRequest({
         authorizationHeader: authorizationFromNodeRequest(req),
-        expectedToken: resolved.token
+        expectedToken: resolved.token,
+        allowUnauthenticated
       });
       if (!auth.ok) {
+        req.resume();
         sendJson(res, auth.status, {
           jsonrpc: '2.0',
           error: { code: -32001, message: auth.message },
@@ -202,13 +215,11 @@ export async function startHttpMcpServer(options: StartHttpMcpServerOptions = {}
           }
         }
         const webReq = nodeRequestToWeb(req, body, resolved.host, resolved.port);
-        // Auth/host already enforced; pass token undefined so handler does not double-check
-        // with a missing header copy edge case — still pass token for defense in depth.
         const response = await handleMcpHttpRequest(webReq, {
           token: resolved.token,
+          allowUnauthenticated,
           allowedHosts: resolved.allowedHosts,
           path: resolved.path,
-          stateless: true,
           enableJsonResponse: resolved.enableJsonResponse
         });
         await writeWebResponse(res, response);
@@ -234,8 +245,16 @@ export async function startHttpMcpServer(options: StartHttpMcpServerOptions = {}
       const sessionHeader = req.headers['mcp-session-id'];
       const sessionId = Array.isArray(sessionHeader) ? sessionHeader[0] : sessionHeader;
 
-      if (sessionId && sessions.has(sessionId)) {
-        const existing = sessions.get(sessionId)!;
+      if (sessionId) {
+        const existing = sessions.get(sessionId);
+        if (!existing) {
+          sendJson(res, 404, {
+            jsonrpc: '2.0',
+            error: { code: -32001, message: 'Session not found.' },
+            id: null
+          });
+          return;
+        }
         await existing.transport.handleRequest(req, res, body);
         return;
       }
@@ -305,6 +324,7 @@ export async function startHttpMcpServer(options: StartHttpMcpServerOptions = {}
     port,
     path: resolved.path,
     url,
+    tokenConfigured: Boolean(resolved.token),
     tokenRequired: Boolean(resolved.token) || !isLoopbackHost(resolved.host),
     server,
     close: async () => {
@@ -320,10 +340,10 @@ export async function startHttpMcpServer(options: StartHttpMcpServerOptions = {}
   };
 }
 
-export function httpMcpStartupMessage(started: StartedHttpMcpServer, tokenConfigured: boolean): string {
-  const authLine = tokenConfigured
+export function httpMcpStartupMessage(started: StartedHttpMcpServer): string {
+  const authLine = started.tokenConfigured
     ? `Auth: Authorization Bearer from ${MCP_TOKEN_ENV}`
-    : `Auth: disabled (loopback only). Set ${MCP_TOKEN_ENV} before any public bind.`;
+    : `Auth: disabled (loopback only; Host allow-list enforced). Set ${MCP_TOKEN_ENV} before any public bind.`;
   return [
     `Gitworthy MCP Streamable HTTP listening on ${started.url}`,
     authLine,

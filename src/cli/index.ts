@@ -71,7 +71,6 @@ import { putCaptureManifest } from '../lib/capture-store.js';
 import { withCaptureSession } from '../lib/capture-session.js';
 import {
   httpMcpStartupMessage,
-  resolveMcpToken,
   startHttpMcpServer,
   startMcpServer
 } from '../mcp/server.js';
@@ -452,7 +451,7 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
           path: stringValue(parsed.values.path),
           stateless: parsed.values.stateless === true
         });
-        stderr(`${httpMcpStartupMessage(started, Boolean(resolveMcpToken()))}\n`);
+        stderr(`${httpMcpStartupMessage(started)}\n`);
         await new Promise<void>((resolve) => {
           const shutdown = () => {
             void started.close().finally(() => resolve());

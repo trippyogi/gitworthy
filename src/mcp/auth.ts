@@ -7,10 +7,7 @@ const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '::1', '[::1]']);
 
 export function isLoopbackHost(host: string): boolean {
   const normalized = host.trim().toLowerCase();
-  if (LOOPBACK_HOSTS.has(normalized)) return true;
-  // Strip optional brackets / zone id variants.
-  if (normalized === '::1' || normalized === '[::1]') return true;
-  return false;
+  return LOOPBACK_HOSTS.has(normalized);
 }
 
 export function isPublicBindHost(host: string): boolean {
@@ -45,7 +42,6 @@ function safeEqualString(left: string, right: string): boolean {
   const a = Buffer.from(left);
   const b = Buffer.from(right);
   if (a.length !== b.length) {
-    // Compare against itself to keep the timing roughly constant on length mismatch.
     timingSafeEqual(a, a);
     return false;
   }
@@ -62,11 +58,17 @@ export function bearerTokenFromAuthorization(header: string | null | undefined):
 export function authorizeMcpRequest(input: {
   authorizationHeader?: string | null;
   expectedToken?: string;
+  /** Explicit opt-in for tokenless loopback only. Default: fail closed. */
+  allowUnauthenticated?: boolean;
 }): { ok: true } | { ok: false; status: 401; message: string } {
   const expected = input.expectedToken?.trim();
   if (!expected) {
-    // Loopback-only unauthenticated mode.
-    return { ok: true };
+    if (input.allowUnauthenticated) return { ok: true };
+    return {
+      ok: false,
+      status: 401,
+      message: `Unauthorized: set ${MCP_TOKEN_ENV} and send Authorization Bearer token.`
+    };
   }
   const provided = bearerTokenFromAuthorization(input.authorizationHeader);
   if (!provided || !safeEqualString(provided, expected)) {
@@ -85,17 +87,51 @@ export function authorizationFromNodeRequest(req: IncomingMessage): string | und
   return value;
 }
 
+/** Hostname from a Host header (strips port; keeps IPv6 bracket form when present). */
+export function hostnameFromHostHeader(hostHeader: string | null | undefined): string | undefined {
+  if (!hostHeader) return undefined;
+  const raw = hostHeader.trim().toLowerCase();
+  if (!raw) return undefined;
+  try {
+    // URL parser handles host:port and [ipv6]:port correctly.
+    return new URL(`http://${raw}`).hostname.toLowerCase();
+  } catch {
+    return raw.replace(/:\d+$/, '');
+  }
+}
+
+export const DEFAULT_LOOPBACK_ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '::1', '[::1]'];
+
+/**
+ * Resolve Host allow-list.
+ * Tokenless loopback defaults to localhost hosts (DNS-rebinding protection).
+ * Public binds with a token may omit the list (auth is the gate) unless configured.
+ */
+export function resolveAllowedHosts(input: {
+  host: string;
+  token?: string;
+  allowedHosts?: string[];
+}): string[] | undefined {
+  if (input.allowedHosts && input.allowedHosts.length > 0) return input.allowedHosts;
+  if (!input.token?.trim() && isLoopbackHost(input.host)) {
+    return [...DEFAULT_LOOPBACK_ALLOWED_HOSTS];
+  }
+  return undefined;
+}
+
 export function hostHeaderAllowed(input: {
   hostHeader?: string | null;
   allowedHosts?: string[];
 }): boolean {
   if (!input.allowedHosts || input.allowedHosts.length === 0) return true;
-  const raw = input.hostHeader?.trim().toLowerCase();
-  if (!raw) return false;
-  // Host may include port.
-  const hostname = raw.replace(/:\d+$/, '');
+  const hostname = hostnameFromHostHeader(input.hostHeader);
+  if (!hostname) return false;
+  const raw = input.hostHeader?.trim().toLowerCase() ?? '';
   return input.allowedHosts.some((allowed) => {
     const needle = allowed.trim().toLowerCase();
-    return needle === raw || needle === hostname;
+    if (!needle) return false;
+    if (needle === raw || needle === hostname) return true;
+    const allowedHost = hostnameFromHostHeader(needle);
+    return Boolean(allowedHost && allowedHost === hostname);
   });
 }

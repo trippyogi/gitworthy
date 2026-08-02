@@ -1,19 +1,24 @@
-import { randomUUID } from 'node:crypto';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
 import { authorizeMcpRequest, hostHeaderAllowed } from './auth.js';
 import { createMcpServer } from './server.js';
 
 export type HttpMcpHandlerOptions = {
-  /** Bearer token expected in Authorization. When unset, requests are allowed (loopback-only use). */
+  /** Bearer token expected in Authorization. Required unless allowUnauthenticated. */
   token?: string;
+  /**
+   * Explicit opt-in for tokenless mode (loopback Node server only).
+   * Shared/serverless handlers must leave this false/undefined (fail closed).
+   */
+  allowUnauthenticated?: boolean;
   /** Optional Host allow-list (hostname or host:port). */
   allowedHosts?: string[];
   /** MCP path. Default `/mcp`. */
   path?: string;
-  /** When true (default for serverless), no session tracking. */
-  stateless?: boolean;
-  /** Prefer JSON responses (better behind many proxies). Default true for stateless. */
+  /**
+   * Stateless mode only for this shared handler (serverless-safe).
+   * Stateful sessions are owned by `startHttpMcpServer`.
+   */
   enableJsonResponse?: boolean;
 };
 
@@ -68,7 +73,8 @@ export async function handleMcpHttpRequest(
 
   const auth = authorizeMcpRequest({
     authorizationHeader: request.headers.get('authorization'),
-    expectedToken: options.token
+    expectedToken: options.token,
+    allowUnauthenticated: options.allowUnauthenticated === true
   });
   if (!auth.ok) {
     return jsonRpcError(auth.status, auth.message);
@@ -82,12 +88,12 @@ export async function handleMcpHttpRequest(
     });
   }
 
-  const stateless = options.stateless !== false;
-  const enableJsonResponse = options.enableJsonResponse ?? stateless;
+  // Shared handler is always stateless; long-lived sessions live in http-server.ts.
+  const enableJsonResponse = options.enableJsonResponse ?? true;
 
   const server = createMcpServer();
   const transport = new WebStandardStreamableHTTPServerTransport({
-    sessionIdGenerator: stateless ? undefined : () => randomUUID(),
+    sessionIdGenerator: undefined,
     enableJsonResponse
   });
 
@@ -95,11 +101,8 @@ export async function handleMcpHttpRequest(
     await server.connect(transport);
     return await transport.handleRequest(request);
   } finally {
-    // Stateless/serverless: tear down after each request.
-    if (stateless) {
-      await transport.close().catch(() => undefined);
-      await server.close().catch(() => undefined);
-    }
+    await transport.close().catch(() => undefined);
+    await server.close().catch(() => undefined);
   }
 }
 
