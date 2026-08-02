@@ -42,6 +42,7 @@ import {
   validateConfigSelection
 } from '../lib/config.js';
 import { packageVersion } from '../lib/package-meta.js';
+import { withRunBudget, createRunBudget } from '../lib/run-budget.js';
 import {
   BranchScanInputSchema,
   BriefShowInputSchema,
@@ -118,8 +119,12 @@ function extractHuntDecisionIds(output: Record<string, unknown>): string[] {
 
 async function withToolErrors<T>(command: string, run: () => Promise<T> | T, map?: (value: T) => unknown) {
   try {
-    const value = await run();
-    return jsonText(map ? map(value) : value);
+    // Stamp/map inside the budget so mergeBudgetMetrics still sees active counters.
+    const value = await withRunBudget(createRunBudget(), async () => {
+      const result = await run();
+      return map ? map(result) : result;
+    });
+    return jsonText(value);
   } catch (error) {
     return jsonText(toErrorResult({ command, error }), true);
   }

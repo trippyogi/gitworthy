@@ -27,6 +27,8 @@ jobs:
       - run: pnpm check
       - name: Frozen eval (offline)
         run: pnpm eval:frozen
+      - name: Frozen perf counters (offline)
+        run: pnpm bench:frozen
       - name: Release metadata sync
         env:
           GITWORTHY_RELEASE_ALLOW_DIRTY: '1'

@@ -43,6 +43,8 @@ import {
 } from '../core/index.js';
 import { GitworthyError } from '../core/envelope.js';
 import { packageVersion } from '../lib/package-meta.js';
+import { enterRunBudget } from '../lib/run-budget.js';
+import { progress, renderHuman } from './render-human.js';
 import {
   assertEffectiveConfigSafeToShow,
   loadEffectiveConfig,
@@ -156,14 +158,9 @@ function issueNumberArg(value: string | undefined, usage: string): number {
   return parseArg(IssueNumberStringSchema, required(value, usage), 'invalid_issue_number');
 }
 
-function print(output: unknown, asJson: boolean, write: Write): void {
+function print(output: unknown, asJson: boolean, write: Write, options: { verbose?: boolean } = {}): void {
   if (asJson) write(`${JSON.stringify(output, null, 2)}\n`);
-  else {
-    const value = output as { verdict_summary?: string; verdict?: string };
-    const summary = value.verdict_summary ?? JSON.stringify(output);
-    const prefix = value.verdict && !summary.startsWith(`${value.verdict}:`) ? `${value.verdict}: ` : '';
-    write(`${prefix}${summary}\n`);
-  }
+  else write(renderHuman(output, { verbose: options.verbose }));
 }
 
 function stringValue(value: unknown): string | undefined {
@@ -250,6 +247,8 @@ const CLI_OPTIONS = {
   help: { type: 'boolean', short: 'h' },
   version: { type: 'boolean', short: 'V' },
   json: { type: 'boolean' },
+  quiet: { type: 'boolean', short: 'q' },
+  verbose: { type: 'boolean', short: 'v' },
   'npm-package': { type: 'string' },
   'probe-glob': { type: 'string' },
   'probe-contains': { type: 'string' },
@@ -418,6 +417,7 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
   }
   if (argv[0] === 'branches' && argv[2]?.startsWith('-')) {
     try {
+      enterRunBudget();
       const repo = repoArg(argv[1], 'branches requires owner/repo and keywords.');
       const second = required(argv[2], 'branches requires owner/repo and keywords.');
       stderr(`Warning: branch keyword "${second}" starts with a dash. Use -- before positional arguments if your shell or parser treats it as an option.\n`);
@@ -426,7 +426,7 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
         keywords: second.split(',').filter(Boolean),
         force_refresh: argv.includes('--force-refresh')
       }) as Record<string, unknown>);
-      print(output, asJsonEarly, stdout);
+      print(output, asJsonEarly, stdout, { verbose: argv.includes('--verbose') || argv.includes('-v') });
       return 0;
     } catch (error) {
       const structured = toErrorResult({ command: 'branch_scan', error });
@@ -489,8 +489,12 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
     }
   }
   const asJson = parsed.values.json === true;
+  const quiet = parsed.values.quiet === true;
+  const verbose = parsed.values.verbose === true;
   let commandName = command ?? 'unknown';
   try {
+    enterRunBudget();
+    if (!quiet && !asJson) progress(stderr, quiet, `gitworthy ${commandName}…`);
     let output: unknown;
     if (command === 'doctor') {
       commandName = 'doctor';
@@ -869,7 +873,7 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
     } else {
       usageError(`Unknown subcommand ${command}.`);
     }
-    print(output, asJson, stdout);
+    print(output, asJson, stdout, { verbose });
     return exitFor(output);
   } catch (error) {
     const structured = toErrorResult({ command: commandName, error });

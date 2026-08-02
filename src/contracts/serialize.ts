@@ -1,5 +1,6 @@
 import { ZodError } from 'zod';
 import { packageVersion } from '../lib/package-meta.js';
+import { mergeBudgetMetrics } from '../lib/run-budget.js';
 import { GitworthyError } from '../core/envelope.js';
 import { CheckResult, CheckResultSchema } from './check.js';
 import { SCHEMA_VERSION, newDecisionId, newRunId } from './common.js';
@@ -125,7 +126,7 @@ export function toCheckResult(legacy: LegacyEnvelopeLike & Record<string, unknow
       ...(typeof item.url === 'string' ? { url: item.url } : {}),
       data: asRecord(item.data)
     })),
-    metrics: { duration_ms: duration },
+    metrics: mergeBudgetMetrics({ duration_ms: duration }),
     target: {
       input_repo: input.repo,
       canonical_repo: input.repo,
@@ -163,7 +164,9 @@ export function toStampedLegacyResult(command: CommandName, legacy: Record<strin
     not_checked: Array.isArray(legacy.not_checked) && legacy.not_checked.length > 0 ? legacy.not_checked : ['full 1.0 contract mapping not yet applied for this command'],
     checks: Array.isArray(legacy.checks) ? legacy.checks : [],
     findings: Array.isArray(legacy.findings) ? legacy.findings : [],
-    metrics: typeof legacy.metrics === 'object' && legacy.metrics !== null ? legacy.metrics : {}
+    metrics: mergeBudgetMetrics(
+      typeof legacy.metrics === 'object' && legacy.metrics !== null ? legacy.metrics as Record<string, unknown> : {}
+    )
   };
 
   if (command === 'scan') return ScanResultSchema.parse(stamped);

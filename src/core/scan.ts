@@ -12,6 +12,7 @@ import {
   type DiscoveryMeta,
   type FilterCounts
 } from '../lib/discovery-budget.js';
+import { noteCandidatesConsidered, notePagesFetched } from '../lib/run-budget.js';
 import { isAutomationAuthor } from './bots.js';
 import { assessIssueQuality } from './candidate-quality.js';
 import { createEnvelope, Envelope } from './envelope.js';
@@ -374,6 +375,8 @@ export async function scan(input: Input): Promise<Envelope> {
     partial: fetched.partial,
     partialReason: fetched.partialReason
   });
+  notePagesFetched(discovery.pages_fetched);
+  noteCandidatesConsidered(discovery.rows_considered);
   const widenHint = widenHintEvidence(input, candidates, limit);
   const evidence = [
     ...candidates,

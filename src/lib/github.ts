@@ -12,6 +12,7 @@ import {
   RequestBudget
 } from './http-client.js';
 import { currentCaptureSession } from './capture-session.js';
+import { noteCacheHit, noteGithubRequest } from './run-budget.js';
 
 export type GithubIssue = {
   number: number;
@@ -97,12 +98,18 @@ export async function githubJson<T>(path: string, init: RequestInit = {}): Promi
   if (ttlMs > 0) {
     const cached = githubTtlCache.get(path);
     if (cached) {
-      if (cached.expiresAt > Date.now()) return cached.value as T;
+      if (cached.expiresAt > Date.now()) {
+        noteCacheHit();
+        return cached.value as T;
+      }
       githubTtlCache.delete(path);
     }
   }
   const inFlight = githubInFlight.get(path);
-  if (inFlight) return inFlight as Promise<T>;
+  if (inFlight) {
+    noteCacheHit();
+    return inFlight as Promise<T>;
+  }
   const promise = githubJsonUncached<T>(path, init)
     .then((value) => {
       if (ttlMs > 0) githubTtlCache.set(path, { value, expiresAt: Date.now() + ttlMs });
@@ -127,6 +134,7 @@ async function githubJsonUncached<T>(path: string, init: RequestInit = {}): Prom
   const url = path.startsWith('http') ? path : `https://api.github.com${path}`;
   let response: Response;
   try {
+    noteGithubRequest();
     const result = await githubHttp.request(url, {
       method: init.method,
       body: init.body,
@@ -179,6 +187,7 @@ export async function fetchRaw(repo: string, branch: string, filePath: string): 
   const token = githubToken();
   let response: Response;
   try {
+    noteGithubRequest();
     const result = await githubHttp.request(url, {
       github: false,
       headers: {
