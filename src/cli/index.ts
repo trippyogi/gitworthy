@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { realpathSync } from 'node:fs';
+import { writeFile } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
 import { pathToFileURL } from 'node:url';
 import {
@@ -10,6 +11,7 @@ import {
   contrib_policy,
   doctor,
   dupe_cluster,
+  generateBrief,
   hunt,
   issue_vs_main,
   ledger_list,
@@ -19,6 +21,7 @@ import {
   listProbeTemplates,
   org_scan,
   related_cluster,
+  renderBrief,
   release_gap,
   scan,
   store_decision_list,
@@ -50,6 +53,7 @@ import {
 import {
   ConfigValidateInputSchema,
   DispositionSchema,
+  BriefFormatSchema,
   IssueNumberStringSchema,
   OrgOrUserLoginSchema,
   RepoRefSchema,
@@ -106,6 +110,7 @@ Usage:
   gitworthy capture list [--limit 50] [--json]
   gitworthy capture show <capture_id> [--json]
   gitworthy case promote <capture_id> --verdict ACT --disposition greenfield --rationale text --evidence-url url --out path [--force] [--json]
+  gitworthy brief <decision_id> [--format human|json|markdown] [--out file] [--json]
   gitworthy recheck owner/repo#123 [--npm-package name] [--json]
   gitworthy mcp
 `;
@@ -261,6 +266,7 @@ const CLI_OPTIONS = {
   out: { type: 'string' },
   rationale: { type: 'string' },
   'evidence-url': { type: 'string', multiple: true },
+  format: { type: 'string' },
   issue: { type: 'string' }
 } as const;
 
@@ -752,6 +758,24 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
         out_path: required(stringValue(parsed.values.out), 'case promote requires --out path.'),
         force: parsed.values.force === true
       }) as Record<string, unknown>);
+    } else if (command === 'brief') {
+      commandName = 'brief';
+      const format = stringValue(parsed.values.format)
+        ? parseArg(BriefFormatSchema, stringValue(parsed.values.format), 'invalid_usage')
+        : (asJson ? 'json' : 'human');
+      const brief = await generateBrief({
+        decision_id: required(first, 'brief requires a decision_id.'),
+        config_path: stringValue(parsed.values.path)
+      });
+      const rendered = renderBrief(brief, format);
+      const out = stringValue(parsed.values.out);
+      if (out) {
+        await writeFile(out, rendered, 'utf8');
+        stdout(`wrote brief to ${out}\n`);
+      } else {
+        stdout(rendered);
+      }
+      return 0;
     } else if (command === 'recheck') {
       commandName = 'store_recheck';
       const ref = parseIssueRef(required(first, 'recheck requires owner/repo#123.'));

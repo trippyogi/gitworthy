@@ -13,6 +13,8 @@ describe('MCP tools', () => {
     await Promise.all([server.connect(serverTransport), client.connect(clientTransport)]);
     const listed = await client.listTools();
     expect(listed.tools.map((tool) => tool.name).sort()).toEqual([
+      'brief',
+      'brief_show',
       'branch_scan',
       'capture_list',
       'capture_show',

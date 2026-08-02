@@ -128,6 +128,14 @@ Evaluate a specific issue:
 npx -y gitworthy@latest check owner/repo#123
 ```
 
+Render a deterministic handoff brief from a stored decision:
+
+```sh
+npx -y gitworthy@latest brief decision_abc123 --format markdown --out brief.md
+```
+
+Brief generation is read-only over the local store and never calls GitHub, npm, or an LLM. Stored decisions are considered stale after 24 hours; stale briefs warn and recommend `recheck`.
+
 Scout and preflight a short list of contribution targets:
 
 ```sh
