@@ -276,7 +276,6 @@ const CLI_OPTIONS = {
   http: { type: 'boolean' },
   host: { type: 'string' },
   port: { type: 'string' },
-  path: { type: 'string' },
   stateless: { type: 'boolean' }
 } as const;
 
