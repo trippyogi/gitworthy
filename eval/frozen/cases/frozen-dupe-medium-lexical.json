@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0-draft.1",
+  "case_version": 1,
+  "suite": "frozen",
+  "classification": "frozen",
+  "provenance": {
+    "notes": "GW-024 promotion"
+  },
+  "time_sensitive": false,
+  "id": "frozen-dupe-medium-lexical",
+  "name": "Medium lexical duplicate without blocking signal",
+  "function": "dupe_cluster",
+  "input": {
+    "repo": "acme/widgets",
+    "issue_number": 50
+  },
+  "ground_truth": {
+    "verdict": "VERIFY",
+    "disposition": "crowded",
+    "failure_mode": "medium_lexical_dupe_without_blocking",
+    "adjudicator_rationale": "Scores between evidence and blocking thresholds surface duplicate signal without hard SKIP.",
+    "evidence_urls": [
+      "https://github.com/acme/widgets/issues/50",
+      "https://github.com/acme/widgets/issues/51"
+    ],
+    "required_signals": [],
+    "required_findings": [
+      "51"
+    ],
+    "forbidden_findings": []
+  },
+  "provider_fixtures": "../fixtures/frozen-dupe-medium-lexical.provider.json"
+}

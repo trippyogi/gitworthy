@@ -55,22 +55,31 @@ beforeEach(() => {
   mocks.readCache.mockImplementation(async () => ({ hit: false }));
 });
 
+function candidateRepos(result: { evidence: Array<Record<string, unknown>> }) {
+  return new Set(
+    result.evidence
+      .filter((item) => typeof item.repo === 'string')
+      .map((item) => item.repo as string)
+  );
+}
+
 describe('org_scan', () => {
   it('lists candidates across top-ranked public repos, excluding archived and forked repos', async () => {
     const result = await org_scan({ org: 'acme', land_hints: false });
     expect(result.evidence.length).toBeGreaterThan(0);
-    const repoNames = new Set(result.evidence.map((item) => item.repo));
+    expect(result.evidence.some((item) => item.kind === 'repo_selection')).toBe(true);
+    const repoNames = candidateRepos(result);
     expect([...repoNames].every((name) => name !== 'acme/gamma-archived' && name !== 'acme/delta-fork')).toBe(true);
     expect(result.checked).toContain('excluded archived and forked repositories');
     expect(result.verdict_summary).toContain('acme');
     expect(result.not_checked.some((item) => item.includes('does not replace per-repo contrib_policy'))).toBe(true);
   });
 
-  it('limits scanned repos to max_repos, ranked by stargazers_count', async () => {
+  it('limits scanned repos to max_repos via skill/activity-aware selection', async () => {
     const result = await org_scan({ org: 'acme', land_hints: false, max_repos: 2 });
     expect(result.checked.some((item) => item.includes('selected top 2 repositories (max_repos=2)'))).toBe(true);
     expect(result.checked.some((item) => item.startsWith('scanned: acme/alpha, acme/beta'))).toBe(true);
-    const repoNames = new Set(result.evidence.map((item) => item.repo));
+    const repoNames = candidateRepos(result);
     expect(repoNames.has('acme/epsilon')).toBe(false);
     expect(repoNames.has('acme/zeta')).toBe(false);
   });
@@ -111,9 +120,10 @@ describe('org_scan', () => {
     expect(candidate).toMatchObject({ likely_land_only: true, land_hint: 'assigned: dev1', repo: 'acme/alpha' });
   });
 
-  it('sorts merged candidates by quality_score and slices to limit', async () => {
+  it('sorts merged candidates by rank_score and slices to limit', async () => {
     const result = await org_scan({ org: 'acme', land_hints: false, limit: 1 });
-    expect(result.evidence).toHaveLength(1);
-    expect(result.evidence[0]).toMatchObject({ number: 1, repo: 'acme/alpha' });
+    const issues = result.evidence.filter((item) => typeof item.number === 'number');
+    expect(issues).toHaveLength(1);
+    expect(issues[0]).toMatchObject({ number: 1, repo: 'acme/alpha' });
   });
 });

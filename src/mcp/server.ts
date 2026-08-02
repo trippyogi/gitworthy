@@ -235,12 +235,12 @@ export function createMcpServer(): McpServer {
       const manifest = await putCaptureManifest(captured.manifest);
       return withCaptureOutput(captured.value, manifest);
     }));
-  server.registerTool('scan', { title: 'Scan issues', inputSchema: { repo: z.string(), label: z.string().optional(), keywords: z.array(z.string()).optional(), since: z.string().optional(), limit: z.number().optional(), land_hints: z.boolean().optional(), skill_profile: skillProfileSchema, manifest_path: z.string().optional() } }, async (input) =>
+  server.registerTool('scan', { title: 'Scan issues', inputSchema: { repo: z.string(), label: z.string().optional(), keywords: z.array(z.string()).optional(), since: z.string().optional(), limit: z.number().optional(), land_hints: z.boolean().optional(), skill_profile: skillProfileSchema, manifest_path: z.string().optional(), max_pages: z.number().optional(), explain_ranking: z.boolean().optional() } }, async (input) =>
     withToolErrors('scan', async () => {
       const parsed = parseToolInput(ScanInputSchema, input);
       return scan(resolveScanFromConfig(parsed, await loadEffectiveConfig({ input: parsed })));
     }, stamp('scan')));
-  server.registerTool('org_scan', { title: 'Org scan', inputSchema: { org: z.string().optional(), label: z.string().optional(), keywords: z.array(z.string()).optional(), since: z.string().optional(), limit: z.number().optional(), max_repos: z.number().optional(), land_hints: z.boolean().optional(), skill_profile: skillProfileSchema, manifest_path: z.string().optional() } }, async (input) =>
+  server.registerTool('org_scan', { title: 'Org scan', inputSchema: { org: z.string().optional(), label: z.string().optional(), keywords: z.array(z.string()).optional(), since: z.string().optional(), limit: z.number().optional(), max_repos: z.number().optional(), land_hints: z.boolean().optional(), skill_profile: skillProfileSchema, manifest_path: z.string().optional(), max_pages: z.number().optional(), explain_ranking: z.boolean().optional() } }, async (input) =>
     withToolErrors('org_scan', async () => {
       const parsed = parseToolInput(OrgScanInputSchema, input);
       return org_scan(resolveOrgFromConfig(parsed, await loadEffectiveConfig({ input: parsed })));
@@ -256,6 +256,7 @@ export function createMcpServer(): McpServer {
       scan_limit: z.number().optional(),
       max_repos: z.number().optional(),
       max_checks: z.number().optional(),
+      max_pages: z.number().optional(),
       land_hints: z.boolean().optional(),
       skip_likely_land_only: z.boolean().optional(),
       skip_soft_ask: z.boolean().optional(),
@@ -266,10 +267,15 @@ export function createMcpServer(): McpServer {
       npm_package: z.string().optional(),
       capture: z.boolean().optional(),
       capture_local_private: z.boolean().optional(),
-      manifest_path: z.string().optional()
+      manifest_path: z.string().optional(),
+      explain_ranking: z.boolean().optional(),
+      resume_run_id: z.string().optional()
     }
   }, async (input) => withToolErrors('hunt', async () => {
     const parsed = parseToolInput(HuntInputSchema, input);
+    if (parsed.resume_run_id) {
+      return stamp('hunt')(await hunt({ resume_run_id: parsed.resume_run_id }));
+    }
     const resolved = resolveHuntFromConfig(parsed, await loadEffectiveConfig({ input: parsed }));
     if (!captureRequested(parsed)) return stamp('hunt')(await hunt(resolved));
     const mode = captureMode(parsed);

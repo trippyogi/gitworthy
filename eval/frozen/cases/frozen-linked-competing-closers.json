@@ -1,0 +1,35 @@
+{
+  "schema_version": "1.0-draft.1",
+  "case_version": 1,
+  "suite": "frozen",
+  "classification": "frozen",
+  "provenance": {
+    "notes": "GW-024 promotion"
+  },
+  "time_sensitive": false,
+  "id": "frozen-linked-competing-closers",
+  "name": "Competing open closers density evidence",
+  "function": "linked_work",
+  "input": {
+    "repo": "acme/widgets",
+    "issue_number": 112
+  },
+  "ground_truth": {
+    "verdict": "VERIFY",
+    "disposition": "land_only",
+    "failure_mode": "competing_open_closers_density",
+    "adjudicator_rationale": "Multiple open explicit closers must remain visible as linked_pr_open density; worth_check picks a land-pick primary.",
+    "evidence_urls": [
+      "https://github.com/acme/widgets/issues/112"
+    ],
+    "required_signals": [
+      "linked_pr_open"
+    ],
+    "required_findings": [
+      "113",
+      "114"
+    ],
+    "forbidden_findings": []
+  },
+  "provider_fixtures": "../fixtures/frozen-linked-competing-closers.provider.json"
+}

@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0-draft.1",
+  "case_version": 1,
+  "suite": "frozen",
+  "classification": "frozen",
+  "provenance": {
+    "notes": "GW-024 promotion"
+  },
+  "time_sensitive": false,
+  "id": "frozen-linked-open-closer",
+  "name": "Open PR explicitly closes issue (linked_work)",
+  "function": "linked_work",
+  "input": {
+    "repo": "acme/widgets",
+    "issue_number": 100
+  },
+  "ground_truth": {
+    "verdict": "VERIFY",
+    "disposition": "land_only",
+    "failure_mode": "open_closing_pr_linked_work",
+    "adjudicator_rationale": "Timeline cross-reference with Fixes #N must emit linked_pr_open for human VERIFY; worth_check treats explicit closers as hard SKIP.",
+    "evidence_urls": [
+      "https://github.com/acme/widgets/issues/100",
+      "https://github.com/acme/widgets/pull/101"
+    ],
+    "required_signals": [
+      "linked_pr_open"
+    ],
+    "forbidden_signals": [],
+    "required_findings": [
+      "101"
+    ],
+    "forbidden_findings": []
+  },
+  "provider_fixtures": "../fixtures/frozen-linked-open-closer.provider.json"
+}

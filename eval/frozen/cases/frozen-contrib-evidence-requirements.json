@@ -1,0 +1,34 @@
+{
+  "schema_version": "1.0-draft.1",
+  "case_version": 1,
+  "suite": "frozen",
+  "classification": "frozen",
+  "provenance": {
+    "notes": "GW-024 promotion"
+  },
+  "time_sensitive": false,
+  "id": "frozen-contrib-evidence-requirements",
+  "name": "Contribution policy evidence_requirements field",
+  "function": "contrib_policy",
+  "input": {
+    "repo": "acme/policy"
+  },
+  "ground_truth": {
+    "verdict": "VERIFY",
+    "disposition": "review",
+    "failure_mode": "contrib_policy_evidence_requirements",
+    "adjudicator_rationale": "Evidence/tests language is extracted as evidence_requirements category (inform-only, no dedicated signal).",
+    "evidence_urls": [
+      "https://github.com/acme/policy/blob/main/CONTRIBUTING.md"
+    ],
+    "required_signals": [],
+    "forbidden_signals": [
+      "claim_required"
+    ],
+    "required_findings": [
+      "evidence_requirements"
+    ],
+    "forbidden_findings": []
+  },
+  "provider_fixtures": "../fixtures/frozen-contrib-evidence-requirements.provider.json"
+}

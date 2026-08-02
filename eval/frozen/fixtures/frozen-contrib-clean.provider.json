@@ -1,0 +1,133 @@
+{
+  "schema_version": "1.0-draft.1",
+  "fixture_version": 1,
+  "case_id": "frozen-contrib-clean",
+  "attributed_from": {
+    "notes": "GW-024 synthetic offline promotion pack — clean contrib docs"
+  },
+  "http_exchanges": [
+    {
+      "sequence": 0,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/repos/acme/open-contrib",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": {
+          "full_name": "acme/open-contrib",
+          "default_branch": "main",
+          "html_url": "https://github.com/acme/open-contrib"
+        }
+      }
+    },
+    {
+      "sequence": 1,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://raw.githubusercontent.com/acme/open-contrib/main/CONTRIBUTING.md",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "text/plain; charset=utf-8"
+        },
+        "body_encoding": "text",
+        "body": "# Contributing\n\nPull requests are welcome. Fork the repository, make your change, and open a PR against main.\n\nPlease include tests when practical.\n"
+      }
+    },
+    {
+      "sequence": 2,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://raw.githubusercontent.com/acme/open-contrib/main/.github/CONTRIBUTING.md",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 404,
+        "headers": {},
+        "body_encoding": "omitted"
+      }
+    },
+    {
+      "sequence": 3,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://raw.githubusercontent.com/acme/open-contrib/main/AGENTS.md",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 404,
+        "headers": {},
+        "body_encoding": "omitted"
+      }
+    },
+    {
+      "sequence": 4,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://raw.githubusercontent.com/acme/open-contrib/main/AI_POLICY.md",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 404,
+        "headers": {},
+        "body_encoding": "omitted"
+      }
+    },
+    {
+      "sequence": 5,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://raw.githubusercontent.com/acme/open-contrib/main/CODE_OF_CONDUCT.md",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 404,
+        "headers": {},
+        "body_encoding": "omitted"
+      }
+    },
+    {
+      "sequence": 6,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://raw.githubusercontent.com/acme/open-contrib/main/.github/PULL_REQUEST_TEMPLATE.md",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 404,
+        "headers": {},
+        "body_encoding": "omitted"
+      }
+    },
+    {
+      "sequence": 7,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://raw.githubusercontent.com/acme/open-contrib/main/SECURITY.md",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 404,
+        "headers": {},
+        "body_encoding": "omitted"
+      }
+    }
+  ],
+  "git_probes": []
+}

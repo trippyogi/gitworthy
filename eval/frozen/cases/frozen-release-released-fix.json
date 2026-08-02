@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0-draft.1",
+  "case_version": 1,
+  "suite": "frozen",
+  "classification": "frozen",
+  "provenance": {
+    "notes": "GW-024 promotion"
+  },
+  "time_sensitive": false,
+  "id": "frozen-release-released-fix",
+  "name": "Release gap released_fix with matched probe",
+  "function": "release_gap",
+  "input": {
+    "repo": "acme/npm-gap",
+    "npm_package": "@acme/widgets-cli",
+    "probe": {
+      "file_glob": "dist/**/add.js",
+      "contains": "shell: true"
+    }
+  },
+  "ground_truth": {
+    "verdict": "SKIP",
+    "disposition": "blocked",
+    "failure_mode": "release_gap_released_fix_probe",
+    "adjudicator_rationale": "Version equality plus content probe match in npm tarball emits definitive released_fix.",
+    "evidence_urls": [
+      "https://www.npmjs.com/package/@acme/widgets-cli/v/2.0.0"
+    ],
+    "required_signals": [
+      "released_fix"
+    ],
+    "required_findings": [
+      "shell: true"
+    ],
+    "forbidden_findings": []
+  },
+  "provider_fixtures": "../fixtures/frozen-release-released-fix.provider.json"
+}

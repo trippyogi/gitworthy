@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0-draft.1",
+  "case_version": 1,
+  "suite": "frozen",
+  "classification": "frozen",
+  "provenance": {
+    "notes": "GW-024 promotion"
+  },
+  "time_sensitive": false,
+  "id": "frozen-linked-closed-unmerged",
+  "name": "Closed unmerged linked PR is prior attempt",
+  "function": "linked_work",
+  "input": {
+    "repo": "acme/widgets",
+    "issue_number": 102
+  },
+  "ground_truth": {
+    "verdict": "VERIFY",
+    "disposition": "review",
+    "failure_mode": "closed_unmerged_prior_attempt",
+    "adjudicator_rationale": "Closed unmerged PRs must surface linked_pr_closed density without forcing SKIP.",
+    "evidence_urls": [
+      "https://github.com/acme/widgets/issues/102"
+    ],
+    "required_signals": [
+      "linked_pr_closed"
+    ],
+    "forbidden_signals": [
+      "linked_pr_open"
+    ],
+    "required_findings": [
+      "prior_attempt"
+    ],
+    "forbidden_findings": []
+  },
+  "provider_fixtures": "../fixtures/frozen-linked-closed-unmerged.provider.json"
+}

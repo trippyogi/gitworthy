@@ -1,0 +1,35 @@
+{
+  "schema_version": "1.0-draft.1",
+  "case_version": 1,
+  "suite": "frozen",
+  "classification": "frozen",
+  "provenance": {
+    "notes": "GW-024 promotion"
+  },
+  "time_sensitive": false,
+  "id": "frozen-repo-rename-canonical",
+  "name": "Renamed repo resolves canonical full_name",
+  "function": "linked_work",
+  "input": {
+    "repo": "acme/old-widgets",
+    "issue_number": 120
+  },
+  "ground_truth": {
+    "verdict": "ACT",
+    "disposition": "greenfield",
+    "failure_mode": "renamed_repo_canonicalization",
+    "adjudicator_rationale": "Alias repo input must resolve to canonical acme/widgets for search/linkage keys.",
+    "evidence_urls": [
+      "https://github.com/acme/widgets/issues/120"
+    ],
+    "required_findings": [
+      "acme/widgets"
+    ],
+    "forbidden_signals": [
+      "linked_pr_open"
+    ],
+    "required_signals": [],
+    "forbidden_findings": []
+  },
+  "provider_fixtures": "../fixtures/frozen-repo-rename-canonical.provider.json"
+}

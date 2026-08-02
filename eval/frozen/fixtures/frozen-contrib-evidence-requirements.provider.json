@@ -1,0 +1,133 @@
+{
+  "schema_version": "1.0-draft.1",
+  "fixture_version": 1,
+  "case_id": "frozen-contrib-evidence-requirements",
+  "attributed_from": {
+    "notes": "GW-024 synthetic offline promotion pack"
+  },
+  "http_exchanges": [
+    {
+      "sequence": 0,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/repos/acme/policy",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": {
+          "full_name": "acme/policy",
+          "default_branch": "main",
+          "html_url": "https://github.com/acme/policy"
+        }
+      }
+    },
+    {
+      "sequence": 1,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://raw.githubusercontent.com/acme/policy/main/CONTRIBUTING.md",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "text/plain; charset=utf-8"
+        },
+        "body_encoding": "text",
+        "body": "# Contributing\n\nAll changes require tests and proof in the pull request description."
+      }
+    },
+    {
+      "sequence": 2,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://raw.githubusercontent.com/acme/policy/main/.github/CONTRIBUTING.md",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 404,
+        "headers": {},
+        "body_encoding": "omitted"
+      }
+    },
+    {
+      "sequence": 3,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://raw.githubusercontent.com/acme/policy/main/AGENTS.md",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 404,
+        "headers": {},
+        "body_encoding": "omitted"
+      }
+    },
+    {
+      "sequence": 4,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://raw.githubusercontent.com/acme/policy/main/AI_POLICY.md",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 404,
+        "headers": {},
+        "body_encoding": "omitted"
+      }
+    },
+    {
+      "sequence": 5,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://raw.githubusercontent.com/acme/policy/main/CODE_OF_CONDUCT.md",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 404,
+        "headers": {},
+        "body_encoding": "omitted"
+      }
+    },
+    {
+      "sequence": 6,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://raw.githubusercontent.com/acme/policy/main/.github/PULL_REQUEST_TEMPLATE.md",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 404,
+        "headers": {},
+        "body_encoding": "omitted"
+      }
+    },
+    {
+      "sequence": 7,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://raw.githubusercontent.com/acme/policy/main/SECURITY.md",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 404,
+        "headers": {},
+        "body_encoding": "omitted"
+      }
+    }
+  ],
+  "git_probes": []
+}

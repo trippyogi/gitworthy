@@ -52,7 +52,7 @@ describe('scan with skill_profile', () => {
     expect(candidates[1]).toMatchObject({ number: 1 });
     expect(Number(candidates[0].fit_score)).toBeGreaterThan(Number(candidates[1].fit_score));
     expect(result.checked.some((item) => item.includes('skill_profile provided: computed fit_score for 2 candidates'))).toBe(true);
-    expect(result.checked.some((item) => item.includes('ranked candidates by quality_score then fit_score'))).toBe(true);
+    expect(result.checked.some((item) => item.includes('ranking_version=1'))).toBe(true);
   });
 
   it('accepts a raw skill_profile string in the same key=value form as the CLI', async () => {

@@ -1,0 +1,39 @@
+{
+  "schema_version": "1.0-draft.1",
+  "case_version": 1,
+  "suite": "frozen",
+  "classification": "frozen",
+  "provenance": {
+    "notes": "GW-024 promotion"
+  },
+  "time_sensitive": false,
+  "id": "frozen-branch-no-match",
+  "name": "Branch scan finds no matching remote heads",
+  "function": "branch_scan",
+  "input": {
+    "repo": "acme/branches",
+    "keywords": [
+      "quantum",
+      "flux"
+    ],
+    "issue_number": 201
+  },
+  "ground_truth": {
+    "verdict": "ACT",
+    "disposition": "greenfield",
+    "failure_mode": "branch_scan_no_match",
+    "adjudicator_rationale": "Unrelated branch names must not emit in_flight.",
+    "evidence_urls": [
+      "https://github.com/acme/branches"
+    ],
+    "forbidden_signals": [
+      "in_flight"
+    ],
+    "required_signals": [],
+    "required_findings": [],
+    "forbidden_findings": [
+      "fix-201"
+    ]
+  },
+  "provider_fixtures": "../fixtures/frozen-branch-no-match.provider.json"
+}

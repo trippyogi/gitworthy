@@ -1,0 +1,225 @@
+{
+  "schema_version": "1.0-draft.1",
+  "fixture_version": 1,
+  "case_id": "frozen-linked-automation-ignored",
+  "attributed_from": {
+    "notes": "GW-024 synthetic offline promotion pack"
+  },
+  "http_exchanges": [
+    {
+      "sequence": 0,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/repos/acme/widgets",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": {
+          "full_name": "acme/widgets",
+          "default_branch": "main",
+          "html_url": "https://github.com/acme/widgets"
+        }
+      }
+    },
+    {
+      "sequence": 1,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/repos/acme/widgets/issues/108",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": {
+          "body": "dependency bump side effect",
+          "labels": [],
+          "comments": 0,
+          "html_url": "https://github.com/acme/widgets/issues/108",
+          "created_at": "2026-01-01T00:00:00Z",
+          "updated_at": "2026-01-02T00:00:00Z",
+          "closed_at": null,
+          "assignees": [],
+          "number": 108,
+          "title": "dependency bump side effect",
+          "state": "open"
+        }
+      }
+    },
+    {
+      "sequence": 2,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/repos/acme/widgets/issues/108/timeline?per_page=100&page=1",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": [
+          {
+            "event": "cross-referenced",
+            "created_at": "2026-01-02T00:00:00Z",
+            "source": {
+              "type": "issue",
+              "issue": {
+                "number": 109,
+                "pull_request": {
+                  "url": "https://api.github.com/repos/acme/widgets/pulls/109"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "sequence": 3,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/repos/acme/widgets/pulls/109",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": {
+          "body": "Fixes #108",
+          "draft": false,
+          "merged": false,
+          "html_url": "https://github.com/acme/widgets/pull/109",
+          "user": {
+            "login": "dependabot[bot]"
+          },
+          "created_at": "2026-01-01T00:00:00Z",
+          "updated_at": "2026-01-02T00:00:00Z",
+          "closed_at": null,
+          "merged_at": null,
+          "number": 109,
+          "title": "Fixes #108",
+          "state": "open"
+        }
+      }
+    },
+    {
+      "sequence": 4,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/repos/acme/widgets/issues/108/comments?per_page=100",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": []
+      }
+    },
+    {
+      "sequence": 5,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/search/issues?per_page=20&q=repo%3Aacme%2Fwidgets%20is%3Apr%20108",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": {
+          "total_count": 0,
+          "incomplete_results": false,
+          "items": []
+        }
+      }
+    },
+    {
+      "sequence": 6,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/search/issues?per_page=20&q=repo%3Aacme%2Fwidgets%20is%3Apr%20is%3Aopen%20dependency%20bump%20side",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": {
+          "total_count": 0,
+          "incomplete_results": false,
+          "items": []
+        }
+      }
+    },
+    {
+      "sequence": 7,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/search/issues?per_page=20&q=is%3Apr%20(%22Fixes%20%23108%22%20OR%20%22Closes%20%23108%22%20OR%20%22Resolves%20%23108%22%20OR%20%22%23108%22)%20org%3Aacme",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": {
+          "total_count": 0,
+          "incomplete_results": false,
+          "items": []
+        }
+      }
+    },
+    {
+      "sequence": 8,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/search/issues?per_page=20&q=is%3Apr%20(%22Fixes%20%23108%22%20OR%20%22Closes%20%23108%22%20OR%20%22Resolves%20%23108%22%20OR%20%22%23108%22)%20user%3Aacme",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": {
+          "total_count": 0,
+          "incomplete_results": false,
+          "items": []
+        }
+      }
+    }
+  ],
+  "git_probes": []
+}

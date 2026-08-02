@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0-draft.1",
+  "case_version": 1,
+  "suite": "frozen",
+  "classification": "frozen",
+  "provenance": {
+    "notes": "GW-024 promotion"
+  },
+  "time_sensitive": false,
+  "id": "frozen-linked-assigned",
+  "name": "Assigned maintainer emits assigned signal",
+  "function": "linked_work",
+  "input": {
+    "repo": "acme/widgets",
+    "issue_number": 111
+  },
+  "ground_truth": {
+    "verdict": "VERIFY",
+    "disposition": "claim_first",
+    "failure_mode": "assigned_maintainer_signal",
+    "adjudicator_rationale": "Current assignees must emit assigned for worth_check VERIFY/claim_first.",
+    "evidence_urls": [
+      "https://github.com/acme/widgets/issues/111"
+    ],
+    "required_signals": [
+      "assigned"
+    ],
+    "forbidden_signals": [
+      "linked_pr_open"
+    ],
+    "required_findings": [
+      "maintainer-alice"
+    ],
+    "forbidden_findings": []
+  },
+  "provider_fixtures": "../fixtures/frozen-linked-assigned.provider.json"
+}

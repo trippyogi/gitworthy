@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0-draft.1",
+  "case_version": 1,
+  "suite": "frozen",
+  "classification": "frozen",
+  "provenance": {
+    "notes": "GW-024 promotion"
+  },
+  "time_sensitive": false,
+  "id": "frozen-worth-verify-assigned",
+  "name": "worth_check VERIFY when issue assigned",
+  "function": "worth_check",
+  "input": {
+    "repo": "acme/widgets",
+    "issue_number": 302
+  },
+  "ground_truth": {
+    "verdict": "VERIFY",
+    "disposition": "claim_first",
+    "failure_mode": "worth_check_verify_assigned",
+    "adjudicator_rationale": "Assigned maintainer must cap worth_check at VERIFY/claim_first even without linked PRs.",
+    "evidence_urls": [
+      "https://github.com/acme/widgets/issues/302"
+    ],
+    "required_signals": [
+      "assigned"
+    ],
+    "forbidden_signals": [
+      "linked_pr_open"
+    ],
+    "required_findings": [
+      "maintainer-alice"
+    ],
+    "forbidden_findings": []
+  },
+  "provider_fixtures": "../fixtures/frozen-worth-verify-assigned.provider.json"
+}

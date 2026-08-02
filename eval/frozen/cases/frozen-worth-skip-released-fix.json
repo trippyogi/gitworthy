@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0-draft.1",
+  "case_version": 1,
+  "suite": "frozen",
+  "classification": "frozen",
+  "provenance": {
+    "notes": "GW-024 promotion"
+  },
+  "time_sensitive": false,
+  "id": "frozen-worth-skip-released-fix",
+  "name": "worth_check SKIP on released_fix probe match",
+  "function": "worth_check",
+  "input": {
+    "repo": "acme/npm-gap",
+    "issue_number": 304,
+    "npm_package": "@acme/widgets-cli",
+    "probe": {
+      "file_glob": "dist/**/add.js",
+      "contains": "shell: true"
+    }
+  },
+  "ground_truth": {
+    "verdict": "SKIP",
+    "disposition": "blocked",
+    "failure_mode": "worth_check_skip_released_fix",
+    "adjudicator_rationale": "Matched release_gap released_fix is a definitive hard SKIP path.",
+    "evidence_urls": [
+      "https://github.com/acme/npm-gap/issues/304"
+    ],
+    "required_signals": [
+      "released_fix"
+    ],
+    "forbidden_signals": [
+      "linked_pr_open"
+    ],
+    "required_findings": [
+      "released_fix"
+    ],
+    "forbidden_findings": []
+  },
+  "provider_fixtures": "../fixtures/frozen-worth-skip-released-fix.provider.json"
+}

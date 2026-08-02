@@ -11,7 +11,7 @@ import {
   ProviderFixturePackSchema
 } from '../contracts/provider-fixtures.js';
 import { GitworthyError } from '../core/envelope.js';
-import { type GitEvalHooks, type RemoteHead, GIT_SUBPROCESS_TIMEOUT_MS } from './git.js';
+import { type GitEvalHooks, type RemoteHead, GIT_SUBPROCESS_TIMEOUT_MS, registerEvalCloneLease, unregisterEvalCloneLease } from './git.js';
 import { ProviderReplayError } from './provider-replay.js';
 
 type QueuedProbe = { probe: GitFixtureProbe; consumed: boolean };
@@ -77,9 +77,13 @@ export function createGitReplaySession(pack: ProviderFixturePack): GitReplaySess
         const files = probe.response.files ?? [];
         dir = await materializeBareRepo(files);
         materialized.set(repo, dir);
+        registerEvalCloneLease(repo, dir);
         cleanups.push(async () => {
           await rm(dir!, { recursive: true, force: true }).catch(() => undefined);
+          unregisterEvalCloneLease(repo);
         });
+      } else {
+        registerEvalCloneLease(repo, dir);
       }
       return {
         dir,

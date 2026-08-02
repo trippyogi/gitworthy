@@ -22,6 +22,16 @@ export function configureGitEvalHooks(hooks: GitEvalHooks | null): void {
   gitEvalHooks = hooks ?? {};
 }
 
+/** Register a replay-materialized bare repo so listCloneFiles works after hook shallowClone (GW-022). */
+export function registerEvalCloneLease(repo: string, dir: string): void {
+  clonePool.set(repo, { dir, refs: 0 });
+}
+
+/** Drop a replay lease after fixture cleanup so later runs do not reuse stale dirs. */
+export function unregisterEvalCloneLease(repo: string): void {
+  clonePool.delete(repo);
+}
+
 const HEADS_TTL_MS = 5 * 60 * 1000;
 const CLONE_IDLE_MS = 10 * 60 * 1000;
 

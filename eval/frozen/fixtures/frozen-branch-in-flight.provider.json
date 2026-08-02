@@ -1,0 +1,60 @@
+{
+  "schema_version": "1.0-draft.1",
+  "fixture_version": 1,
+  "case_id": "frozen-branch-in-flight",
+  "attributed_from": {
+    "notes": "GW-024 synthetic offline promotion pack"
+  },
+  "http_exchanges": [
+    {
+      "sequence": 0,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/repos/acme/branches/commits/bbb222",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": {
+          "commit": {
+            "author": {
+              "date": "2026-08-02T21:18:25.299Z"
+            },
+            "message": "fix widget cache"
+          },
+          "html_url": "https://github.com/acme/branches/commit/bbb222"
+        }
+      }
+    }
+  ],
+  "git_probes": [
+    {
+      "sequence": 0,
+      "kind": "ls_remote_heads",
+      "match": {
+        "repo": "acme/branches"
+      },
+      "response": {
+        "heads": [
+          {
+            "name": "main",
+            "sha": "aaa111"
+          },
+          {
+            "name": "fix-200-widget-cache",
+            "sha": "bbb222"
+          },
+          {
+            "name": "chore/deps",
+            "sha": "ccc333"
+          }
+        ]
+      }
+    }
+  ]
+}
