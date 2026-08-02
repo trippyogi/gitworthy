@@ -7,6 +7,7 @@
 - Add safe legacy-ledger migration with quarantine + target-index rebuild (`gitworthy ledger migrate`, `gitworthy store rebuild-indexes`) (GW-016).
 - Add store browse/record/recheck/export commands: `run` / `decision` / `outcome` / `recheck` / `store target|export` (GW-017).
 - Add opt-in public-repo capture for `check`/`hunt` plus human-reviewed `case promote` for proposed fixtures (GW-018).
+- Add versioned, secret-free config files, skill profiles, and target manifests with CLI/MCP show/validate surfaces and effective-value provenance (GW-019).
 
 ## 0.4.1
 

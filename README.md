@@ -242,10 +242,14 @@ Every core result includes a structured envelope:
 
 ```sh
 gitworthy check owner/repo#123 [--npm-package name] [--json]
-gitworthy hunt owner/repo [--max-checks 3] [--json]
+gitworthy hunt owner/repo [--manifest path] [--max-checks 3] [--json]
 gitworthy scan owner/repo [--label "help wanted"] [--json]
-gitworthy org owner [--max-repos 8] [--json]
+gitworthy org owner [--manifest path] [--max-repos 8] [--json]
 gitworthy policy owner/repo [--json]
+gitworthy init [--user] [--repo] [--json]
+gitworthy config validate [--path path] [--manifest path] [--json]
+gitworthy config show --effective [--json]
+gitworthy profile show [--json]
 gitworthy related owner/repo [issue] [--json]
 gitworthy ledger show owner/repo#123 [--json]
 gitworthy doctor [--json]
@@ -264,6 +268,12 @@ See [SKILL.md](./SKILL.md) for the strict contribution gates and [docs/AGENT_WOR
 ## Configuration
 
 - `GITHUB_TOKEN` / `GH_TOKEN` enables authenticated GitHub REST checks.
+- Config files are data-only JSON. Gitworthy reads user config from `~/.gitworthy/config.json` and repository-local config from `.gitworthy/config.json`.
+- Precedence is: CLI/MCP input, `GITWORTHY_*` environment variables, repository config, user config, built-in defaults. `gitworthy config show --effective --json` includes provenance for each effective value.
+- Create a secret-free skeleton with `gitworthy init --repo` or `gitworthy init --user`. Validate with `gitworthy config validate`.
+- Skill profiles (`profile` in config or `--skill-profile`) can include `languages`, `topics`, `preferred_ecosystems`, and avoid lists; they affect scan/hunt ranking inputs only, never hard verdict policy.
+- Target manifests (`--manifest path` or `manifest_path` in config) can list repos/orgs, include/exclude filters, per-repo npm package mappings, and target-specific overrides. Ambiguous npm package mappings are rejected.
+- Tokens and credentials are never persisted in config or manifests; use environment variables such as `GITHUB_TOKEN` / `GH_TOKEN`.
 - `GITWORTHY_CACHE_DIR` overrides the cache under `~/.gitworthy/cache`.
 - `GITWORTHY_LEDGER_DIR` overrides local scout history under `~/.gitworthy/ledger`.
 - `GITWORTHY_TELEMETRY=on` plus `GITWORTHY_POSTHOG_KEY` requests optional telemetry.

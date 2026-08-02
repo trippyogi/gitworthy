@@ -29,6 +29,13 @@ import {
   store_target_show,
   worth_check
 } from '../core/index.js';
+import {
+  loadEffectiveConfig,
+  resolveHuntFromConfig,
+  resolveOrgFromConfig,
+  resolveScanFromConfig,
+  validateConfigSelection
+} from '../lib/config.js';
 import { packageVersion } from '../lib/package-meta.js';
 import {
   BranchScanInputSchema,
@@ -36,6 +43,8 @@ import {
   CaptureShowInputSchema,
   CasePromoteInputSchema,
   ContribPolicyInputSchema,
+  ConfigShowInputSchema,
+  ConfigValidateInputSchema,
   DoctorInputSchema,
   DupeClusterInputSchema,
   HuntInputSchema,
@@ -46,6 +55,7 @@ import {
   LinkedWorkInputSchema,
   OrgScanInputSchema,
   parseToolInput,
+  ProfileShowInputSchema,
   RelatedClusterInputSchema,
   ReleaseGapInputSchema,
   ScanInputSchema,
@@ -119,7 +129,11 @@ const skillProfileSchema = z.union([
   z.object({
     languages: z.array(z.string()).optional(),
     topics: z.array(z.string()).optional(),
-    avoid: z.array(z.string()).optional()
+    preferred_ecosystems: z.array(z.string()).optional(),
+    avoid: z.array(z.string()).optional(),
+    avoid_languages: z.array(z.string()).optional(),
+    avoid_topics: z.array(z.string()).optional(),
+    avoid_ecosystems: z.array(z.string()).optional()
   })
 ]).optional();
 
@@ -144,6 +158,43 @@ export function createMcpServer(): McpServer {
     withToolErrors('linked_work', () => linked_work(parseToolInput(LinkedWorkInputSchema, input)), stamp('linked_work')));
   server.registerTool('contrib_policy', { title: 'Contribution policy', inputSchema: { repo: z.string(), force_refresh: z.boolean().optional() } }, async (input) =>
     withToolErrors('contrib_policy', () => contrib_policy(parseToolInput(ContribPolicyInputSchema, input)), stamp('contrib_policy')));
+  server.registerTool('config_validate', { title: 'Validate config', inputSchema: { path: z.string().optional(), user: z.boolean().optional(), repo: z.boolean().optional(), manifest_path: z.string().optional() } }, async (input) =>
+    withToolErrors('config_validate', () => validateConfigSelection(parseToolInput(ConfigValidateInputSchema, input)), (value) => ({
+      command: 'config_validate',
+      verdict_summary: 'config validation complete',
+      ...value,
+      checked: ['validated selected config file(s) and target manifest(s)'],
+      not_checked: ['tokens are not read from config; use GITHUB_TOKEN or GH_TOKEN environment variables.']
+    })));
+  server.registerTool('config_show', { title: 'Show effective config', inputSchema: { effective: z.boolean().optional(), path: z.string().optional(), cwd: z.string().optional() } }, async (input) =>
+    withToolErrors('config_show', async () => {
+      const parsed = parseToolInput(ConfigShowInputSchema, input);
+      const effective = await loadEffectiveConfig({ cwd: parsed.cwd, userPath: parsed.path });
+      return {
+        command: 'config_show',
+        verdict_summary: 'resolved effective config',
+        effective: parsed.effective !== false,
+        values: effective.values,
+        provenance: effective.provenance,
+        paths: effective.paths,
+        loaded: effective.loaded,
+        checked: ['resolved config precedence: input > env > repo > user > defaults'],
+        not_checked: ['secret values are not shown; GitHub tokens remain env-only via GITHUB_TOKEN or GH_TOKEN.']
+      };
+    }));
+  server.registerTool('profile_show', { title: 'Show skill profile', inputSchema: { path: z.string().optional(), cwd: z.string().optional() } }, async (input) =>
+    withToolErrors('profile_show', async () => {
+      const parsed = parseToolInput(ProfileShowInputSchema, input);
+      const effective = await loadEffectiveConfig({ cwd: parsed.cwd, userPath: parsed.path });
+      return {
+        command: 'profile_show',
+        verdict_summary: effective.values.skill_profile ? 'resolved skill profile' : 'no skill profile configured',
+        profile: effective.values.skill_profile ?? null,
+        provenance: effective.provenance.skill_profile ?? null,
+        checked: ['resolved skill profile from config precedence'],
+        not_checked: ['skill profile affects scan/hunt ranking inputs only; it never changes hard verdict policy.']
+      };
+    }));
   server.registerTool('worth_check', { title: 'Worth check', inputSchema: { repo: z.string(), issue_number: z.number(), npm_package: z.string().optional(), probe: z.object(probeShape).optional(), probe_template: z.string().optional(), capture: z.boolean().optional(), capture_local_private: z.boolean().optional() } }, async (input) =>
     withToolErrors('check', async () => {
       const parsed = parseToolInput(WorthCheckInputSchema, input);
@@ -169,10 +220,16 @@ export function createMcpServer(): McpServer {
       const manifest = await putCaptureManifest(captured.manifest);
       return withCaptureOutput(captured.value, manifest);
     }));
-  server.registerTool('scan', { title: 'Scan issues', inputSchema: { repo: z.string(), label: z.string().optional(), keywords: z.array(z.string()).optional(), since: z.string().optional(), limit: z.number().optional(), land_hints: z.boolean().optional(), skill_profile: skillProfileSchema } }, async (input) =>
-    withToolErrors('scan', () => scan(parseToolInput(ScanInputSchema, input)), stamp('scan')));
-  server.registerTool('org_scan', { title: 'Org scan', inputSchema: { org: z.string(), label: z.string().optional(), keywords: z.array(z.string()).optional(), since: z.string().optional(), limit: z.number().optional(), max_repos: z.number().optional(), land_hints: z.boolean().optional(), skill_profile: skillProfileSchema } }, async (input) =>
-    withToolErrors('org_scan', () => org_scan(parseToolInput(OrgScanInputSchema, input)), stamp('org_scan')));
+  server.registerTool('scan', { title: 'Scan issues', inputSchema: { repo: z.string(), label: z.string().optional(), keywords: z.array(z.string()).optional(), since: z.string().optional(), limit: z.number().optional(), land_hints: z.boolean().optional(), skill_profile: skillProfileSchema, manifest_path: z.string().optional() } }, async (input) =>
+    withToolErrors('scan', async () => {
+      const parsed = parseToolInput(ScanInputSchema, input);
+      return scan(resolveScanFromConfig(parsed, await loadEffectiveConfig({ input: parsed })));
+    }, stamp('scan')));
+  server.registerTool('org_scan', { title: 'Org scan', inputSchema: { org: z.string().optional(), label: z.string().optional(), keywords: z.array(z.string()).optional(), since: z.string().optional(), limit: z.number().optional(), max_repos: z.number().optional(), land_hints: z.boolean().optional(), skill_profile: skillProfileSchema, manifest_path: z.string().optional() } }, async (input) =>
+    withToolErrors('org_scan', async () => {
+      const parsed = parseToolInput(OrgScanInputSchema, input);
+      return org_scan(resolveOrgFromConfig(parsed, await loadEffectiveConfig({ input: parsed })));
+    }, stamp('org_scan')));
   server.registerTool('hunt', {
     title: 'Hunt',
     inputSchema: {
@@ -193,22 +250,24 @@ export function createMcpServer(): McpServer {
       skill_profile: skillProfileSchema,
       npm_package: z.string().optional(),
       capture: z.boolean().optional(),
-      capture_local_private: z.boolean().optional()
+      capture_local_private: z.boolean().optional(),
+      manifest_path: z.string().optional()
     }
   }, async (input) => withToolErrors('hunt', async () => {
     const parsed = parseToolInput(HuntInputSchema, input);
-    if (!captureRequested(parsed)) return stamp('hunt')(await hunt(parsed));
+    const resolved = resolveHuntFromConfig(parsed, await loadEffectiveConfig({ input: parsed }));
+    if (!captureRequested(parsed)) return stamp('hunt')(await hunt(resolved));
     const mode = captureMode(parsed);
-    const target = parsed.repo
-      ? await captureTargetForRepo({ repo: parsed.repo, capture_mode: mode })
-      : captureTargetForOrg(parsed.org!);
+    const target = resolved.repo
+      ? await captureTargetForRepo({ repo: resolved.repo, capture_mode: mode })
+      : captureTargetForOrg(resolved.org!);
     const captured = await withCaptureSession({
       command: 'hunt',
       capture_mode: mode,
       target,
       source: { surface: 'mcp', attribution: 'hunt capture' }
     }, async (session) => {
-      const stamped = stamp('hunt')(await hunt({ ...parsed, capture_persist_checks: true })) as Record<string, unknown>;
+      const stamped = stamp('hunt')(await hunt({ ...resolved, capture_persist_checks: true })) as Record<string, unknown>;
       session.linkRun({
         run_id: typeof stamped.run_id === 'string' ? stamped.run_id : undefined,
         decision_ids: extractHuntDecisionIds(stamped)
