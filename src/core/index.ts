@@ -11,6 +11,7 @@ export { worth_check } from './worth-check.js';
 export { scan } from './scan.js';
 export { org_scan } from './org-scan.js';
 export { hunt } from './hunt.js';
+export { capture_show, capture_list, case_promote } from './capture-commands.js';
 export { ledger_lookup, ledger_record, ledger_list } from './ledger.js';
 export { store_migrate_ledger, store_rebuild_indexes } from './store-admin.js';
 export {

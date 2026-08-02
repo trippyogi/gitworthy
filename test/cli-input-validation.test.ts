@@ -74,6 +74,29 @@ describe('CLI input validation', () => {
     expect(parsed.error.message).toContain('--org expects an org or user login');
   });
 
+  it('accepts capture flags in strict parsing but still rejects malformed check refs before network', async () => {
+    const { code, stdout } = await run(['check', 'not-a-repo#1', '--capture', '--capture-local-private', '--json']);
+    expect(code).toBe(2);
+    const parsed = ErrorResultSchema.parse(JSON.parse(stdout));
+    expect(parsed.error.code).toBe('invalid_issue_ref');
+  });
+
+  it('validates case promote required adjudication flags before store access', async () => {
+    const { code, stdout } = await run(['case', 'promote', 'capture_missing', '--verdict', 'ACT', '--json']);
+    expect(code).toBe(2);
+    const parsed = ErrorResultSchema.parse(JSON.parse(stdout));
+    expect(parsed.error.code).toBe('invalid_usage');
+    expect(parsed.error.message).toContain('--disposition');
+  });
+
+  it('validates capture subcommands before store access', async () => {
+    const { code, stdout } = await run(['capture', 'show', '--json']);
+    expect(code).toBe(2);
+    const parsed = ErrorResultSchema.parse(JSON.parse(stdout));
+    expect(parsed.error.code).toBe('invalid_usage');
+    expect(parsed.error.message).toContain('capture show requires a capture_id');
+  });
+
   it('rejects an org login that fails the shared login format', async () => {
     const { code, stdout } = await run(['org', 'in_valid_org', '--json']);
     expect(code).toBe(2);

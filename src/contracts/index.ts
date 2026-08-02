@@ -45,6 +45,18 @@ export {
 } from './store.js';
 export type { RunRecord, DecisionRecord, TargetIndex } from './store.js';
 
+export {
+  CAPTURE_RECORD_VERSION,
+  CASE_FIXTURE_VERSION,
+  CaptureModeSchema,
+  CaptureTargetSchema,
+  CaptureSourceSchema,
+  CapturedExchangeSchema,
+  CaptureManifestSchema,
+  CasePromotionFixtureSchema
+} from './capture.js';
+export type { CaptureManifest, CapturedExchange, CaptureMode, CaptureTarget, CasePromotionFixture } from './capture.js';
+
 export { toCheckResult, toStampedLegacyResult, toErrorResult } from './serialize.js';
 
 export {
@@ -68,6 +80,9 @@ export {
   OrgScanInputSchema,
   HuntInputSchema,
   HuntInputObjectSchema,
+  CaptureShowInputSchema,
+  CaptureListInputSchema,
+  CasePromoteInputSchema,
   LedgerLookupInputSchema,
   LedgerRecordInputSchema,
   LedgerListInputSchema,

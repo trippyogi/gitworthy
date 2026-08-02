@@ -4,6 +4,9 @@ import { parseArgs } from 'node:util';
 import { pathToFileURL } from 'node:url';
 import {
   branch_scan,
+  capture_list,
+  capture_show,
+  case_promote,
   contrib_policy,
   doctor,
   dupe_cluster,
@@ -47,6 +50,9 @@ import {
   toStampedLegacyResult
 } from '../contracts/index.js';
 import { persistCheckResultBestEffort } from '../lib/store.js';
+import { captureTargetForOrg, captureTargetForRepo, captureTargetForRepoIssue } from '../lib/capture-policy.js';
+import { putCaptureManifest } from '../lib/capture-store.js';
+import { withCaptureSession } from '../lib/capture-session.js';
 import { startMcpServer } from '../mcp/server.js';
 
 const help = `gitworthy
@@ -55,8 +61,8 @@ Usage:
   gitworthy --help
   gitworthy --version
   gitworthy doctor [--json]
-  gitworthy check owner/repo#123 [--npm-package name] [--probe-glob glob] [--probe-contains text] [--probe-template id] [--json]
-  gitworthy hunt owner/repo|org [--max-checks 3] [--label ...] [--keywords ...] [--since 90d] [--limit 25] [--max-repos 8] [--skill-profile ...] [--skip-policy-gate] [--no-land-hints] [--json]
+  gitworthy check owner/repo#123 [--npm-package name] [--probe-glob glob] [--probe-contains text] [--probe-template id] [--capture] [--capture-local-private] [--json]
+  gitworthy hunt owner/repo|org [--max-checks 3] [--label ...] [--keywords ...] [--since 90d] [--limit 25] [--max-repos 8] [--skill-profile ...] [--skip-policy-gate] [--no-land-hints] [--capture] [--capture-local-private] [--json]
   gitworthy branches owner/repo keyword[,keyword] [--json] [--force-refresh]
   gitworthy issue owner/repo 123 [--json]
   gitworthy release owner/repo package-name [--probe-glob glob] [--probe-contains text] [--probe-template id] [--json]
@@ -81,6 +87,9 @@ Usage:
   gitworthy outcome show <event_id> [--json]
   gitworthy outcome list [--repo owner/repo] [--issue 123] [--limit 50] [--json]
   gitworthy outcome record owner/repo#123 --event selected [--decision-id id] [--run-id id] [--notes text] [--json]
+  gitworthy capture list [--limit 50] [--json]
+  gitworthy capture show <capture_id> [--json]
+  gitworthy case promote <capture_id> --verdict ACT --disposition greenfield --rationale text --evidence-url url --out path [--force] [--json]
   gitworthy recheck owner/repo#123 [--npm-package name] [--json]
   gitworthy mcp
 `;
@@ -129,6 +138,44 @@ function stringValue(value: unknown): string | undefined {
   return typeof value === 'string' ? value : undefined;
 }
 
+function stringValues(value: unknown): string[] {
+  if (typeof value === 'string') return [value];
+  if (Array.isArray(value)) return value.filter((item): item is string => typeof item === 'string');
+  return [];
+}
+
+function captureRequested(values: Record<string, unknown>): boolean {
+  return values.capture === true || values['capture-local-private'] === true;
+}
+
+function captureMode(values: Record<string, unknown>): 'public' | 'local_only' {
+  return values['capture-local-private'] === true ? 'local_only' : 'public';
+}
+
+function withCaptureOutput<T extends Record<string, unknown>>(output: T, manifest: { capture_id: string; capture_mode: string; promotable: boolean }): T & { capture: { capture_id: string; capture_mode: string; promotable: boolean } } {
+  return {
+    ...output,
+    capture: {
+      capture_id: manifest.capture_id,
+      capture_mode: manifest.capture_mode,
+      promotable: manifest.promotable
+    }
+  };
+}
+
+function extractHuntDecisionIds(output: Record<string, unknown>): string[] {
+  const evidence = Array.isArray(output.evidence) ? output.evidence : [];
+  const ids: string[] = [];
+  for (const item of evidence) {
+    if (!item || typeof item !== 'object') continue;
+    const worth = (item as { worth_check?: unknown }).worth_check;
+    if (!worth || typeof worth !== 'object') continue;
+    const id = (worth as { decision_id?: unknown }).decision_id;
+    if (typeof id === 'string' && !ids.includes(id)) ids.push(id);
+  }
+  return ids;
+}
+
 function probe(values: { 'probe-glob'?: unknown; 'probe-contains'?: unknown }): { file_glob?: string; contains?: string } | undefined {
   const file_glob = stringValue(values['probe-glob']);
   const contains = stringValue(values['probe-contains']);
@@ -173,6 +220,8 @@ const CLI_OPTIONS = {
   'max-repos': { type: 'string' },
   'max-checks': { type: 'string' },
   'no-land-hints': { type: 'boolean' },
+  capture: { type: 'boolean' },
+  'capture-local-private': { type: 'boolean' },
   repo: { type: 'string' },
   org: { type: 'boolean' },
   verdict: { type: 'string' },
@@ -183,6 +232,9 @@ const CLI_OPTIONS = {
   'decision-id': { type: 'string' },
   'run-id': { type: 'string' },
   'out-dir': { type: 'string' },
+  out: { type: 'string' },
+  rationale: { type: 'string' },
+  'evidence-url': { type: 'string', multiple: true },
   issue: { type: 'string' }
 } as const;
 
@@ -250,15 +302,35 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
     } else if (command === 'check') {
       commandName = 'check';
       const ref = parseIssueRef(required(first, 'check requires owner/repo#123.'));
-      const legacy = await worth_check({
-        ...ref,
-        npm_package: stringValue(parsed.values['npm-package']),
-        probe: probe(parsed.values),
-        probe_template: stringValue(parsed.values['probe-template'])
-      });
-      const check = toCheckResult(legacy as Record<string, unknown>, ref);
-      await persistCheckResultBestEffort(check);
-      output = check;
+      const runCheck = async () => {
+        const legacy = await worth_check({
+          ...ref,
+          npm_package: stringValue(parsed.values['npm-package']),
+          probe: probe(parsed.values),
+          probe_template: stringValue(parsed.values['probe-template'])
+        });
+        const check = toCheckResult(legacy as Record<string, unknown>, ref);
+        await persistCheckResultBestEffort(check);
+        return check;
+      };
+      if (captureRequested(parsed.values)) {
+        const mode = captureMode(parsed.values);
+        const target = await captureTargetForRepoIssue({ ...ref, capture_mode: mode });
+        const captured = await withCaptureSession({
+          command: 'check',
+          capture_mode: mode,
+          target,
+          source: { surface: 'cli', attribution: 'gitworthy check --capture' }
+        }, async (session) => {
+          const check = await runCheck();
+          session.linkRun({ run_id: check.run_id, decision_id: check.decision_id });
+          return check;
+        });
+        const manifest = await putCaptureManifest(captured.manifest);
+        output = withCaptureOutput(captured.value, manifest);
+      } else {
+        output = await runCheck();
+      }
     } else if (command === 'branches') {
       commandName = 'branch_scan';
       const repo = repoArg(first, 'branches requires owner/repo and keywords.');
@@ -328,7 +400,7 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
       const target = asOrg
         ? { org: orgArg(huntTarget, 'hunt requires owner/repo or an org/user login.') }
         : { repo: repoArg(huntTarget, 'hunt requires owner/repo or an org/user login.') };
-      output = toStampedLegacyResult('hunt', await hunt({
+      const huntInput = {
         ...target,
         label: filters.label,
         keywords: filters.keywords,
@@ -340,7 +412,28 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
         max_repos: maxRepos,
         skip_policy_gate: parsed.values['skip-policy-gate'] === true,
         npm_package: stringValue(parsed.values['npm-package'])
-      }) as Record<string, unknown>);
+      };
+      if (captureRequested(parsed.values)) {
+        const mode = captureMode(parsed.values);
+        const captureTarget = typeof target.repo === 'string'
+          ? await captureTargetForRepo({ repo: target.repo, capture_mode: mode })
+          : captureTargetForOrg(target.org as string);
+        const captured = await withCaptureSession({
+          command: 'hunt',
+          capture_mode: mode,
+          target: captureTarget,
+          source: { surface: 'cli', attribution: 'gitworthy hunt --capture' }
+        }, async (session) => {
+          const legacy = await hunt({ ...huntInput, capture_persist_checks: true }) as Record<string, unknown>;
+          const stamped = toStampedLegacyResult('hunt', legacy) as Record<string, unknown>;
+          session.linkRun({ run_id: stringValue(stamped.run_id), decision_ids: extractHuntDecisionIds(stamped) });
+          return stamped;
+        });
+        const manifest = await putCaptureManifest(captured.manifest);
+        output = withCaptureOutput(captured.value, manifest);
+      } else {
+        output = toStampedLegacyResult('hunt', await hunt(huntInput) as Record<string, unknown>);
+      }
     } else if (command === 'scan') {
       commandName = 'scan';
       const repo = repoArg(first, 'scan requires owner/repo.');
@@ -488,6 +581,37 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
       } else {
         usageError('outcome requires show, list, or record.');
       }
+    } else if (command === 'capture') {
+      const action = first;
+      if (action === 'show') {
+        commandName = 'capture_show';
+        output = toStampedLegacyResult('capture_show', await capture_show({
+          capture_id: required(second, 'capture show requires a capture_id.')
+        }) as Record<string, unknown>);
+      } else if (action === 'list') {
+        commandName = 'capture_list';
+        output = toStampedLegacyResult('capture_list', await capture_list({
+          limit: stringValue(parsed.values.limit) ? Number(stringValue(parsed.values.limit)) : undefined
+        }) as Record<string, unknown>);
+      } else {
+        usageError('capture requires show or list.');
+      }
+    } else if (command === 'case') {
+      const action = first;
+      if (action !== 'promote') usageError('case requires promote.');
+      commandName = 'case_promote';
+      const verdictRaw = required(stringValue(parsed.values.verdict), 'case promote requires --verdict ACT|VERIFY|SKIP.');
+      const dispositionRaw = required(stringValue(parsed.values.disposition), 'case promote requires --disposition <name>.');
+      const evidenceUrls = stringValues(parsed.values['evidence-url']);
+      output = toStampedLegacyResult('case_promote', await case_promote({
+        capture_id: required(second, 'case promote requires a capture_id.'),
+        verdict: parseArg(VerdictSchema, verdictRaw, 'invalid_usage'),
+        disposition: parseArg(DispositionSchema, dispositionRaw, 'invalid_usage'),
+        adjudicator_rationale: required(stringValue(parsed.values.rationale), 'case promote requires --rationale text.'),
+        evidence_urls: evidenceUrls.length > 0 ? evidenceUrls : usageError('case promote requires at least one --evidence-url.'),
+        out_path: required(stringValue(parsed.values.out), 'case promote requires --out path.'),
+        force: parsed.values.force === true
+      }) as Record<string, unknown>);
     } else if (command === 'recheck') {
       commandName = 'store_recheck';
       const ref = parseIssueRef(required(first, 'recheck requires owner/repo#123.'));

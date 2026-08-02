@@ -146,11 +146,11 @@ export async function withStoreLock<T>(
 }
 
 /** Atomic JSON write: temp file + rename into place. */
-export async function writeJsonAtomic(file: string, value: unknown): Promise<void> {
+export async function writeJsonAtomic(file: string, value: unknown, opts: { mode?: number } = {}): Promise<void> {
   await mkdir(path.dirname(file), { recursive: true });
   const tmp = `${file}.${process.pid}.${Date.now()}.tmp`;
   try {
-    await writeFile(tmp, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+    await writeFile(tmp, `${JSON.stringify(value, null, 2)}\n`, { encoding: 'utf8', mode: opts.mode });
     const deadline = Date.now() + 2_000;
     // Windows can transiently refuse replacing an existing file (AV / open handles).
     while (true) {

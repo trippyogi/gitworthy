@@ -11,6 +11,7 @@ import {
   HttpTransport,
   RequestBudget
 } from './http-client.js';
+import { currentCaptureSession } from './capture-session.js';
 
 export type GithubIssue = {
   number: number;
@@ -87,6 +88,9 @@ export function clearGithubCachesForTests(): void {
 
 export async function githubJson<T>(path: string, init: RequestInit = {}): Promise<T> {
   if (!isGetRequest(init)) {
+    return githubJsonUncached<T>(path, init);
+  }
+  if (currentCaptureSession()) {
     return githubJsonUncached<T>(path, init);
   }
   const ttlMs = githubCacheTtlMs();
