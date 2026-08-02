@@ -54,6 +54,10 @@ function nextActionLines(result: HumanResult): string[] {
       .slice(0, 4)
       .map((line) => `  ${line}`);
   }
+  // Doctor uses verdicts for exit codes; capability remediations are the action surface.
+  if (result.command === 'doctor' || (result.capabilities && result.capabilities.length > 0)) {
+    return [];
+  }
   if (result.verdict === 'SKIP' && result.disposition === 'land_only') {
     return ['  Review or help land the cited open PR. Do not open a parallel implementation.'];
   }

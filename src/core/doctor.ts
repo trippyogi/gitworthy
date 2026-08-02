@@ -38,7 +38,7 @@ type StepResult = { evidence: Record<string, unknown>; checked: string[]; not_ch
 const DEFAULT_PROBE_REPO = 'trippyogi/gitworthy';
 const DEFAULT_PROBE_ISSUE_NUMBER = 1;
 const RATE_LIMIT_LOW_THRESHOLD = 100;
-const MIN_NODE_MAJOR = 20;
+const MIN_NODE_MAJOR = 22;
 const BASELINE_LIMITATION = 'doctor validates the local environment and a small live GitHub API surface (rate limit, auth, timeline capability); it does not validate permissions against an arbitrary target repo or exercise the full worth_check pipeline.';
 
 function errorMessage(error: unknown): string {
