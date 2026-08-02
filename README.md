@@ -87,7 +87,7 @@ See [docs/AGENT_WORKFLOW.md](./docs/AGENT_WORKFLOW.md) for the complete agent po
 
 ## Use it with Cursor, ChatGPT, Hermes, or any MCP client
 
-Add Gitworthy as an MCP server:
+### Local stdio (desktop / agent VM)
 
 ```json
 {
@@ -102,6 +102,31 @@ Add Gitworthy as an MCP server:
   }
 }
 ```
+
+### Streamable HTTP (Cloud Agents / mobile / iPad)
+
+Run or deploy the same engine over HTTP and point the client at a URL:
+
+```sh
+export GITWORTHY_MCP_TOKEN="$(openssl rand -hex 32)"
+export GITHUB_TOKEN="github_pat_..."
+npx -y gitworthy@latest mcp --http --host 127.0.0.1 --port 8787
+```
+
+```json
+{
+  "mcpServers": {
+    "gitworthy": {
+      "url": "https://mcp.example.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${env:GITWORTHY_MCP_TOKEN}"
+      }
+    }
+  }
+}
+```
+
+Non-loopback binds require `GITWORTHY_MCP_TOKEN`. Keep `GITHUB_TOKEN` on the server. Full deploy and Cloud Agent notes: [docs/HTTP_MCP.md](./docs/HTTP_MCP.md).
 
 Give the agent a policy like this:
 
@@ -262,6 +287,7 @@ gitworthy related owner/repo [issue] [--json]
 gitworthy ledger show owner/repo#123 [--json]
 gitworthy doctor [--json]
 gitworthy mcp
+gitworthy mcp --http [--host 127.0.0.1] [--port 8787] [--stateless]
 ```
 
 Exit codes for `check`:
@@ -282,6 +308,7 @@ See [SKILL.md](./SKILL.md) for the strict contribution gates and [docs/AGENT_WOR
 - Skill profiles (`profile` in config or `--skill-profile`) can include `languages`, `topics`, `preferred_ecosystems`, and avoid lists; they affect scan/hunt ranking inputs only, never hard verdict policy.
 - Target manifests (`--manifest path` or `manifest_path` in config) can list repos/orgs, include/exclude filters, per-repo npm package mappings, and target-specific overrides. Ambiguous npm package mappings are rejected. Include/exclude filters are validated and carried as manifest metadata in GW-019; full filtering consumption is deferred to GW-027.
 - Tokens and credentials are never persisted in config or manifests; use environment variables such as `GITHUB_TOKEN` / `GH_TOKEN`.
+- `GITWORTHY_MCP_TOKEN` is the bearer secret for Streamable HTTP MCP (required for non-loopback binds).
 - `GITWORTHY_CACHE_DIR` overrides the cache under `~/.gitworthy/cache`.
 - `GITWORTHY_LEDGER_DIR` overrides local scout history under `~/.gitworthy/ledger`.
 - `GITWORTHY_TELEMETRY=on` plus `GITWORTHY_POSTHOG_KEY` requests optional telemetry.

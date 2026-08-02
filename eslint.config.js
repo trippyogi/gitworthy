@@ -1,6 +1,6 @@
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['dist/**', 'node_modules/**', 'fixtures/**'] },
+  { ignores: ['dist/**', 'node_modules/**', 'fixtures/**', 'api/**'] },
   ...tseslint.configs.recommended
 );

@@ -127,4 +127,23 @@ describe('CLI input validation', () => {
       issue_number: 12
     });
   });
+
+  it('refuses mcp --http on a public bind without GITWORTHY_MCP_TOKEN', async () => {
+    const previous = process.env.GITWORTHY_MCP_TOKEN;
+    delete process.env.GITWORTHY_MCP_TOKEN;
+    try {
+      const { code, stdout, stderr } = await run(['mcp', '--http', '--host', '0.0.0.0', '--port', '8799', '--json']);
+      expect(code).toBe(2);
+      const payload = stdout.trim() ? JSON.parse(stdout) : null;
+      if (payload) {
+        const parsed = ErrorResultSchema.parse(payload);
+        expect(parsed.error.message).toMatch(/GITWORTHY_MCP_TOKEN/);
+      } else {
+        expect(stderr).toMatch(/GITWORTHY_MCP_TOKEN/);
+      }
+    } finally {
+      if (previous === undefined) delete process.env.GITWORTHY_MCP_TOKEN;
+      else process.env.GITWORTHY_MCP_TOKEN = previous;
+    }
+  });
 });
