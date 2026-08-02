@@ -1,6 +1,6 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -87,6 +87,23 @@ async function callMcpTool(name: string, args: Record<string, unknown>) {
     await client.close();
     await server.close();
   }
+}
+
+async function snapshotStoreFiles(dir: string): Promise<Record<string, string>> {
+  const rows: Record<string, string> = {};
+  async function walk(current: string): Promise<void> {
+    const entries = await readdir(current, { withFileTypes: true });
+    for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
+      const fullPath = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        await walk(fullPath);
+      } else {
+        rows[path.relative(dir, fullPath)] = await readFile(fullPath, 'utf8');
+      }
+    }
+  }
+  await walk(dir);
+  return rows;
 }
 
 describe('brief generation (GW-020)', () => {
@@ -312,6 +329,32 @@ describe('brief generation (GW-020)', () => {
     expect(BriefSchema.parse(first).named_paths_symbols).toEqual({ paths: ['src/repro.ts'], symbols: ['reproduceBug'] });
   });
 
+  it('includes structured brief sections in human and Markdown renderings', async () => {
+    await seedDecision({
+      decision_id: 'decision_render_sections',
+      verdict: 'VERIFY',
+      disposition: 'claim_first',
+      findings: [
+        finding({ type: 'claim_required', strength: 'definitive', effect: 'verify', message: 'Claim before PR.', url: 'https://github.com/owner/repo/blob/main/CONTRIBUTING.md' }),
+        finding({ type: 'linked_pr_open', strength: 'definitive', effect: 'block', message: 'PR #9 is linked.', url: 'https://github.com/owner/repo/pull/9' }),
+        finding({ type: 'linked_pr_closed', strength: 'definitive', effect: 'verify', message: 'PR #3 closed unmerged.', data: { prior_attempt: true, path: 'src/old.ts', symbol: 'oldFix' } })
+      ]
+    });
+
+    const brief = await generateBrief({ decision_id: 'decision_render_sections' }, { now: NOW });
+    const human = renderBrief(brief, 'human');
+    const markdown = renderBrief(brief, 'markdown');
+
+    for (const label of ['Contribution policy:', 'Claim requirements:', 'Linked work:', 'Prior attempts:', 'Named paths:', 'Named symbols:']) {
+      expect(human).toContain(label);
+    }
+    for (const heading of ['## Contribution policy', '## Claim requirements', '## Linked work', '## Prior attempts', '## Named paths and symbols']) {
+      expect(markdown).toContain(heading);
+    }
+    expect(human).toContain('src/old.ts');
+    expect(markdown).toContain('oldFix');
+  });
+
   it('warns on stale decisions and fails cleanly for missing records', async () => {
     await seedDecision({
       decision_id: 'decision_stale',
@@ -337,27 +380,60 @@ describe('brief generation (GW-020)', () => {
         finding({ type: 'competing_open_closer', strength: 'corroborated', effect: 'inform', message: 'Sibling.', url: 'https://example.test/corroborated' })
       ]
     });
-    await putOutcomeEvent({
-      event_id: 'outcome_url',
-      decision_id: 'decision_urls',
-      run_id: 'run_decision_urls',
-      target: { repo: 'owner/repo', issue_number: 123 },
-      event: 'comment_posted',
-      occurred_at: '2026-01-02T01:00:00.000Z',
-      source: 'test',
-      data: { url: 'https://example.test/outcome' },
-      notes: 'commented'
-    });
+    for (const [eventId, url] of [
+      ['outcome_z', 'https://example.test/outcome-z'],
+      ['outcome_a', 'https://example.test/outcome-a'],
+      ['outcome_url', 'https://example.test/outcome-url']
+    ] as const) {
+      await putOutcomeEvent({
+        event_id: eventId,
+        decision_id: 'decision_urls',
+        run_id: 'run_decision_urls',
+        target: { repo: 'owner/repo', issue_number: 123 },
+        event: 'comment_posted',
+        occurred_at: '2026-01-02T01:00:00.000Z',
+        source: 'test',
+        data: { url },
+        notes: 'commented'
+      });
+    }
 
     const brief = await generateBrief({ decision_id: 'decision_urls' }, { now: NOW });
     expect(brief.ranked_findings.map((entry) => entry.type)).toEqual(['linked_pr_open', 'competing_open_closer', 'branch_match']);
+    expect(brief.source_records.outcome_ids).toEqual(['outcome_a', 'outcome_url', 'outcome_z']);
     expect(brief.evidence_urls).toEqual([
       'https://github.com/owner/repo/issues/123',
       'https://example.test/definitive',
       'https://example.test/corroborated',
       'https://example.test/heuristic',
-      'https://example.test/outcome'
+      'https://example.test/outcome-a',
+      'https://example.test/outcome-url',
+      'https://example.test/outcome-z'
     ]);
+  });
+
+  it('leaves durable store files unchanged after generating a brief', async () => {
+    await seedDecision({
+      decision_id: 'decision_immutable_store',
+      verdict: 'ACT',
+      disposition: 'greenfield'
+    });
+    await putOutcomeEvent({
+      event_id: 'outcome_immutable',
+      decision_id: 'decision_immutable_store',
+      run_id: 'run_decision_immutable_store',
+      target: { repo: 'owner/repo', issue_number: 123 },
+      event: 'selected',
+      occurred_at: '2026-01-02T00:30:00.000Z',
+      source: 'test',
+      data: {},
+      notes: 'picked'
+    });
+    const before = await snapshotStoreFiles(storeDir);
+
+    await generateBrief({ decision_id: 'decision_immutable_store' }, { now: NOW });
+
+    await expect(snapshotStoreFiles(storeDir)).resolves.toEqual(before);
   });
 
   it('does not call GitHub or HTTP clients while generating a brief', async () => {
