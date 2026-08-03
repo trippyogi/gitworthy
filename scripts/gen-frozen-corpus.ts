@@ -31,6 +31,21 @@ class Fx {
     });
   }
 
+  /** Unified-diff body for the same pulls/{n} URL linked_work already fetched as JSON. */
+  ghDiff(url: string, text: string) {
+    this.http.push({
+      sequence: this.next(),
+      provider: 'github',
+      match: { method: 'GET', canonical_url: url, request_body_digest_sha256: null },
+      response: {
+        status: 200,
+        headers: { 'content-type': 'application/vnd.github.diff' },
+        body_encoding: 'text',
+        body: text
+      }
+    });
+  }
+
   ghRateLimit(url: string) {
     this.http.push({
       sequence: this.next(),
@@ -1132,6 +1147,104 @@ function worthAssignedPack(caseId: string, issueNumber: number) {
       provider_fixtures: '../fixtures/frozen-worth-skip-released-fix.provider.json'
     }),
     pack: fx.pack('frozen-worth-skip-released-fix')
+  });
+}
+
+// --- contention: superseded overlapping claims (Hermes #76793 narrative, synthetic acme) ---
+{
+  const fx = new Fx();
+  const n = 76793;
+  const target = issue({
+    number: n,
+    title: 'match app id',
+    body: '## Proposed Fix\n\n```ts\n_app_id\n```\nOnly `_app_id`.\n',
+    state: 'open',
+    labels: [{ name: 'sweeper:risk-compatibility' }]
+  });
+  const prOpen = pull({
+    number: 100,
+    title: 'fix app id',
+    body: `Fixes #${n}`,
+    state: 'open',
+    user: { login: 'dev-a' }
+  });
+  const prClosed = pull({
+    number: 102,
+    title: 'broader fix',
+    body: `Fixes #${n}`,
+    state: 'closed',
+    merged: false,
+    merged_at: null,
+    user: { login: 'dev-b' }
+  });
+  const diffOpen = [
+    'diff --git a/src/auth.ts b/src/auth.ts',
+    '--- a/src/auth.ts',
+    '+++ b/src/auth.ts',
+    '@@ -1,1 +1,3 @@ export function matchAppId(input: string) {',
+    ' export function matchAppId(input: string) {',
+    '+export function _app_id(value: string) {',
+    '+  return value;',
+    '+}',
+    ''
+  ].join('\n');
+  const diffClosed = [
+    'diff --git a/src/auth.ts b/src/auth.ts',
+    '--- a/src/auth.ts',
+    '+++ b/src/auth.ts',
+    '@@ -1,1 +1,5 @@ export function matchAppId(input: string) {',
+    ' export function matchAppId(input: string) {',
+    '+export function _app_id(value: string) { return value; }',
+    '+export function _client_id(value: string) { return value; }',
+    ''
+  ].join('\n');
+
+  // contention() fetches the issue before calling linked_work
+  fx.gh(`https://api.github.com/repos/${REPO}/issues/${n}`, target);
+  linkedBase(fx, REPO, n, target, [
+    {
+      event: 'cross-referenced',
+      created_at: '2026-01-02T00:00:00Z',
+      source: { type: 'issue', issue: { number: 100, pull_request: { url: `https://api.github.com/repos/${REPO}/pulls/100` } } }
+    },
+    {
+      event: 'cross-referenced',
+      created_at: '2026-01-02T01:00:00Z',
+      source: { type: 'issue', issue: { number: 102, pull_request: { url: `https://api.github.com/repos/${REPO}/pulls/102` } } }
+    }
+  ]);
+  fx.gh(`https://api.github.com/repos/${REPO}/pulls/100`, prOpen);
+  fx.gh(`https://api.github.com/repos/${REPO}/pulls/102`, prClosed);
+  linkedTail(fx, REPO, REPO, n, [prSearchItem(prOpen), prSearchItem(prClosed)]);
+  // Same pulls/{n} URLs as JSON above; replay queue serves JSON then unified diff.
+  fx.ghDiff(`https://api.github.com/repos/${REPO}/pulls/100`, diffOpen);
+  fx.ghDiff(`https://api.github.com/repos/${REPO}/pulls/102`, diffClosed);
+  fx.lsRemote(REPO, [
+    { name: 'main', sha: 'aaa111' },
+    { name: 'fix-76793-app-id', sha: 'abc222' }
+  ]);
+
+  cases.push({
+    meta: caseJson({
+      id: 'frozen-contention-superseded-overlap',
+      name: 'Contention superseded when closed PR overlaps open claim',
+      function: 'contention',
+      input: { repo: REPO, issue_number: n },
+      ground_truth: {
+        verdict: 'VERIFY',
+        disposition: 'land_only',
+        failure_mode: 'contention_superseded_overlapping_claims',
+        adjudicator_rationale:
+          'Synthetic pack of the Hermes #76793 race narrative: open closer #100 and closed unmerged #102 share auth/_app_id paths; contention must report superseded with claim_branches density and provenance footer. Mechanism-only (no worth_check verdict).',
+        evidence_urls: [`https://github.com/${REPO}/issues/${n}`],
+        required_signals: ['linked_pr_open'],
+        forbidden_signals: ['linked_pr_merged'],
+        required_findings: ['superseded', '100', '102', 'fix-76793', 'Contention analysis'],
+        forbidden_findings: []
+      },
+      provider_fixtures: '../fixtures/frozen-contention-superseded-overlap.provider.json'
+    }),
+    pack: fx.pack('frozen-contention-superseded-overlap')
   });
 }
 

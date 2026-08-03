@@ -1,13 +1,13 @@
 /** Fetch GitHub pull request unified diffs with byte budgets (GW-041). */
 
 import { GitworthyError } from '../core/envelope.js';
+import { githubApiHeaders, HttpClientError } from './http-client.js';
 import {
-  createHttpClient,
-  githubApiHeaders,
-  HttpClientError,
-  type HttpClient
-} from './http-client.js';
-import { githubToken, clearGithubCachesForTests, configureGithubHttpForTests } from './github.js';
+  githubToken,
+  githubHttpRequest,
+  clearGithubCachesForTests,
+  configureGithubHttpForTests
+} from './github.js';
 import {
   DEFAULT_MAX_DIFF_BYTES_PER_PR,
   tryConsumeBudget,
@@ -23,16 +23,9 @@ export type PullDiffResult = {
   changed_files?: number;
 };
 
-let diffHttp: HttpClient | undefined;
-
-function diffClient(): HttpClient {
-  diffHttp ??= createHttpClient({ userAgent: 'gitworthy', maxRetries: 1 });
-  return diffHttp;
-}
-
-/** Test helper: reset the dedicated diff client (shares github test transport when configured). */
+/** @deprecated No-op; diffs use the shared GitHub client / replay transport. */
 export function resetDiffHttpForTests(): void {
-  diffHttp = undefined;
+  // retained for call-site compatibility
 }
 
 export async function fetchPullDiff(
@@ -53,13 +46,12 @@ export async function fetchPullDiff(
   const url = `https://api.github.com/repos/${repo}/pulls/${prNumber}`;
   let response: Response;
   try {
-    const result = await diffClient().request(url, {
+    response = await githubHttpRequest(url, {
       headers: {
         ...githubApiHeaders(token),
         accept: 'application/vnd.github.diff'
       }
     });
-    response = result.response;
   } catch (error) {
     if (error instanceof HttpClientError && error.code === 'http_timeout') {
       throw new GitworthyError({

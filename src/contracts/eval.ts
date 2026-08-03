@@ -12,6 +12,7 @@ export const EvalCommandSchema = z.enum([
   'dupe_cluster',
   'contrib_policy',
   'linked_work',
+  'contention',
   'worth_check'
 ]);
 

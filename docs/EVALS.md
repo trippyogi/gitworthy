@@ -22,8 +22,27 @@ pnpm eval:live      # needs token + network
 
 1. Prefer **beta / dogfood captures** over solo fixture farming ([`BETA.md`](./BETA.md)).
 2. Adjudicate ground truth (verdict, disposition, failure_mode, evidence URLs).
-3. Build a provider fixture pack.
+3. Build a provider fixture pack (or promote from a capture).
 4. Land under `eval/frozen/cases/` + `eval/frozen/fixtures/`.
+
+### Capture → promote (live candidates)
+
+Live `promote_candidate` rows in `eval/live/cases.json` (`live-003`, `004`, `006`, `007`, `009`, `011`, `012`) need a real capture before freeze. Do **not** invent adjudications.
+
+```sh
+# After a surprising check/hunt with --capture:
+gitworthy capture list --json
+gitworthy capture show <capture_id> --json
+
+gitworthy case promote <capture_id> \
+  --verdict SKIP \
+  --disposition land_only \
+  --rationale 'human-reviewed: open closer still definitive' \
+  --evidence-url 'https://github.com/owner/repo/issues/N' \
+  --out ./eval/private/promotions/<id>.json
+```
+
+Then convert the promotion fixture into an offline provider pack, add a frozen case JSON + inventory row, and run `pnpm eval:frozen`. Mechanism-only packs (e.g. `contention`) grow path coverage; only `worth_check` rows expand the ACT/SKIP precision denominator — see [`CORPUS.md`](./CORPUS.md).
 
 Before growing volume, read the taxonomy in [`CORPUS.md`](./CORPUS.md): suite pass rate ≠ verdict precision denominator.
 

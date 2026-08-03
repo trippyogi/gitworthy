@@ -4,7 +4,7 @@ Promotion and exclusion record for adjudicated offline cases. Live catalog class
 lives in `eval/live/cases.json`. Private experiments must not become release blockers
 without an explicit move into `eval/frozen/`.
 
-**Corpus size:** 30 frozen cases. Suite result: **30/30 passed** (see [`../../docs/CORPUS.md`](../../docs/CORPUS.md) for verdict-scored vs mechanism-only taxonomy).
+**Corpus size:** 31 frozen cases. Suite result: re-verify with `pnpm eval:frozen` after this pack lands (see [`../../docs/CORPUS.md`](../../docs/CORPUS.md) for verdict-scored vs mechanism-only taxonomy).
 
 ## Frozen cases
 
@@ -21,6 +21,7 @@ without an explicit move into `eval/frozen/`.
 | `frozen-contrib-clean` | `contrib_policy` | `contrib_policy_no_blocking_signals` |
 | `frozen-contrib-evidence-requirements` | `contrib_policy` | `contrib_policy_evidence_requirements` |
 | `frozen-contrib-no-pr-path` | `contrib_policy` | `contrib_policy_no_pr_path` |
+| `frozen-contention-superseded-overlap` | `contention` | `contention_superseded_overlapping_claims` |
 | `frozen-issue-partial-overlap` | `issue_vs_main` | `issue_vs_main_partial_overlap` |
 | `frozen-issue-shipped` | `issue_vs_main` | `issue_vs_main_shipped_overlap` |
 | `frozen-linked-assigned` | `linked_work` | `assigned_maintainer_signal` |
@@ -43,7 +44,7 @@ without an explicit move into `eval/frozen/`.
 
 ## Live promote candidates (not yet frozen)
 
-See `classification: promote_candidate` in `eval/live/cases.json` (`live-003`, `004`, `006`, `007`, `009`, `011`, `012`). These need capture→replay packs before promotion.
+See `classification: promote_candidate` in `eval/live/cases.json` (`live-003`, `004`, `006`, `007`, `009`, `011`, `012`). These need capture→replay packs before promotion. Maintainer path: [`../../docs/EVALS.md`](../../docs/EVALS.md) (Capture → promote).
 
 ## Explicit exclusions / live-only
 
@@ -52,7 +53,6 @@ See `classification: promote_candidate` in `eval/live/cases.json` (`live-003`, `
 | CASE_STUDIES Dawn #3921 | Store-reproduced UI; no durable public GitHub oracle for offline replay |
 | CASE_STUDIES Firecrawl rename | Mutable rename/search state; keep live until capture pack exists |
 | `live-001/002/005/008/010` | `live_only` — mutable branches/assignments/npm latest |
-| Hermes contention #76793 narrative | Guides GW-040–042; promote as frozen contention case after dedicated fixture pack |
 
 ## Gap tracking
 
@@ -61,10 +61,11 @@ Hard-SKIP / VERIFY paths now covered in frozen replay:
 - Open PR explicitly closing issue → `frozen-worth-skip-open-closer` (worth_check SKIP / land_only)
 - Released_fix with matched probe → `frozen-release-released-fix`, `frozen-worth-skip-released-fix`
 - Provider/auth rate-limit failures → VERIFY (`frozen-worth-rate-limit-verify`)
+- Contention superseded / overlapping claims → `frozen-contention-superseded-overlap` (mechanism-only; Hermes #76793 narrative on synthetic `acme/widgets`)
 
-Remaining gaps (non-blocking for current 30-case corpus):
+Remaining gaps (non-blocking for current corpus):
 
-- Contention / swarm-risk frozen pack (Hermes narrative)
+- Additional contention states (resolved, contested multi-open without supersession)
 - Additional npm tarball edge cases (binary fixture maintenance)
 
 ## Fixture maintenance notes
@@ -76,3 +77,4 @@ Provider packs must match production URL canonicalization:
 - Renamed / aliased repos: comments and linkage use canonical `full_name` from `/repos/{input}`
 - `worth_check` composites need duplicate issue-fetch fixtures for parallel sub-checks
 - npm tarball probes must be valid `.tgz` bytes (see `scripts/gen-frozen-corpus.ts` `makeTarball`)
+- `contention` packs: issue fetch before `linked_work`, then a second JSON exchange per `pulls/{n}` followed by a `body_encoding: text` unified-diff exchange for the same URL (shared GitHub HTTP client / replay transport)

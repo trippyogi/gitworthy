@@ -2,6 +2,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   branch_scan,
+  contention,
   contrib_policy,
   dupe_cluster,
   issue_vs_main,
@@ -20,6 +21,7 @@ export const runners = {
   dupe_cluster,
   contrib_policy,
   linked_work,
+  contention,
   worth_check
 } as const;
 
