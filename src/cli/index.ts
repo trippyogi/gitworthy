@@ -642,26 +642,33 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
       });
       const effective = await loadEffectiveConfig({ input: rawInput });
       const huntInput = resolveHuntFromConfig(rawInput, effective);
-      if (captureRequested(parsed.values)) {
-        const mode = captureMode(parsed.values);
-        const captureTarget = huntInput.repo
-          ? await captureTargetForRepo({ repo: huntInput.repo, capture_mode: mode })
-          : captureTargetForOrg(huntInput.org!);
-        const captured = await withCaptureSession({
-          command: 'hunt',
-          capture_mode: mode,
-          target: captureTarget,
-          source: { surface: 'cli', attribution: 'gitworthy hunt --capture' }
-        }, async (session) => {
-          const legacy = await hunt({ ...huntInput, capture_persist_checks: true }) as Record<string, unknown>;
-          const stamped = toStampedLegacyResult('hunt', legacy) as Record<string, unknown>;
-          session.linkRun({ run_id: stringValue(stamped.run_id), decision_ids: extractHuntDecisionIds(stamped) });
-          return stamped;
-        });
-        const manifest = await putCaptureManifest(captured.manifest);
-        output = withCaptureOutput(captured.value, manifest);
-      } else {
-        output = toStampedLegacyResult('hunt', await hunt(huntInput) as Record<string, unknown>);
+      const abort = new AbortController();
+      const onSigInt = () => abort.abort();
+      process.once('SIGINT', onSigInt);
+      try {
+        if (captureRequested(parsed.values)) {
+          const mode = captureMode(parsed.values);
+          const captureTarget = huntInput.repo
+            ? await captureTargetForRepo({ repo: huntInput.repo, capture_mode: mode })
+            : captureTargetForOrg(huntInput.org!);
+          const captured = await withCaptureSession({
+            command: 'hunt',
+            capture_mode: mode,
+            target: captureTarget,
+            source: { surface: 'cli', attribution: 'gitworthy hunt --capture' }
+          }, async (session) => {
+            const legacy = await hunt({ ...huntInput, capture_persist_checks: true, signal: abort.signal }) as Record<string, unknown>;
+            const stamped = toStampedLegacyResult('hunt', legacy) as Record<string, unknown>;
+            session.linkRun({ run_id: stringValue(stamped.run_id), decision_ids: extractHuntDecisionIds(stamped) });
+            return stamped;
+          });
+          const manifest = await putCaptureManifest(captured.manifest);
+          output = withCaptureOutput(captured.value, manifest);
+        } else {
+          output = toStampedLegacyResult('hunt', await hunt({ ...huntInput, signal: abort.signal }) as Record<string, unknown>);
+        }
+      } finally {
+        process.removeListener('SIGINT', onSigInt);
       }
     } else if (command === 'scan') {
       commandName = 'scan';
@@ -757,7 +764,14 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
       } else if (action === 'resume') {
         commandName = 'hunt';
         const runId = required(second, 'run resume requires a run_id.');
-        output = toStampedLegacyResult('hunt', await resumeHunt(runId) as Record<string, unknown>);
+        const abort = new AbortController();
+        const onSigInt = () => abort.abort();
+        process.once('SIGINT', onSigInt);
+        try {
+          output = toStampedLegacyResult('hunt', await resumeHunt(runId, { signal: abort.signal }) as Record<string, unknown>);
+        } finally {
+          process.removeListener('SIGINT', onSigInt);
+        }
       } else if (action === 'list') {
         commandName = 'store_run_list';
         const repoFilter = stringValue(parsed.values.repo);

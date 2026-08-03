@@ -27,7 +27,8 @@
     "eval:live": "tsx eval/run-suite.ts --suite=live",
     "eval:private": "tsx eval/run-suite.ts --suite=private",
     "bench:frozen": "tsx scripts/bench-frozen.ts",
-    "mcp:self-test": "tsx scripts/mcp-self-test.ts"
+    "mcp:self-test": "tsx scripts/mcp-self-test.ts",
+    "docs:links": "tsx scripts/docs-links.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.29.0",

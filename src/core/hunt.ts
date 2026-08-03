@@ -35,6 +35,8 @@ type Input = {
   capture_persist_checks?: boolean;
   /** Resume an incomplete hunt run (GW-028). */
   resume_run_id?: string;
+  /** Cooperative cancellation (CLI SIGINT / host abort). Persists partial progress. */
+  signal?: AbortSignal;
 };
 
 type PolicyGate = { blocked: boolean; claimRequired: boolean; feedbackChannel?: string };
@@ -82,6 +84,10 @@ const META_KINDS = new Set(['widen_hint', 'discovery', 'ranking_explain', 'repo_
 
 function candidateKey(repo: string, issueNumber: number): string {
   return `${repo}#${issueNumber}`;
+}
+
+function isCancelled(signal?: AbortSignal): boolean {
+  return signal?.aborted === true;
 }
 
 function toHuntCandidate(item: Evidence): HuntCandidate | null {
@@ -384,6 +390,14 @@ export async function hunt(input: Input): Promise<Envelope> {
   await persistHuntRun(huntRunId, metrics, checked, [...notCheckedSet]);
 
   while (queue.length > 0) {
+    if (isCancelled(input.signal)) {
+      deferred.push(...queue);
+      queue.length = 0;
+      metrics.status = 'partial';
+      metrics.partial_reason = 'cancelled';
+      notCheckedSet.add('hunt cancelled before remaining candidates were preflighted; resume with the hunt run_id.');
+      break;
+    }
     if (checksRun >= maxChecks) {
       deferred.push(...queue);
       break;
@@ -596,6 +610,13 @@ export async function resumeHunt(runId: string, overrides: Input = {}): Promise<
   metrics.status = 'running';
 
   while (queue.length > 0 && checksRun < remainingBudget) {
+    if (isCancelled(overrides.signal)) {
+      metrics.status = 'partial';
+      metrics.partial_reason = 'cancelled';
+      metrics.queue = queue;
+      notCheckedSet.add('hunt resume cancelled; remaining queue preserved for another resume.');
+      break;
+    }
     const item = queue.shift()!;
     const key = candidateKey(item.repo, item.issue_number);
     if (metrics.completed_keys.includes(key)) continue;

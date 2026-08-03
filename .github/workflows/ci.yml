@@ -25,6 +25,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
+      - name: Docs link check
+        run: pnpm docs:links
       - name: Frozen eval (offline)
         run: pnpm eval:frozen
       - name: Frozen perf counters (offline)
