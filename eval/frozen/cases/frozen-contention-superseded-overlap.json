@@ -1,0 +1,41 @@
+{
+  "schema_version": "1.0-draft.1",
+  "case_version": 1,
+  "suite": "frozen",
+  "classification": "frozen",
+  "provenance": {
+    "notes": "GW-024 promotion"
+  },
+  "time_sensitive": false,
+  "id": "frozen-contention-superseded-overlap",
+  "name": "Contention superseded when closed PR overlaps open claim",
+  "function": "contention",
+  "input": {
+    "repo": "acme/widgets",
+    "issue_number": 76793
+  },
+  "ground_truth": {
+    "verdict": "VERIFY",
+    "disposition": "land_only",
+    "failure_mode": "contention_superseded_overlapping_claims",
+    "adjudicator_rationale": "Synthetic pack of the Hermes #76793 race narrative: open closer #100 and closed unmerged #102 share auth/_app_id paths; contention must report superseded with claim_branches density and provenance footer. Mechanism-only (no worth_check verdict).",
+    "evidence_urls": [
+      "https://github.com/acme/widgets/issues/76793"
+    ],
+    "required_signals": [
+      "linked_pr_open"
+    ],
+    "forbidden_signals": [
+      "linked_pr_merged"
+    ],
+    "required_findings": [
+      "superseded",
+      "100",
+      "102",
+      "fix-76793",
+      "Contention analysis"
+    ],
+    "forbidden_findings": []
+  },
+  "provider_fixtures": "../fixtures/frozen-contention-superseded-overlap.provider.json"
+}

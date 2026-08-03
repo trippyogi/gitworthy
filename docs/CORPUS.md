@@ -6,10 +6,10 @@ Last verified: offline `pnpm eval:frozen` + `pnpm eval:report` on current `main`
 
 | Signal | Current value | Meaning |
 |---|---|---|
-| Frozen suite rows | **30 / 30 passed**, `failed=0` | Engine matches offline fixtures. **There is no 12/30 suite failure rate today.** |
+| Frozen suite rows | **31 / 31 passed** (target after contention pack), `failed=0` | Engine matches offline fixtures. **There is no 12/30 suite failure rate today.** |
 | Quality milestone | `0.6.0` release **PASS** | Volume floor (≥30) + **zero false hard SKIP** on verdict-scored cases |
 | Verdict-scored cases | **5** | `worth_check` cases that emit `observed_verdict` (ACT/VERIFY/SKIP precision math) |
-| Mechanism-only cases | **25** | Sub-tool cases (`linked_work`, `dupe_cluster`, `contrib_policy`, …) with expected signals/paths; they **pass** the suite but are not counted in ACT/SKIP precision denominators |
+| Mechanism-only cases | **26** | Sub-tool cases (`linked_work`, `contention`, `dupe_cluster`, …) with expected signals/paths; they **pass** the suite but are not counted in ACT/SKIP precision denominators |
 
 If someone says “12 of 30 fail,” that does **not** match the current frozen suite. Likely confusion with mechanism-only counts, an older report, or live-suite drift. Always re-check:
 
@@ -45,7 +45,7 @@ Cases where replay **fails** (`status=failed` / product regression).
 
 Deliberate hard / edge paths for sub-checks. They are **not** failures. Each has a recorded `failure_mode` in `eval/frozen/INVENTORY.md` and case JSON rationale.
 
-**Current count: 25.** Growing to 150 by cloning only mechanism cases does not improve ACT precision gates.
+**Current count: 26.** Growing to 150 by cloning only mechanism cases does not improve ACT precision gates.
 
 ## What 1.0 should gate on (proposal)
 

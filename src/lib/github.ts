@@ -70,6 +70,23 @@ export function configureGithubHttpForTests(overrides: GithubHttpTestOverrides |
   githubHttp = createGithubHttpClient();
 }
 
+/**
+ * Low-level GitHub HTTP that honors provider replay / test transport.
+ * Used by PR diff fetches so frozen contention packs stay offline.
+ */
+export async function githubHttpRequest(
+  url: string,
+  init: { method?: string; headers?: Record<string, string>; signal?: AbortSignal } = {}
+): Promise<Response> {
+  noteGithubRequest();
+  const result = await githubHttp.request(url, {
+    method: init.method,
+    headers: init.headers,
+    signal: init.signal
+  });
+  return result.response;
+}
+
 function githubCacheTtlMs(): number {
   const raw = process.env.GITWORTHY_GITHUB_CACHE_MS;
   if (raw === undefined || raw === '') return DEFAULT_GITHUB_CACHE_MS;

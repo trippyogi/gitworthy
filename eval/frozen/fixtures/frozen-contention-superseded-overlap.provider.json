@@ -1,0 +1,363 @@
+{
+  "schema_version": "1.0-draft.1",
+  "fixture_version": 1,
+  "case_id": "frozen-contention-superseded-overlap",
+  "attributed_from": {
+    "notes": "GW-024 synthetic offline promotion pack"
+  },
+  "http_exchanges": [
+    {
+      "sequence": 0,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/repos/acme/widgets/issues/76793",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": {
+          "body": "## Proposed Fix\n\n```ts\n_app_id\n```\nOnly `_app_id`.\n",
+          "labels": [
+            {
+              "name": "sweeper:risk-compatibility"
+            }
+          ],
+          "comments": 0,
+          "html_url": "https://github.com/acme/widgets/issues/76793",
+          "created_at": "2026-01-01T00:00:00Z",
+          "updated_at": "2026-01-02T00:00:00Z",
+          "closed_at": null,
+          "assignees": [],
+          "number": 76793,
+          "title": "match app id",
+          "state": "open"
+        }
+      }
+    },
+    {
+      "sequence": 1,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/repos/acme/widgets",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": {
+          "full_name": "acme/widgets",
+          "default_branch": "main",
+          "html_url": "https://github.com/acme/widgets"
+        }
+      }
+    },
+    {
+      "sequence": 2,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/repos/acme/widgets/issues/76793",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": {
+          "body": "## Proposed Fix\n\n```ts\n_app_id\n```\nOnly `_app_id`.\n",
+          "labels": [
+            {
+              "name": "sweeper:risk-compatibility"
+            }
+          ],
+          "comments": 0,
+          "html_url": "https://github.com/acme/widgets/issues/76793",
+          "created_at": "2026-01-01T00:00:00Z",
+          "updated_at": "2026-01-02T00:00:00Z",
+          "closed_at": null,
+          "assignees": [],
+          "number": 76793,
+          "title": "match app id",
+          "state": "open"
+        }
+      }
+    },
+    {
+      "sequence": 3,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/repos/acme/widgets/issues/76793/timeline?per_page=100&page=1",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": [
+          {
+            "event": "cross-referenced",
+            "created_at": "2026-01-02T00:00:00Z",
+            "source": {
+              "type": "issue",
+              "issue": {
+                "number": 100,
+                "pull_request": {
+                  "url": "https://api.github.com/repos/acme/widgets/pulls/100"
+                }
+              }
+            }
+          },
+          {
+            "event": "cross-referenced",
+            "created_at": "2026-01-02T01:00:00Z",
+            "source": {
+              "type": "issue",
+              "issue": {
+                "number": 102,
+                "pull_request": {
+                  "url": "https://api.github.com/repos/acme/widgets/pulls/102"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "sequence": 4,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/repos/acme/widgets/pulls/100",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": {
+          "body": "Fixes #76793",
+          "draft": false,
+          "merged": false,
+          "html_url": "https://github.com/acme/widgets/pull/100",
+          "user": {
+            "login": "dev-a"
+          },
+          "created_at": "2026-01-01T00:00:00Z",
+          "updated_at": "2026-01-02T00:00:00Z",
+          "closed_at": null,
+          "merged_at": null,
+          "number": 100,
+          "title": "fix app id",
+          "state": "open"
+        }
+      }
+    },
+    {
+      "sequence": 5,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/repos/acme/widgets/pulls/102",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": {
+          "body": "Fixes #76793",
+          "draft": false,
+          "merged": false,
+          "html_url": "https://github.com/acme/widgets/pull/102",
+          "user": {
+            "login": "dev-b"
+          },
+          "created_at": "2026-01-01T00:00:00Z",
+          "updated_at": "2026-01-02T00:00:00Z",
+          "closed_at": "2026-01-03T00:00:00Z",
+          "merged_at": null,
+          "number": 102,
+          "title": "broader fix",
+          "state": "closed"
+        }
+      }
+    },
+    {
+      "sequence": 6,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/repos/acme/widgets/issues/76793/comments?per_page=100",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": []
+      }
+    },
+    {
+      "sequence": 7,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/search/issues?per_page=20&q=repo%3Aacme%2Fwidgets%20is%3Apr%2076793",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": {
+          "total_count": 2,
+          "incomplete_results": false,
+          "items": [
+            {
+              "number": 100,
+              "title": "fix app id",
+              "body": "Fixes #76793",
+              "state": "open",
+              "html_url": "https://github.com/acme/widgets/pull/100",
+              "repository_url": "https://api.github.com/repos/acme/widgets",
+              "pull_request": {
+                "url": "https://api.github.com/repos/acme/widgets/pulls/100"
+              }
+            },
+            {
+              "number": 102,
+              "title": "broader fix",
+              "body": "Fixes #76793",
+              "state": "closed",
+              "html_url": "https://github.com/acme/widgets/pull/102",
+              "repository_url": "https://api.github.com/repos/acme/widgets",
+              "pull_request": {
+                "url": "https://api.github.com/repos/acme/widgets/pulls/102"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "sequence": 8,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/search/issues?per_page=20&q=is%3Apr%20(%22Fixes%20%2376793%22%20OR%20%22Closes%20%2376793%22%20OR%20%22Resolves%20%2376793%22%20OR%20%22%2376793%22)%20org%3Aacme",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": {
+          "total_count": 0,
+          "incomplete_results": false,
+          "items": []
+        }
+      }
+    },
+    {
+      "sequence": 9,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/search/issues?per_page=20&q=is%3Apr%20(%22Fixes%20%2376793%22%20OR%20%22Closes%20%2376793%22%20OR%20%22Resolves%20%2376793%22%20OR%20%22%2376793%22)%20user%3Aacme",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json"
+        },
+        "body_encoding": "json",
+        "body": {
+          "total_count": 0,
+          "incomplete_results": false,
+          "items": []
+        }
+      }
+    },
+    {
+      "sequence": 10,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/repos/acme/widgets/pulls/100",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/vnd.github.diff"
+        },
+        "body_encoding": "text",
+        "body": "diff --git a/src/auth.ts b/src/auth.ts\n--- a/src/auth.ts\n+++ b/src/auth.ts\n@@ -1,1 +1,3 @@ export function matchAppId(input: string) {\n export function matchAppId(input: string) {\n+export function _app_id(value: string) {\n+  return value;\n+}\n"
+      }
+    },
+    {
+      "sequence": 11,
+      "provider": "github",
+      "match": {
+        "method": "GET",
+        "canonical_url": "https://api.github.com/repos/acme/widgets/pulls/102",
+        "request_body_digest_sha256": null
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/vnd.github.diff"
+        },
+        "body_encoding": "text",
+        "body": "diff --git a/src/auth.ts b/src/auth.ts\n--- a/src/auth.ts\n+++ b/src/auth.ts\n@@ -1,1 +1,5 @@ export function matchAppId(input: string) {\n export function matchAppId(input: string) {\n+export function _app_id(value: string) { return value; }\n+export function _client_id(value: string) { return value; }\n"
+      }
+    }
+  ],
+  "git_probes": [
+    {
+      "sequence": 0,
+      "kind": "ls_remote_heads",
+      "match": {
+        "repo": "acme/widgets"
+      },
+      "response": {
+        "heads": [
+          {
+            "name": "main",
+            "sha": "aaa111"
+          },
+          {
+            "name": "fix-76793-app-id",
+            "sha": "abc222"
+          }
+        ]
+      }
+    }
+  ]
+}
