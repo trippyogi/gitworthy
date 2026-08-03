@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { execa } from 'execa';
 import { GitworthyError } from '../core/envelope.js';
+import { noteGitCommand } from './run-budget.js';
 
 export type RemoteHead = { name: string; sha: string };
 
@@ -62,6 +63,7 @@ export async function lsRemoteHeads(repo: string, force_refresh = false): Promis
   }
   const remote = `https://github.com/${repo}.git`;
   try {
+    noteGitCommand();
     const { stdout } = await execa('git', ['ls-remote', '--heads', remote], { timeout: GIT_SUBPROCESS_TIMEOUT_MS });
     const heads = stdout.split('\n').filter(Boolean).map((line) => {
       const [sha, ref] = line.split(/\s+/);
@@ -80,6 +82,7 @@ async function createClone(repo: string): Promise<string> {
     // --bare + --no-checkout leaves no working tree at all, so there is nothing to
     // walk with fs.readdir/fs.readFile and no working-tree symlink can ever be
     // resolved. All content inspection below goes through git plumbing instead.
+    noteGitCommand();
     await execa('git', ['clone', '--bare', '--depth', '1', '--single-branch', `https://github.com/${repo}.git`, dir], { timeout: GIT_SUBPROCESS_TIMEOUT_MS });
     return dir;
   } catch {
@@ -179,6 +182,7 @@ export async function listTreeFiles(
   const ref = opts.ref ?? 'HEAD';
   const maxFiles = opts.maxFiles ?? DEFAULT_MAX_TREE_FILES;
   try {
+    noteGitCommand();
     const { stdout } = await execa('git', ['ls-tree', '-r', '-z', ref], { cwd: dir, timeout: opts.timeoutMs ?? GIT_SUBPROCESS_TIMEOUT_MS });
     return parseLsTree(stdout, maxFiles);
   } catch {
@@ -200,6 +204,7 @@ export async function readTreeFile(dir: string, file: ClonedFile, opts: { maxByt
 
   let size: number;
   try {
+    noteGitCommand();
     const { stdout } = await execa('git', ['cat-file', '-s', file.sha], { cwd: dir, timeout });
     size = Number.parseInt(stdout.trim(), 10);
   } catch {
@@ -211,6 +216,7 @@ export async function readTreeFile(dir: string, file: ClonedFile, opts: { maxByt
     // `cat-file -p` writes raw blob bytes with no trailing separator of its own, so a blob whose
     // content legitimately ends in `\n` must not have execa's default final-newline stripping
     // silently eat that last byte.
+    noteGitCommand();
     const { stdout } = await execa('git', ['cat-file', '-p', file.sha], { cwd: dir, timeout, encoding: 'buffer', maxBuffer: maxBytes + 4096, stripFinalNewline: false });
     const buffer = Buffer.from(stdout as unknown as Uint8Array);
     if (buffer.includes(0)) return null; // binary content, safe no-op
@@ -224,6 +230,7 @@ async function batchBlobSizes(dir: string, shas: string[], timeout: number): Pro
   const sizes = new Map<string, number>();
   if (shas.length === 0) return sizes;
   try {
+    noteGitCommand();
     const { stdout } = await execa('git', ['cat-file', '--batch-check'], { cwd: dir, timeout, input: `${shas.join('\n')}\n` });
     for (const line of stdout.split('\n')) {
       if (!line) continue;
@@ -263,6 +270,7 @@ async function batchBlobContents(dir: string, shas: string[], sizes: Map<string,
   if (shas.length === 0) return new Map();
   const totalBytes = shas.reduce((sum, sha) => sum + (sizes.get(sha) ?? 0), 0);
   try {
+    noteGitCommand();
     const result = await execa('git', ['cat-file', '--batch'], {
       cwd: dir,
       timeout,
@@ -433,6 +441,7 @@ export async function readClonedFilesBatch(
 
 export async function gitOutput(cwd: string, args: string[]): Promise<string> {
   try {
+    noteGitCommand();
     const { stdout } = await execa('git', args, { cwd, timeout: GIT_SUBPROCESS_TIMEOUT_MS });
     return stdout;
   } catch {
@@ -443,6 +452,7 @@ export async function gitOutput(cwd: string, args: string[]): Promise<string> {
 /** True when `dir`'s origin remote looks like `owner/repo` on GitHub. */
 export async function localCheckoutMatchesRepo(dir: string, repo: string): Promise<boolean> {
   try {
+    noteGitCommand();
     const { stdout } = await execa('git', ['remote', 'get-url', 'origin'], { cwd: dir, timeout: GIT_SUBPROCESS_TIMEOUT_MS });
     const remote = stdout.trim().toLowerCase().replace(/\.git$/i, '');
     const needle = repo.trim().toLowerCase();

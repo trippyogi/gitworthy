@@ -1,6 +1,7 @@
 /** Shared bounded HTTP client for GitHub / npm providers (GW-011). */
 
 import { maybeCaptureHttpExchange } from './capture-session.js';
+import { noteGithubRetry } from './run-budget.js';
 import { redactHeaders, redactUrl } from './redaction.js';
 
 export { redactHeaders, redactUrl } from './redaction.js';
@@ -206,6 +207,8 @@ export class HttpClient {
       }
 
       const delayMs = this.retryDelayMs(rateLimit, attempt);
+      // Only count GitHub API retries; npm/raw use `github: false`.
+      if (options.github !== false) noteGithubRetry();
       this.logger?.({
         level: 'warn',
         message: 'retrying HTTP request after transient failure',

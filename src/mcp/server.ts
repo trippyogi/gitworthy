@@ -42,6 +42,7 @@ import {
   validateConfigSelection
 } from '../lib/config.js';
 import { packageVersion } from '../lib/package-meta.js';
+import { withRunBudget, createRunBudget } from '../lib/run-budget.js';
 import {
   BranchScanInputSchema,
   BriefShowInputSchema,
@@ -118,8 +119,12 @@ function extractHuntDecisionIds(output: Record<string, unknown>): string[] {
 
 async function withToolErrors<T>(command: string, run: () => Promise<T> | T, map?: (value: T) => unknown) {
   try {
-    const value = await run();
-    return jsonText(map ? map(value) : value);
+    // Stamp/map inside the budget so mergeBudgetMetrics still sees active counters.
+    const value = await withRunBudget(createRunBudget(), async () => {
+      const result = await run();
+      return map ? map(result) : result;
+    });
+    return jsonText(value);
   } catch (error) {
     return jsonText(toErrorResult({ command, error }), true);
   }
@@ -150,7 +155,7 @@ const probeShape = { file_glob: z.string().optional(), contains: z.string().opti
 export function createMcpServer(): McpServer {
   const server = new McpServer({ name: 'gitworthy', version: packageVersion() });
   const stamp = (command: string) => (value: unknown) => toStampedLegacyResult(command, value as Record<string, unknown>);
-  server.registerTool('doctor', { title: 'Doctor', inputSchema: { probe_repo: z.string().optional(), probe_issue_number: z.number().optional() } }, async (input) =>
+  server.registerTool('doctor', { title: 'Doctor', inputSchema: { probe_repo: z.string().optional(), probe_issue_number: z.number().optional(), full: z.boolean().optional() } }, async (input) =>
     withToolErrors('doctor', () => doctor(parseToolInput(DoctorInputSchema, input)), stamp('doctor')));
   server.registerTool('branch_scan', { title: 'Branch scan', inputSchema: { repo: z.string(), keywords: z.array(z.string()), issue_number: z.number().optional(), max_age_days: z.number().optional(), force_refresh: z.boolean().optional() } }, async (input) =>
     withToolErrors('branch_scan', () => branch_scan(parseToolInput(BranchScanInputSchema, input)), stamp('branch_scan')));
