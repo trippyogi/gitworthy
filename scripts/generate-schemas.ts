@@ -17,6 +17,11 @@ import { ConfigFileSchema, TargetManifestSchema, SkillProfileV1Schema } from '..
 import { EvalCaseSchema, EvalCaseCatalogSchema, EvalQualityReportSchema, EvalSuiteReportSchema } from '../src/contracts/eval.js';
 import { ProviderFixturePackSchema } from '../src/contracts/provider-fixtures.js';
 import { ContentionReportSchema } from '../src/contracts/contention.js';
+import {
+  TrackOCovariatesRecordSchema,
+  TrackOContingencyTableSchema,
+  TrackOJoinKeySchema
+} from '../src/contracts/track-o.js';
 
 const outDir = join(process.cwd(), 'schemas');
 mkdirSync(outDir, { recursive: true });
@@ -45,7 +50,10 @@ const docs: Array<{ file: string; schema: z.ZodType }> = [
   { file: 'gitworthy-eval-suite-report.v1.schema.json', schema: EvalSuiteReportSchema },
   { file: 'gitworthy-eval-quality-report.v1.schema.json', schema: EvalQualityReportSchema },
   { file: 'gitworthy-provider-fixture-pack.v1.schema.json', schema: ProviderFixturePackSchema },
-  { file: 'gitworthy-contention-report.v1.schema.json', schema: ContentionReportSchema }
+  { file: 'gitworthy-contention-report.v1.schema.json', schema: ContentionReportSchema },
+  { file: 'gitworthy-track-o-join-key.v1.schema.json', schema: TrackOJoinKeySchema },
+  { file: 'gitworthy-track-o-covariates.v1.schema.json', schema: TrackOCovariatesRecordSchema },
+  { file: 'gitworthy-track-o-contingency.v1.schema.json', schema: TrackOContingencyTableSchema }
 ];
 
 const checkOnly = process.argv.includes('--check');

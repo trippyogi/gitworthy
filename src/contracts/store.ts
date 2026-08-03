@@ -44,7 +44,13 @@ export const DecisionRecordSchema = z.object({
   next_actions: z.array(NextActionSchema).default([]),
   findings: z.array(FindingSchema).default([]),
   reasons: z.array(z.string()).default([]),
-  signals: z.array(z.string()).default([])
+  signals: z.array(z.string()).default([]),
+  /**
+   * Track O: this decision record *is* the T0 verdict-inputs snapshot
+   * (what the deterministic engine saw). Covariates live in a separate store
+   * blob under `track-o/covariates/` and are never read by the verdict path.
+   */
+  has_track_o_covariates: z.boolean().optional().default(false)
 });
 
 export const TargetIndexSchema = z.object({

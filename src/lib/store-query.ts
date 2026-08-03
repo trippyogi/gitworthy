@@ -98,6 +98,9 @@ export async function recordOutcome(input: {
   notes?: string;
   source?: string;
   data?: Record<string, unknown>;
+  close_reason?: 'superseded' | 'stale' | 'withdrawn';
+  acted_against_skip?: boolean;
+  pr_url?: string;
 }): Promise<OutcomeEvent> {
   const index = await getTargetIndex(input.repo, input.issue_number);
   let decisionId = input.decision_id;
@@ -136,7 +139,10 @@ export async function recordOutcome(input: {
     occurred_at: new Date().toISOString(),
     source: input.source ?? 'cli',
     data: input.data ?? {},
-    notes: input.notes ?? ''
+    notes: input.notes ?? '',
+    close_reason: input.close_reason,
+    acted_against_skip: input.acted_against_skip,
+    pr_url: input.pr_url
   });
 }
 

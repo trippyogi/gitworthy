@@ -328,7 +328,17 @@ export function createMcpServer(): McpServer {
     withToolErrors('store_target_show', () => store_target_show({ repo: input.repo, issue_number: input.issue_number }), stamp('store_target_show')));
   server.registerTool('store_decision_list', toolConfig('store_decision_list', { repo: z.string().optional(), issue_number: z.number().optional(), limit: z.number().optional() }), async (input) =>
     withToolErrors('store_decision_list', () => store_decision_list(input ?? {}), stamp('store_decision_list')));
-  server.registerTool('store_outcome_record', toolConfig('store_outcome_record', { repo: z.string(), issue_number: z.number(), event: z.string(), decision_id: z.string().optional(), run_id: z.string().optional(), notes: z.string().optional() }), async (input) =>
+  server.registerTool('store_outcome_record', toolConfig('store_outcome_record', {
+    repo: z.string(),
+    issue_number: z.number(),
+    event: z.string(),
+    decision_id: z.string().optional(),
+    run_id: z.string().optional(),
+    notes: z.string().optional(),
+    close_reason: z.string().optional(),
+    acted_against_skip: z.boolean().optional(),
+    pr_url: z.string().optional()
+  }), async (input) =>
     withToolErrors('store_outcome_record', () => store_outcome_record(input), stamp('store_outcome_record')));
   server.registerTool('store_recheck', toolConfig('store_recheck', { repo: z.string(), issue_number: z.number(), npm_package: z.string().optional() }), async (input) =>
     withToolErrors('store_recheck', () => store_recheck(input), stamp('store_recheck')));

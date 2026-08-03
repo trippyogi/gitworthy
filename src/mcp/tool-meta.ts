@@ -87,7 +87,7 @@ export const TOOL_META = {
     title: 'Record outcome',
     role: 'primary',
     description:
-      'Record a local outcome event (selected/acted/abandoned/etc.) for a target so later hunts can learn. Writes only to the local Gitworthy store — never mutates GitHub.',
+      'Record a local outcome event (selected/pr_opened/merged/closed_unmerged/etc.) for a target. For closed_unmerged pass close_reason (superseded|stale|withdrawn). Set acted_against_skip when contributing against a soft SKIP (Track O). Writes only to the local store — never mutates GitHub.',
     annotations: { ...writeLocal, title: 'Record outcome' }
   },
   scan: {

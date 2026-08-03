@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "record_version": {
+      "type": "number",
+      "const": 1
+    },
+    "record_kind": {
+      "type": "string",
+      "const": "track_o_covariates"
+    },
+    "decision_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "target": {
+      "type": "object",
+      "properties": {
+        "repo": {
+          "type": "string",
+          "minLength": 1
+        },
+        "issue_number": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "repo",
+        "issue_number"
+      ],
+      "additionalProperties": false
+    },
+    "captured_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+    },
+    "reconstructed": {
+      "default": false,
+      "type": "boolean"
+    },
+    "covariates": {
+      "default": {},
+      "type": "object",
+      "properties": {
+        "contributor_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "open_pr_backlog": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "median_time_to_first_review_hours": {
+          "type": "number",
+          "minimum": 0
+        },
+        "maintainer_commented_on_issue": {
+          "type": "boolean"
+        },
+        "issue_age_hours": {
+          "type": "number",
+          "minimum": 0
+        },
+        "linked_pr_count_at_check": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "contributing_md_present": {
+          "type": "boolean"
+        },
+        "author_prior_merged_prs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "planned_diff_scope_note": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "knowable_at_t0": {
+      "default": true,
+      "type": "boolean",
+      "const": true
+    }
+  },
+  "required": [
+    "record_version",
+    "record_kind",
+    "decision_id",
+    "run_id",
+    "target",
+    "captured_at",
+    "reconstructed",
+    "covariates",
+    "knowable_at_t0"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,198 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "number",
+      "const": 1
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+    },
+    "partition": {
+      "type": "string",
+      "enum": [
+        "snapshot_backed",
+        "reconstructed"
+      ]
+    },
+    "rows": {
+      "type": "object",
+      "properties": {
+        "ACT": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "enum": [
+              "merged",
+              "rejected",
+              "superseded",
+              "stale_or_withdrawn"
+            ]
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "count"
+            ],
+            "additionalProperties": false
+          },
+          "required": [
+            "merged",
+            "rejected",
+            "superseded",
+            "stale_or_withdrawn"
+          ]
+        },
+        "VERIFY": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "enum": [
+              "merged",
+              "rejected",
+              "superseded",
+              "stale_or_withdrawn"
+            ]
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "count"
+            ],
+            "additionalProperties": false
+          },
+          "required": [
+            "merged",
+            "rejected",
+            "superseded",
+            "stale_or_withdrawn"
+          ]
+        },
+        "SKIP_acted_against": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "enum": [
+              "merged",
+              "rejected",
+              "superseded",
+              "stale_or_withdrawn"
+            ]
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "count"
+            ],
+            "additionalProperties": false
+          },
+          "required": [
+            "merged",
+            "rejected",
+            "superseded",
+            "stale_or_withdrawn"
+          ]
+        }
+      },
+      "required": [
+        "ACT",
+        "VERIFY",
+        "SKIP_acted_against"
+      ],
+      "additionalProperties": false
+    },
+    "metrics": {
+      "type": "object",
+      "properties": {
+        "act_precision": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "skip_validation_merge_rate": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "superseded_rate_under_act": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "acted_on_denominator": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "notes": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "act_precision",
+        "skip_validation_merge_rate",
+        "superseded_rate_under_act",
+        "acted_on_denominator",
+        "notes"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schema_version",
+    "generated_at",
+    "partition",
+    "rows",
+    "metrics"
+  ],
+  "additionalProperties": false
+}
