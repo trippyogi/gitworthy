@@ -48,6 +48,10 @@ Before growing volume, read the taxonomy in [`CORPUS.md`](./CORPUS.md): suite pa
 
 Do not invent frozen cases without adjudication. Heuristic-only SKIP must not appear in the corpus.
 
+## Track O (outcome calibration)
+
+Separate from frozen. Joins a stored T0 decision to a later PR outcome for product insight — does **not** block CI or redefine 1.0. Spec: [`TRACK_O.md`](./TRACK_O.md).
+
 ## 1.0 corpus targets (release audit)
 
 See GW-038: volume and precision gates (including ≥150 adjudicated frozen cases, hard-SKIP coverage, ACT precision). Current inventory is the floor for 0.6+; grow via promotion, not synthetic labels.

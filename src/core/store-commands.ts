@@ -11,7 +11,7 @@ import {
   showRun,
   showTarget
 } from '../lib/store-query.js';
-import { OutcomeEventNameSchema } from '../contracts/outcomes.js';
+import { CloseReasonSchema, OutcomeEventNameSchema } from '../contracts/outcomes.js';
 import { persistCheckResultBestEffort, getDecisionRecord } from '../lib/store.js';
 import { toCheckResult } from '../contracts/serialize.js';
 
@@ -110,8 +110,14 @@ export async function store_outcome_record(input: {
   decision_id?: string;
   run_id?: string;
   notes?: string;
+  close_reason?: string;
+  acted_against_skip?: boolean;
+  pr_url?: string;
 }): Promise<Envelope> {
   const eventName = OutcomeEventNameSchema.parse(input.event);
+  const closeReason = input.close_reason !== undefined
+    ? CloseReasonSchema.parse(input.close_reason)
+    : undefined;
   try {
     const event = await recordOutcome({
       repo: input.repo,
@@ -120,7 +126,10 @@ export async function store_outcome_record(input: {
       decision_id: input.decision_id,
       run_id: input.run_id,
       notes: input.notes,
-      source: 'cli'
+      source: 'cli',
+      close_reason: closeReason,
+      acted_against_skip: input.acted_against_skip,
+      pr_url: input.pr_url
     });
     return createEnvelope({
       verdict_summary: `recorded outcome ${event.event} for ${event.target.repo}#${event.target.issue_number}.`,

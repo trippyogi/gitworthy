@@ -181,6 +181,10 @@
       "items": {
         "type": "string"
       }
+    },
+    "has_track_o_covariates": {
+      "default": false,
+      "type": "boolean"
     }
   },
   "required": [
@@ -197,7 +201,8 @@
     "next_actions",
     "findings",
     "reasons",
-    "signals"
+    "signals",
+    "has_track_o_covariates"
   ],
   "additionalProperties": false
 }

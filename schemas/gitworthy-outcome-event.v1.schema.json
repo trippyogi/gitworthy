@@ -78,6 +78,21 @@
     "notes": {
       "default": "",
       "type": "string"
+    },
+    "close_reason": {
+      "type": "string",
+      "enum": [
+        "superseded",
+        "stale",
+        "withdrawn"
+      ]
+    },
+    "acted_against_skip": {
+      "type": "boolean"
+    },
+    "pr_url": {
+      "type": "string",
+      "format": "uri"
     }
   },
   "required": [

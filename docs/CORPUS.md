@@ -66,7 +66,8 @@ If suite pass rate dropped below ~0.95 with unexplained failures, that is an **e
 ## Sequencing (product)
 
 1. **Run GW-034 beta now** on a pinned build (`0.4.1` or next labeled RC).
-2. Grow corpus **from beta dogfood** (false SKIP / wrong ACT / surprising VERIFY), not from solo fixture farming.
-3. Promote mechanism packs (e.g. Hermes contention) as secondary — they help coverage, not the human blockers.
+2. Grow **Track F** corpus **from beta dogfood** (false SKIP / wrong ACT / surprising VERIFY), not from solo fixture farming.
+3. **Track O** (outcome calibration) runs in parallel and does **not** change the 1.0 frozen gate — see [`TRACK_O.md`](./TRACK_O.md). Snapshot-at-check ships so OSS PRs can join later.
+4. Promote mechanism packs as secondary — they help coverage, not the human blockers.
 
 See [`BETA.md`](./BETA.md).

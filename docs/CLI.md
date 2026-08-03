@@ -21,7 +21,7 @@ gitworthy doctor [--full] [--json]
 gitworthy check owner/repo#123 [--npm-package name] [--json]
 gitworthy hunt owner/repo|org [--max-checks 3] [--manifest path] [--json]
 gitworthy brief <decision_id> [--format human|json|markdown]
-gitworthy outcome record owner/repo#123 --event selected [--decision-id id] [--json]
+gitworthy outcome record owner/repo#123 --event selected [--decision-id id] [--close-reason superseded|stale|withdrawn] [--acted-against-skip] [--pr-url url] [--json]
 ```
 
 ### Doctor

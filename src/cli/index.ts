@@ -119,7 +119,7 @@ Usage:
   gitworthy decision list [--repo owner/repo] [--issue 123] [--limit 50] [--json]
   gitworthy outcome show <event_id> [--json]
   gitworthy outcome list [--repo owner/repo] [--issue 123] [--limit 50] [--json]
-  gitworthy outcome record owner/repo#123 --event selected [--decision-id id] [--run-id id] [--notes text] [--json]
+  gitworthy outcome record owner/repo#123 --event selected [--decision-id id] [--run-id id] [--notes text] [--close-reason superseded|stale|withdrawn] [--acted-against-skip] [--pr-url url] [--json]
   gitworthy capture list [--limit 50] [--json]
   gitworthy capture show <capture_id> [--json]
   gitworthy case promote <capture_id> --verdict ACT --disposition greenfield --rationale text --evidence-url url --out path [--force] [--json]
@@ -287,6 +287,9 @@ const CLI_OPTIONS = {
   event: { type: 'string' },
   'decision-id': { type: 'string' },
   'run-id': { type: 'string' },
+  'close-reason': { type: 'string' },
+  'acted-against-skip': { type: 'boolean' },
+  'pr-url': { type: 'string' },
   'out-dir': { type: 'string' },
   out: { type: 'string' },
   rationale: { type: 'string' },
@@ -827,7 +830,10 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
           event: required(stringValue(parsed.values.event), 'outcome record requires --event <name>.'),
           decision_id: stringValue(parsed.values['decision-id']),
           run_id: stringValue(parsed.values['run-id']),
-          notes: stringValue(parsed.values.notes)
+          notes: stringValue(parsed.values.notes),
+          close_reason: stringValue(parsed.values['close-reason']),
+          acted_against_skip: parsed.values['acted-against-skip'] === true ? true : undefined,
+          pr_url: stringValue(parsed.values['pr-url'])
         }) as Record<string, unknown>);
       } else {
         usageError('outcome requires show, list, or record.');

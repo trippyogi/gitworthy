@@ -9,10 +9,11 @@ import {
   type RunRecord,
   type TargetIndex
 } from '../contracts/store.js';
-import { OutcomeEventSchema, type OutcomeEvent } from '../contracts/outcomes.js';
+import { OutcomeEventSchema, assertOutcomeWrite, type OutcomeEvent } from '../contracts/outcomes.js';
 import { packageVersion } from './package-meta.js';
 import { readJsonFile, storeRoot, withStoreLock, writeJsonAtomic } from './store-fs.js';
 import { SCHEMA_VERSION } from '../contracts/common.js';
+import { covariatesFromCheckSignals, putTrackOCovariates } from './track-o-covariates.js';
 
 const INDEX_RUN_CAP = 100;
 const INDEX_DECISION_CAP = 100;
@@ -103,11 +104,11 @@ async function updateTargetIndex(
 
 export async function putRunRecord(input: Omit<RunRecord, 'record_version' | 'record_kind' | 'schema_version' | 'gitworthy_version'> & Partial<Pick<RunRecord, 'schema_version' | 'gitworthy_version'>>): Promise<RunRecord> {
   const record = RunRecordSchema.parse({
+    ...input,
     record_version: 1,
     record_kind: 'run',
     schema_version: input.schema_version ?? SCHEMA_VERSION,
-    gitworthy_version: input.gitworthy_version ?? packageVersion(),
-    ...input
+    gitworthy_version: input.gitworthy_version ?? packageVersion()
   });
 
   return withStoreLock(`run:${record.run_id}`, async () => {
@@ -119,13 +120,13 @@ export async function putRunRecord(input: Omit<RunRecord, 'record_version' | 're
   });
 }
 
-export async function putDecisionRecord(input: Omit<DecisionRecord, 'record_version' | 'record_kind' | 'schema_version' | 'gitworthy_version'> & Partial<Pick<DecisionRecord, 'schema_version' | 'gitworthy_version'>>): Promise<DecisionRecord> {
+export async function putDecisionRecord(input: Omit<DecisionRecord, 'record_version' | 'record_kind' | 'schema_version' | 'gitworthy_version' | 'has_track_o_covariates'> & Partial<Pick<DecisionRecord, 'schema_version' | 'gitworthy_version' | 'has_track_o_covariates'>>): Promise<DecisionRecord> {
   const record = DecisionRecordSchema.parse({
+    ...input,
     record_version: 1,
     record_kind: 'decision',
     schema_version: input.schema_version ?? SCHEMA_VERSION,
-    gitworthy_version: input.gitworthy_version ?? packageVersion(),
-    ...input
+    gitworthy_version: input.gitworthy_version ?? packageVersion()
   });
 
   return withStoreLock(`decision:${record.decision_id}`, async () => {
@@ -144,6 +145,7 @@ export async function putOutcomeEvent(input: Omit<OutcomeEvent, 'event_version' 
     event_id: input.event_id ?? `outcome_${randomUUID().replace(/-/g, '')}`,
     ...input
   });
+  assertOutcomeWrite(event);
 
   return withStoreLock(`outcome:${event.event_id}`, async () => {
     await writeJsonAtomic(outcomePath(event.event_id), event);
@@ -313,6 +315,24 @@ export async function persistCheckResultBestEffort(result: {
 }): Promise<void> {
   try {
     // Write decision first so a partial failure cannot leave a run pointing at a missing decision.
+    // The decision record is the Track O T0 verdict-inputs snapshot.
+    let hasCovariates = false;
+    try {
+      await putTrackOCovariates({
+        decision_id: result.decision_id,
+        run_id: result.run_id,
+        target: { repo: result.target.canonical_repo, issue_number: result.target.issue_number },
+        captured_at: result.generated_at,
+        covariates: covariatesFromCheckSignals({
+          signals: result.signals,
+          findings: result.findings
+        })
+      });
+      hasCovariates = true;
+    } catch {
+      // Covariates are optional Track O analysis data; never fail a check for them.
+    }
+
     await putDecisionRecord({
       decision_id: result.decision_id,
       run_id: result.run_id,
@@ -324,8 +344,11 @@ export async function persistCheckResultBestEffort(result: {
       findings: result.findings ?? [],
       reasons: result.reasons ?? [],
       signals: result.signals ?? [],
-      gitworthy_version: result.gitworthy_version,
-      schema_version: result.schema_version as DecisionRecord['schema_version'] | undefined
+      has_track_o_covariates: hasCovariates,
+      ...(result.gitworthy_version ? { gitworthy_version: result.gitworthy_version } : {}),
+      ...(result.schema_version
+        ? { schema_version: result.schema_version as DecisionRecord['schema_version'] }
+        : {})
     });
     await putRunRecord({
       run_id: result.run_id,
@@ -338,8 +361,10 @@ export async function persistCheckResultBestEffort(result: {
       checked: result.checked ?? [],
       not_checked: result.not_checked ?? [],
       metrics: result.metrics ?? {},
-      gitworthy_version: result.gitworthy_version,
-      schema_version: result.schema_version as RunRecord['schema_version'] | undefined
+      ...(result.gitworthy_version ? { gitworthy_version: result.gitworthy_version } : {}),
+      ...(result.schema_version
+        ? { schema_version: result.schema_version as RunRecord['schema_version'] }
+        : {})
     });
   } catch {
     // Durable store is best-effort; never fail a check because persistence failed.

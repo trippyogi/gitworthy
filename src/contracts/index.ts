@@ -33,8 +33,25 @@ export type { DoctorResult } from './doctor.js';
 export { LedgerResultSchema } from './ledger.js';
 export type { LedgerResult } from './ledger.js';
 
-export { OutcomeEventNameSchema, OutcomeEventSchema } from './outcomes.js';
-export type { OutcomeEvent } from './outcomes.js';
+export { OutcomeEventNameSchema, OutcomeEventSchema, CloseReasonSchema, assertOutcomeWrite } from './outcomes.js';
+export type { OutcomeEvent, CloseReason, OutcomeEventName } from './outcomes.js';
+
+export {
+  TRACK_O_COVARIATES_VERSION,
+  TrackOJoinKeySchema,
+  TrackOCovariatesFieldsSchema,
+  TrackOCovariatesRecordSchema,
+  TrackOOutcomeColumnSchema,
+  TrackOContingencyCellSchema,
+  TrackOContingencyTableSchema,
+  TrackOExampleRowSchema
+} from './track-o.js';
+export type {
+  TrackOJoinKey,
+  TrackOCovariatesRecord,
+  TrackOCovariatesFields,
+  TrackOContingencyTable
+} from './track-o.js';
 
 export {
   BRIEF_SCHEMA_VERSION,
