@@ -488,7 +488,11 @@ export async function hunt(input: Input): Promise<Envelope> {
   }
 
   if (deferred.length > 0) {
-    notCheckedSet.add(`${deferred.length} eligible candidate(s) exceeded max_checks=${maxChecks} and were not run through worth_check: ${deferred.map((item) => `#${item.number}`).join(', ')}`);
+    if (metrics.partial_reason === 'cancelled') {
+      notCheckedSet.add(`${deferred.length} eligible candidate(s) were not preflighted because the hunt was cancelled: ${deferred.map((item) => `#${item.number}`).join(', ')}`);
+    } else {
+      notCheckedSet.add(`${deferred.length} eligible candidate(s) exceeded max_checks=${maxChecks} and were not run through worth_check: ${deferred.map((item) => `#${item.number}`).join(', ')}`);
+    }
   }
   notCheckedSet.add(HUNT_LIMIT);
 

@@ -419,5 +419,6 @@ describe('hunt policy gate', () => {
     const run = result.evidence.find((item) => item.kind === 'hunt_run');
     expect(run).toMatchObject({ status: 'partial', partial_reason: 'cancelled' });
     expect(result.not_checked.join(' ')).toMatch(/cancelled/);
+    expect(result.not_checked.join(' ')).not.toMatch(/exceeded max_checks/);
   });
 });
