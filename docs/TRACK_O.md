@@ -140,12 +140,26 @@ Agents on **another machine** do not share this corpus unless you sync that stor
 | `snapshot_backed` | Check ran with live T0 decision (+ covariates flag) |
 | `reconstructed` | Phase 2 history backfill; **never mix into headline rates** |
 
+## Phase 2 — personal history backfill
+
+Reconstruct **clear terminal** outcomes from your own third-party PRs (exclude self-owned orgs). Rows are flagged `reconstructed: true` / `data.reconstructed` and must **not** enter snapshot-backed ACT precision.
+
+```sh
+# Inventory + dry-run (default)
+pnpm exec tsx scripts/track-o-backfill-authored-prs.ts --author=@me
+
+# Write into local store
+pnpm exec tsx scripts/track-o-backfill-authored-prs.ts --author=@me --write
+```
+
+Heuristic close reasons for unmerged closes default to `withdrawn` when the author closed; override by re-running `outcome record` with the correct `--close-reason`. Prefer hand labels for known superseded cases (script includes a small allowlist).
+
 ## Sequencing
 
-1. Phase 0 in repo (this doc + schemas) — done with this change set  
-2. Phase 1 store extension before OSS PRs that should join Track O  
+1. Phase 0 schemas + `TRACK_O.md` — done (`#80`)  
+2. Phase 1 covariates at check time — done (`#80`)  
 3. Beta / Track F remain the 1.0 priority  
-4. Phase 2 personal history backfill when quiet  
+4. Phase 2 personal history backfill — script in repo; run locally (never commit store)  
 5. Phase 3 stranger harvest only if 1+2 are thin (and only with synthesized T0 + caveats)
 
 ## Final gate (do not report Track O “complete” without)

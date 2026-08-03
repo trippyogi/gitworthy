@@ -120,7 +120,7 @@ export async function putRunRecord(input: Omit<RunRecord, 'record_version' | 're
   });
 }
 
-export async function putDecisionRecord(input: Omit<DecisionRecord, 'record_version' | 'record_kind' | 'schema_version' | 'gitworthy_version' | 'has_track_o_covariates'> & Partial<Pick<DecisionRecord, 'schema_version' | 'gitworthy_version' | 'has_track_o_covariates'>>): Promise<DecisionRecord> {
+export async function putDecisionRecord(input: Omit<DecisionRecord, 'record_version' | 'record_kind' | 'schema_version' | 'gitworthy_version' | 'has_track_o_covariates' | 'reconstructed'> & Partial<Pick<DecisionRecord, 'schema_version' | 'gitworthy_version' | 'has_track_o_covariates' | 'reconstructed'>>): Promise<DecisionRecord> {
   const record = DecisionRecordSchema.parse({
     ...input,
     record_version: 1,
