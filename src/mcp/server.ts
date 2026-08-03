@@ -77,10 +77,15 @@ import { persistCheckResultBestEffort } from '../lib/store.js';
 import { captureTargetForOrg, captureTargetForRepo, captureTargetForRepoIssue } from '../lib/capture-policy.js';
 import { putCaptureManifest } from '../lib/capture-store.js';
 import { withCaptureSession } from '../lib/capture-session.js';
+import { toolConfig } from './tool-meta.js';
 
 function jsonText(value: unknown, isError = false) {
+  const structuredContent = value !== null && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : { result: value };
   return {
     content: [{ type: 'text' as const, text: JSON.stringify(value, null, 2) }],
+    structuredContent,
     ...(isError ? { isError: true as const } : {})
   };
 }
@@ -155,27 +160,27 @@ const probeShape = { file_glob: z.string().optional(), contains: z.string().opti
 export function createMcpServer(): McpServer {
   const server = new McpServer({ name: 'gitworthy', version: packageVersion() });
   const stamp = (command: string) => (value: unknown) => toStampedLegacyResult(command, value as Record<string, unknown>);
-  server.registerTool('doctor', { title: 'Doctor', inputSchema: { probe_repo: z.string().optional(), probe_issue_number: z.number().optional(), full: z.boolean().optional() } }, async (input) =>
+  server.registerTool('doctor', toolConfig('doctor', { probe_repo: z.string().optional(), probe_issue_number: z.number().optional(), full: z.boolean().optional() }), async (input) =>
     withToolErrors('doctor', () => doctor(parseToolInput(DoctorInputSchema, input)), stamp('doctor')));
-  server.registerTool('branch_scan', { title: 'Branch scan', inputSchema: { repo: z.string(), keywords: z.array(z.string()), issue_number: z.number().optional(), max_age_days: z.number().optional(), force_refresh: z.boolean().optional() } }, async (input) =>
+  server.registerTool('branch_scan', toolConfig('branch_scan', { repo: z.string(), keywords: z.array(z.string()), issue_number: z.number().optional(), max_age_days: z.number().optional(), force_refresh: z.boolean().optional() }), async (input) =>
     withToolErrors('branch_scan', () => branch_scan(parseToolInput(BranchScanInputSchema, input)), stamp('branch_scan')));
-  server.registerTool('issue_vs_main', { title: 'Issue versus main', inputSchema: { repo: z.string(), issue_number: z.number() } }, async (input) =>
+  server.registerTool('issue_vs_main', toolConfig('issue_vs_main', { repo: z.string(), issue_number: z.number() }), async (input) =>
     withToolErrors('issue_vs_main', () => issue_vs_main(parseToolInput(IssueVsMainInputSchema, input)), stamp('issue_vs_main')));
-  server.registerTool('release_gap', { title: 'Release gap', inputSchema: { repo: z.string(), npm_package: z.string(), probe: z.object(probeShape).optional(), probe_template: z.string().optional(), force_refresh: z.boolean().optional() } }, async (input) =>
+  server.registerTool('release_gap', toolConfig('release_gap', { repo: z.string(), npm_package: z.string(), probe: z.object(probeShape).optional(), probe_template: z.string().optional(), force_refresh: z.boolean().optional() }), async (input) =>
     withToolErrors('release_gap', () => release_gap(parseToolInput(ReleaseGapInputSchema, input)), stamp('release_gap')));
-  server.registerTool('dupe_cluster', { title: 'Duplicate cluster', inputSchema: { repo: z.string(), issue_number: z.number(), max_candidates: z.number().optional() } }, async (input) =>
+  server.registerTool('dupe_cluster', toolConfig('dupe_cluster', { repo: z.string(), issue_number: z.number(), max_candidates: z.number().optional() }), async (input) =>
     withToolErrors('dupe_cluster', () => dupe_cluster(parseToolInput(DupeClusterInputSchema, input)), stamp('dupe_cluster')));
-  server.registerTool('related_cluster', { title: 'Related cluster', inputSchema: { repo: z.string(), issue_number: z.number().optional(), label: z.string().optional(), keywords: z.array(z.string()).optional(), limit: z.number().optional(), min_score: z.number().optional() } }, async (input) =>
+  server.registerTool('related_cluster', toolConfig('related_cluster', { repo: z.string(), issue_number: z.number().optional(), label: z.string().optional(), keywords: z.array(z.string()).optional(), limit: z.number().optional(), min_score: z.number().optional() }), async (input) =>
     withToolErrors('related_cluster', () => related_cluster(parseToolInput(RelatedClusterInputSchema, input)), stamp('related_cluster')));
-  server.registerTool('linked_work', { title: 'Linked work', inputSchema: { repo: z.string(), issue_number: z.number() } }, async (input) =>
+  server.registerTool('linked_work', toolConfig('linked_work', { repo: z.string(), issue_number: z.number() }), async (input) =>
     withToolErrors('linked_work', () => linked_work(parseToolInput(LinkedWorkInputSchema, input)), stamp('linked_work')));
-  server.registerTool('contention', { title: 'Contention analysis', inputSchema: { repo: z.string(), issue_number: z.number(), include_diffs: z.boolean().optional(), include_gaps: z.boolean().optional(), budget_bytes: z.number().optional() } }, async (input) =>
+  server.registerTool('contention', toolConfig('contention', { repo: z.string(), issue_number: z.number(), include_diffs: z.boolean().optional(), include_gaps: z.boolean().optional(), budget_bytes: z.number().optional() }), async (input) =>
     withToolErrors('contention', () => contention(parseToolInput(ContentionInputSchema, input)), stamp('contention')));
-  server.registerTool('scope_check', { title: 'Scope check', inputSchema: { repo: z.string(), issue_number: z.number(), diff_path: z.string().optional(), diff_cwd: z.string().optional(), base_ref: z.string().optional() } }, async (input) =>
+  server.registerTool('scope_check', toolConfig('scope_check', { repo: z.string(), issue_number: z.number(), diff_path: z.string().optional(), diff_cwd: z.string().optional(), base_ref: z.string().optional() }), async (input) =>
     withToolErrors('scope_check', () => check_scope(parseToolInput(ScopeCheckInputSchema, input)), stamp('scope_check')));
-  server.registerTool('contrib_policy', { title: 'Contribution policy', inputSchema: { repo: z.string(), force_refresh: z.boolean().optional() } }, async (input) =>
+  server.registerTool('contrib_policy', toolConfig('contrib_policy', { repo: z.string(), force_refresh: z.boolean().optional() }), async (input) =>
     withToolErrors('contrib_policy', () => contrib_policy(parseToolInput(ContribPolicyInputSchema, input)), stamp('contrib_policy')));
-  server.registerTool('config_validate', { title: 'Validate config', inputSchema: { path: z.string().optional(), user: z.boolean().optional(), repo: z.boolean().optional(), manifest_path: z.string().optional() } }, async (input) =>
+  server.registerTool('config_validate', toolConfig('config_validate', { path: z.string().optional(), user: z.boolean().optional(), repo: z.boolean().optional(), manifest_path: z.string().optional() }), async (input) =>
     withToolErrors('config_validate', () => validateConfigSelection(parseToolInput(ConfigValidateInputSchema, input)), (value) => ({
       command: 'config_validate',
       verdict_summary: 'config validation complete',
@@ -183,7 +188,7 @@ export function createMcpServer(): McpServer {
       checked: ['validated selected config file(s) and target manifest(s)'],
       not_checked: ['tokens are not read from config; use GITHUB_TOKEN or GH_TOKEN environment variables.']
     })));
-  server.registerTool('config_show', { title: 'Show effective config', inputSchema: { effective: z.boolean().optional(), path: z.string().optional(), cwd: z.string().optional() } }, async (input) =>
+  server.registerTool('config_show', toolConfig('config_show', { effective: z.boolean().optional(), path: z.string().optional(), cwd: z.string().optional() }), async (input) =>
     withToolErrors('config_show', async () => {
       const parsed = parseToolInput(ConfigShowInputSchema, input);
       const effective = await loadEffectiveConfig({ cwd: parsed.cwd, userPath: parsed.path });
@@ -200,7 +205,7 @@ export function createMcpServer(): McpServer {
         not_checked: ['secret values are not shown; GitHub tokens remain env-only via GITHUB_TOKEN or GH_TOKEN.']
       };
     }));
-  server.registerTool('profile_show', { title: 'Show skill profile', inputSchema: { path: z.string().optional(), cwd: z.string().optional() } }, async (input) =>
+  server.registerTool('profile_show', toolConfig('profile_show', { path: z.string().optional(), cwd: z.string().optional() }), async (input) =>
     withToolErrors('profile_show', async () => {
       const parsed = parseToolInput(ProfileShowInputSchema, input);
       const effective = await loadEffectiveConfig({ cwd: parsed.cwd, userPath: parsed.path });
@@ -215,7 +220,7 @@ export function createMcpServer(): McpServer {
         not_checked: ['skill profile affects scan/hunt ranking inputs only; it never changes hard verdict policy.']
       };
     }));
-  server.registerTool('worth_check', { title: 'Worth check', inputSchema: { repo: z.string(), issue_number: z.number(), npm_package: z.string().optional(), probe: z.object(probeShape).optional(), probe_template: z.string().optional(), capture: z.boolean().optional(), capture_local_private: z.boolean().optional() } }, async (input) =>
+  server.registerTool('worth_check', toolConfig('worth_check', { repo: z.string(), issue_number: z.number(), npm_package: z.string().optional(), probe: z.object(probeShape).optional(), probe_template: z.string().optional(), capture: z.boolean().optional(), capture_local_private: z.boolean().optional() }), async (input) =>
     withToolErrors('check', async () => {
       const parsed = parseToolInput(WorthCheckInputSchema, input);
       const runCheck = async () => {
@@ -240,19 +245,17 @@ export function createMcpServer(): McpServer {
       const manifest = await putCaptureManifest(captured.manifest);
       return withCaptureOutput(captured.value, manifest);
     }));
-  server.registerTool('scan', { title: 'Scan issues', inputSchema: { repo: z.string(), label: z.string().optional(), keywords: z.array(z.string()).optional(), since: z.string().optional(), limit: z.number().optional(), land_hints: z.boolean().optional(), skill_profile: skillProfileSchema, manifest_path: z.string().optional(), max_pages: z.number().optional(), explain_ranking: z.boolean().optional() } }, async (input) =>
+  server.registerTool('scan', toolConfig('scan', { repo: z.string(), label: z.string().optional(), keywords: z.array(z.string()).optional(), since: z.string().optional(), limit: z.number().optional(), land_hints: z.boolean().optional(), skill_profile: skillProfileSchema, manifest_path: z.string().optional(), max_pages: z.number().optional(), explain_ranking: z.boolean().optional() }), async (input) =>
     withToolErrors('scan', async () => {
       const parsed = parseToolInput(ScanInputSchema, input);
       return scan(resolveScanFromConfig(parsed, await loadEffectiveConfig({ input: parsed })));
     }, stamp('scan')));
-  server.registerTool('org_scan', { title: 'Org scan', inputSchema: { org: z.string().optional(), label: z.string().optional(), keywords: z.array(z.string()).optional(), since: z.string().optional(), limit: z.number().optional(), max_repos: z.number().optional(), land_hints: z.boolean().optional(), skill_profile: skillProfileSchema, manifest_path: z.string().optional(), max_pages: z.number().optional(), explain_ranking: z.boolean().optional() } }, async (input) =>
+  server.registerTool('org_scan', toolConfig('org_scan', { org: z.string().optional(), label: z.string().optional(), keywords: z.array(z.string()).optional(), since: z.string().optional(), limit: z.number().optional(), max_repos: z.number().optional(), land_hints: z.boolean().optional(), skill_profile: skillProfileSchema, manifest_path: z.string().optional(), max_pages: z.number().optional(), explain_ranking: z.boolean().optional() }), async (input) =>
     withToolErrors('org_scan', async () => {
       const parsed = parseToolInput(OrgScanInputSchema, input);
       return org_scan(resolveOrgFromConfig(parsed, await loadEffectiveConfig({ input: parsed })));
     }, stamp('org_scan')));
-  server.registerTool('hunt', {
-    title: 'Hunt',
-    inputSchema: {
+  server.registerTool('hunt', toolConfig('hunt', {
       repo: z.string().optional(),
       org: z.string().optional(),
       label: z.string().optional(),
@@ -275,8 +278,7 @@ export function createMcpServer(): McpServer {
       manifest_path: z.string().optional(),
       explain_ranking: z.boolean().optional(),
       resume_run_id: z.string().optional()
-    }
-  }, async (input) => withToolErrors('hunt', async () => {
+  }), async (input) => withToolErrors('hunt', async () => {
     const parsed = parseToolInput(HuntInputSchema, input);
     if (parsed.resume_run_id) {
       return stamp('hunt')(await hunt({ resume_run_id: parsed.resume_run_id }));
@@ -303,7 +305,7 @@ export function createMcpServer(): McpServer {
     const manifest = await putCaptureManifest(captured.manifest);
     return withCaptureOutput(captured.value, manifest);
   }));
-  server.registerTool('list_probe_templates', { title: 'List probe templates', inputSchema: {} }, async () => withToolErrors('probes', async () => ({
+  server.registerTool('list_probe_templates', toolConfig('list_probe_templates', {}), async () => withToolErrors('probes', async () => ({
     verdict_summary: `listed ${listProbeTemplates().length} probe templates.`,
     evidence: listProbeTemplates(),
     checked: ['listed built-in probe templates'],
@@ -312,35 +314,35 @@ export function createMcpServer(): McpServer {
     cached: false,
     fetched_at: new Date().toISOString()
   }), stamp('probes')));
-  server.registerTool('ledger_lookup', { title: 'Ledger lookup', inputSchema: { repo: z.string(), issue_number: z.number() } }, async (input) =>
+  server.registerTool('ledger_lookup', toolConfig('ledger_lookup', { repo: z.string(), issue_number: z.number() }), async (input) =>
     withToolErrors('ledger_lookup', () => ledger_lookup(parseToolInput(LedgerLookupInputSchema, input)), stamp('ledger_lookup')));
-  server.registerTool('ledger_record', { title: 'Ledger record', inputSchema: { repo: z.string(), issue_number: z.number(), verdict: z.string().optional(), disposition: z.string().optional(), quality_score: z.number().optional(), notes: z.string().optional(), source: z.string().optional() } }, async (input) =>
+  server.registerTool('ledger_record', toolConfig('ledger_record', { repo: z.string(), issue_number: z.number(), verdict: z.string().optional(), disposition: z.string().optional(), quality_score: z.number().optional(), notes: z.string().optional(), source: z.string().optional() }), async (input) =>
     withToolErrors('ledger_record', () => ledger_record(parseToolInput(LedgerRecordInputSchema, input)), stamp('ledger_record')));
-  server.registerTool('ledger_list', { title: 'Ledger list', inputSchema: { repo: z.string().optional(), limit: z.number().optional() } }, async (input) =>
+  server.registerTool('ledger_list', toolConfig('ledger_list', { repo: z.string().optional(), limit: z.number().optional() }), async (input) =>
     withToolErrors('ledger_list', () => ledger_list(parseToolInput(LedgerListInputSchema, input)), stamp('ledger_list')));
-  server.registerTool('store_migrate_ledger', { title: 'Migrate legacy ledger', inputSchema: { force: z.boolean().optional() } }, async (input) =>
+  server.registerTool('store_migrate_ledger', toolConfig('store_migrate_ledger', { force: z.boolean().optional() }), async (input) =>
     withToolErrors('store_migrate_ledger', () => store_migrate_ledger({ force: input?.force === true }), stamp('store_migrate_ledger')));
-  server.registerTool('store_rebuild_indexes', { title: 'Rebuild store indexes', inputSchema: {} }, async () =>
+  server.registerTool('store_rebuild_indexes', toolConfig('store_rebuild_indexes', {}), async () =>
     withToolErrors('store_rebuild_indexes', () => store_rebuild_indexes(), stamp('store_rebuild_indexes')));
-  server.registerTool('store_target_show', { title: 'Show store target', inputSchema: { repo: z.string(), issue_number: z.number() } }, async (input) =>
+  server.registerTool('store_target_show', toolConfig('store_target_show', { repo: z.string(), issue_number: z.number() }), async (input) =>
     withToolErrors('store_target_show', () => store_target_show({ repo: input.repo, issue_number: input.issue_number }), stamp('store_target_show')));
-  server.registerTool('store_decision_list', { title: 'List store decisions', inputSchema: { repo: z.string().optional(), issue_number: z.number().optional(), limit: z.number().optional() } }, async (input) =>
+  server.registerTool('store_decision_list', toolConfig('store_decision_list', { repo: z.string().optional(), issue_number: z.number().optional(), limit: z.number().optional() }), async (input) =>
     withToolErrors('store_decision_list', () => store_decision_list(input ?? {}), stamp('store_decision_list')));
-  server.registerTool('store_outcome_record', { title: 'Record outcome event', inputSchema: { repo: z.string(), issue_number: z.number(), event: z.string(), decision_id: z.string().optional(), run_id: z.string().optional(), notes: z.string().optional() } }, async (input) =>
+  server.registerTool('store_outcome_record', toolConfig('store_outcome_record', { repo: z.string(), issue_number: z.number(), event: z.string(), decision_id: z.string().optional(), run_id: z.string().optional(), notes: z.string().optional() }), async (input) =>
     withToolErrors('store_outcome_record', () => store_outcome_record(input), stamp('store_outcome_record')));
-  server.registerTool('store_recheck', { title: 'Recheck target', inputSchema: { repo: z.string(), issue_number: z.number(), npm_package: z.string().optional() } }, async (input) =>
+  server.registerTool('store_recheck', toolConfig('store_recheck', { repo: z.string(), issue_number: z.number(), npm_package: z.string().optional() }), async (input) =>
     withToolErrors('store_recheck', () => store_recheck(input), stamp('store_recheck')));
-  server.registerTool('store_export', { title: 'Export store slice', inputSchema: { out_dir: z.string(), repo: z.string().optional(), issue_number: z.number().optional() } }, async (input) =>
+  server.registerTool('store_export', toolConfig('store_export', { out_dir: z.string(), repo: z.string().optional(), issue_number: z.number().optional() }), async (input) =>
     withToolErrors('store_export', () => store_export(input), stamp('store_export')));
-  server.registerTool('capture_show', { title: 'Show capture', inputSchema: { capture_id: z.string() } }, async (input) =>
+  server.registerTool('capture_show', toolConfig('capture_show', { capture_id: z.string() }), async (input) =>
     withToolErrors('capture_show', () => capture_show(parseToolInput(CaptureShowInputSchema, input)), stamp('capture_show')));
-  server.registerTool('capture_list', { title: 'List captures', inputSchema: { limit: z.number().optional() } }, async (input) =>
+  server.registerTool('capture_list', toolConfig('capture_list', { limit: z.number().optional() }), async (input) =>
     withToolErrors('capture_list', () => capture_list(parseToolInput(CaptureListInputSchema, input)), stamp('capture_list')));
-  server.registerTool('case_promote', { title: 'Promote capture to proposed case fixture', inputSchema: { capture_id: z.string(), verdict: z.string(), disposition: z.string(), adjudicator_rationale: z.string(), evidence_urls: z.array(z.string()), out_path: z.string(), force: z.boolean().optional() } }, async (input) =>
+  server.registerTool('case_promote', toolConfig('case_promote', { capture_id: z.string(), verdict: z.string(), disposition: z.string(), adjudicator_rationale: z.string(), evidence_urls: z.array(z.string()), out_path: z.string(), force: z.boolean().optional() }), async (input) =>
     withToolErrors('case_promote', () => case_promote(parseToolInput(CasePromoteInputSchema, input)), stamp('case_promote')));
-  server.registerTool('brief_show', { title: 'Show stored decision brief', inputSchema: { decision_id: z.string(), config_path: z.string().optional(), cwd: z.string().optional() } }, async (input) =>
+  server.registerTool('brief_show', toolConfig('brief_show', { decision_id: z.string(), config_path: z.string().optional(), cwd: z.string().optional() }), async (input) =>
     withToolErrors('brief', () => generateBrief(parseToolInput(BriefShowInputSchema, input))));
-  server.registerTool('brief', { title: 'Brief stored decision', inputSchema: { decision_id: z.string(), config_path: z.string().optional(), cwd: z.string().optional() } }, async (input) =>
+  server.registerTool('brief', toolConfig('brief', { decision_id: z.string(), config_path: z.string().optional(), cwd: z.string().optional() }), async (input) =>
     withToolErrors('brief', () => generateBrief(parseToolInput(BriefShowInputSchema, input))));
   return server;
 }

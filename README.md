@@ -126,7 +126,7 @@ npx -y gitworthy@latest mcp --http --host 127.0.0.1 --port 8787
 }
 ```
 
-Non-loopback binds require `GITWORTHY_MCP_TOKEN`. Keep `GITHUB_TOKEN` on the server. Full deploy and Cloud Agent notes: [docs/HTTP_MCP.md](./docs/HTTP_MCP.md).
+Non-loopback binds require `GITWORTHY_MCP_TOKEN`. Keep `GITHUB_TOKEN` on the server. Full deploy and Cloud Agent notes: [docs/HTTP_MCP.md](./docs/HTTP_MCP.md). Tool descriptions, annotations, and structured results: [docs/MCP.md](./docs/MCP.md).
 
 Give the agent a policy like this:
 
