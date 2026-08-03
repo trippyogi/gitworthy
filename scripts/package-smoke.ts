@@ -9,9 +9,20 @@ const require = createRequire(import.meta.url);
 const packageJson = require(join(root, 'package.json')) as { name: string; version: string };
 const tempRoot = mkdtempSync(join(tmpdir(), 'gitworthy-package-smoke-'));
 
-function runNode(args: string[], cwd = root, allowFail = false): { stdout: string; stderr: string; status: number } {
+function runNode(
+  args: string[],
+  cwd = root,
+  allowFail = false,
+  env?: NodeJS.ProcessEnv
+): { stdout: string; stderr: string; status: number } {
   try {
-    const stdout = execFileSync(process.execPath, args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+    const stdout = execFileSync(process.execPath, args, {
+      cwd,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: env ?? process.env,
+      timeout: 60_000
+    });
     return { stdout, stderr: '', status: 0 };
   } catch (error) {
     const err = error as { status?: number; stdout?: string | Buffer; stderr?: string | Buffer };
@@ -53,23 +64,32 @@ try {
     throw new Error(`invalid issue ref output unexpected: ${invalid.stderr}${invalid.stdout}`);
   }
 
-  // doctor may attempt a public npm latest lookup; failure is recorded in not_checked, not a crash.
+  // doctor may exit VERIFY(10)/SKIP(20) when the environment is not ready (e.g. no token).
+  // Smoke only requires a structured JSON diagnostic, not an ACT/pass exit.
   const doctorEnv = {
     ...process.env,
     GITWORTHY_CACHE_DIR: join(tempRoot, 'cache'),
     GITHUB_TOKEN: '',
     GH_TOKEN: ''
   };
-  const doctorStdout = execFileSync(process.execPath, [cliJs, 'doctor', '--json'], {
-    cwd: tempRoot,
-    encoding: 'utf8',
-    env: doctorEnv,
-    stdio: ['ignore', 'pipe', 'pipe'],
-    timeout: 60_000
-  });
-  const doctorJson = JSON.parse(doctorStdout) as { checked?: unknown[]; not_checked?: unknown[] };
+  const doctor = runNode([cliJs, 'doctor', '--json'], tempRoot, true, doctorEnv);
+  if (![0, 10, 20].includes(doctor.status)) {
+    throw new Error(`doctor --json unexpected exit ${doctor.status}: ${doctor.stderr}${doctor.stdout}`);
+  }
+  const doctorJson = JSON.parse(doctor.stdout) as {
+    checked?: unknown[];
+    not_checked?: unknown[];
+    capabilities?: unknown[];
+    verdict?: string;
+  };
   if (!Array.isArray(doctorJson.checked) || !Array.isArray(doctorJson.not_checked)) {
     throw new Error('doctor --json missing checked/not_checked arrays');
+  }
+  if (!Array.isArray(doctorJson.capabilities) || doctorJson.capabilities.length === 0) {
+    throw new Error('doctor --json missing capabilities matrix');
+  }
+  if (typeof doctorJson.verdict !== 'string') {
+    throw new Error('doctor --json missing verdict');
   }
 
   const installedPkg = JSON.parse(readFileSync(join(tempRoot, 'node_modules', 'gitworthy', 'package.json'), 'utf8')) as { version: string };
