@@ -108,6 +108,31 @@ gitworthy outcome record owner/repo#123 \
   --json
 ```
 
+## Multi-agent / same corpus
+
+Track O is **one local directory**, not one MCP process. Every agent on this machine that should contribute to the same corpus must share:
+
+1. **Same binary** — build from `main` (`pnpm build`) and point MCP at that repo’s `dist/cli/index.js`. npm `gitworthy@0.4.0` does **not** write Track O covariates. After `git pull` + `pnpm build`, restart MCP so hosts reload `dist`.
+2. **Same store** — default `~/.gitworthy/store` (`%USERPROFILE%\.gitworthy\store` on Windows). If any agent sets `GITWORTHY_STORE_DIR`, **all** agents must use that same absolute path.
+3. **Same outcome discipline** — checks auto-write decisions + covariates; T1 labels still need `outcome record` (with `--close-reason` for `closed_unmerged`).
+
+### Per-agent checklist
+
+```sh
+node /path/to/gitworthy/dist/cli/index.js --version
+# expect the version in package.json on main (e.g. 0.4.1), not an older npm install
+
+node /path/to/gitworthy/dist/cli/index.js doctor --json
+# data_store evidence.dir must be the shared store
+# local may be ahead of npm_latest until you publish — OK for Track O dogfood
+```
+
+Confirm each MCP server’s CLI arg is the **repo `dist`**, not a global `node_modules/gitworthy` from npm.
+
+After a check, confirm growth under the shared store: `decisions/` and `track-o/covariates/`.
+
+Agents on **another machine** do not share this corpus unless you sync that store (private backup only — never commit Track O into the public repo).
+
 ## Partitions
 
 | Partition | Meaning |
