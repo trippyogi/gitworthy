@@ -4,7 +4,7 @@ Promotion and exclusion record for adjudicated offline cases. Live catalog class
 lives in `eval/live/cases.json`. Private experiments must not become release blockers
 without an explicit move into `eval/frozen/`.
 
-**Corpus size:** 30 frozen cases (meets 0.6.0 WARN target of 30).
+**Corpus size:** 30 frozen cases. Suite result: **30/30 passed** (see [`../docs/CORPUS.md`](../docs/CORPUS.md) for verdict-scored vs mechanism-only taxonomy).
 
 ## Frozen cases
 
