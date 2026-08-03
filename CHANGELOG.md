@@ -4,6 +4,7 @@
 
 - Docs set for public beta (GW-033): VERDICTS, CLI, CONFIG, DATA, EVALS, SECURITY_MODEL, TROUBLESHOOTING, COMPATIBILITY; README docs router; `pnpm docs:links` in CI.
 - Hunt cooperative cancellation via `AbortSignal` / CLI SIGINT with partial persist + resume (GW-036 slice).
+- Upgrade smoke script `pnpm test:upgrade` (published → packed workspace → rollback) for GW-037 prep.
 - MCP contract polish (GW-032): tool metadata, annotations, structuredContent, `pnpm mcp:self-test`.
 - Perf counters / human CLI / doctor capability matrix (GW-029–031).
 - Add in-flight contention analysis (GW-040–042 / #70–#72): CLI `contention` / `check-scope`, MCP `contention` / `scope_check`, diff-level claim overlap, gap/swarm heuristics, evidence budgets. Roadmap dig-quality track after 0.6 — not a 0.4 reset.
