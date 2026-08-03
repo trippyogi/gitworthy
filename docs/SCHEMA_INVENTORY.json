@@ -1,0 +1,31 @@
+{
+  "generated_at": "2026-08-03T01:26:09.025Z",
+  "schema_count": 24,
+  "schemas": [
+    "gitworthy-brief.v1.schema.json",
+    "gitworthy-capture-manifest.v1.schema.json",
+    "gitworthy-case-promotion-fixture.v1.schema.json",
+    "gitworthy-check.v1.schema.json",
+    "gitworthy-common.v1.schema.json",
+    "gitworthy-config.v1.schema.json",
+    "gitworthy-contention-report.v1.schema.json",
+    "gitworthy-decision-record.v1.schema.json",
+    "gitworthy-doctor.v1.schema.json",
+    "gitworthy-error.v1.schema.json",
+    "gitworthy-eval-case-catalog.v1.schema.json",
+    "gitworthy-eval-case.v1.schema.json",
+    "gitworthy-eval-quality-report.v1.schema.json",
+    "gitworthy-eval-suite-report.v1.schema.json",
+    "gitworthy-finding.v1.schema.json",
+    "gitworthy-hunt.v1.schema.json",
+    "gitworthy-ledger.v1.schema.json",
+    "gitworthy-outcome-event.v1.schema.json",
+    "gitworthy-provider-fixture-pack.v1.schema.json",
+    "gitworthy-run-record.v1.schema.json",
+    "gitworthy-scan.v1.schema.json",
+    "gitworthy-skill-profile.v1.schema.json",
+    "gitworthy-target-index.v1.schema.json",
+    "gitworthy-target-manifest.v1.schema.json"
+  ],
+  "note": "Pre-1.0 draft. SCHEMA_VERSION remains 1.0-draft.1 until GW-035 freeze after beta."
+}

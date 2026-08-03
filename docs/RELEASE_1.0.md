@@ -31,8 +31,8 @@ Maintainer checklist derived from GW-038. This is not a substitute for the issue
 | `1.0-draft.1` → stable freeze | Open (GW-035; after beta) |
 | Compatibility suite | Partial (`docs/COMPATIBILITY.md` + migrate/legacy tests) |
 | Hunt cancel + partial resume | Shipped (SIGINT / AbortSignal) |
-| Cross-platform / soak / fuzz / mutation | Open (GW-036) |
-| RC install / upgrade / rollback | Open (GW-037) |
+| Cross-platform / soak / fuzz / mutation | Partial (OS package-smoke matrix; seeded input fuzz; policy mutation guards) |
+| RC install / upgrade / rollback | Partial (`pnpm test:upgrade` published→packed→rollback) |
 
 ## Honest note
 
