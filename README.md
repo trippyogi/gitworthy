@@ -25,6 +25,8 @@
   <a href="#use-it-with-cursor-chatgpt-hermes-or-any-mcp-client">MCP setup</a> ·
   <a href="#try-it-in-30-seconds">CLI</a> ·
   <a href="./docs/AGENT_WORKFLOW.md">Agent workflow</a> ·
+  <a href="./docs/VERDICTS.md">Verdicts</a> ·
+  <a href="./docs/TROUBLESHOOTING.md">Troubleshooting</a> ·
   <a href="./CASE_STUDIES.md">Case studies</a> ·
   <a href="./ROADMAP.md">Roadmap</a> ·
   <a href="./CONTRIBUTING.md">Contributing</a>
@@ -298,6 +300,25 @@ Exit codes for `check`:
 - `1` — error
 
 See [SKILL.md](./SKILL.md) for the strict contribution gates and [docs/AGENT_WORKFLOW.md](./docs/AGENT_WORKFLOW.md) for the explanatory workflow guide.
+
+## Documentation
+
+| Doc | Topic |
+|---|---|
+| [docs/AGENT_WORKFLOW.md](./docs/AGENT_WORKFLOW.md) | Scout vs execute, tool selection |
+| [docs/VERDICTS.md](./docs/VERDICTS.md) | ACT / VERIFY / SKIP and dispositions |
+| [docs/CLI.md](./docs/CLI.md) | CLI reference and exit codes |
+| [docs/MCP.md](./docs/MCP.md) | MCP tools, annotations, structured results |
+| [docs/HTTP_MCP.md](./docs/HTTP_MCP.md) | Streamable HTTP MCP |
+| [docs/CONFIG.md](./docs/CONFIG.md) | Config, manifests, profiles |
+| [docs/DATA.md](./docs/DATA.md) | Local store, outcomes, captures |
+| [docs/EVALS.md](./docs/EVALS.md) | Frozen / live / private eval |
+| [docs/SECURITY_MODEL.md](./docs/SECURITY_MODEL.md) | Trust boundaries |
+| [docs/TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md) | Doctor-driven remediation |
+| [docs/COMPATIBILITY.md](./docs/COMPATIBILITY.md) | Pre-1.0 contract policy |
+| [docs/PERFORMANCE.md](./docs/PERFORMANCE.md) | Counters and budgets |
+| [docs/RANKING.md](./docs/RANKING.md) | Ranking contract |
+| [docs/RELEASE_1.0.md](./docs/RELEASE_1.0.md) | 1.0 gate checklist |
 
 ## Configuration
 

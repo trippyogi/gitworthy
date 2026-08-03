@@ -25,6 +25,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
+      - name: Docs link check
+        run: pnpm docs:links
       - name: Frozen eval (offline)
         run: pnpm eval:frozen
       - name: Frozen perf counters (offline)
@@ -52,3 +54,6 @@ jobs:
       - run: pnpm build
       - run: pnpm test:package
       - run: pnpm mcp:self-test
+      - name: Upgrade smoke (published → packed → rollback)
+        run: pnpm test:upgrade
+        continue-on-error: true

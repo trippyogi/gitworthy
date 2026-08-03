@@ -384,4 +384,41 @@ describe('hunt policy gate', () => {
     await hunt({ repo: 'o/r' });
     expect(mocks.contribPolicy).not.toHaveBeenCalled();
   });
+
+  it('marks partial when max_checks is exhausted with remaining candidates', async () => {
+    mocks.scan.mockResolvedValue(scanEnvelope({
+      evidence: [
+        { number: 1, quality_score: 90, likely_land_only: false, soft_ask: false, assignees: [] },
+        { number: 2, quality_score: 80, likely_land_only: false, soft_ask: false, assignees: [] },
+        { number: 3, quality_score: 70, likely_land_only: false, soft_ask: false, assignees: [] }
+      ]
+    }));
+    mocks.worthCheck.mockResolvedValue(worthResult());
+    const result = await hunt({ repo: 'o/r', max_checks: 1 });
+    expect(mocks.worthCheck).toHaveBeenCalledTimes(1);
+    const run = result.evidence.find((item) => item.kind === 'hunt_run');
+    expect(run).toMatchObject({ status: 'partial' });
+    expect(String(run?.partial_reason ?? '')).toMatch(/max_checks/);
+    expect(result.not_checked.join(' ')).toMatch(/exceeded max_checks/);
+  });
+
+  it('stops and preserves partial progress when signal aborts before the next check', async () => {
+    mocks.scan.mockResolvedValue(scanEnvelope({
+      evidence: [
+        { number: 1, quality_score: 90, likely_land_only: false, soft_ask: false, assignees: [] },
+        { number: 2, quality_score: 80, likely_land_only: false, soft_ask: false, assignees: [] }
+      ]
+    }));
+    const abort = new AbortController();
+    mocks.worthCheck.mockImplementation(async () => {
+      abort.abort();
+      return worthResult();
+    });
+    const result = await hunt({ repo: 'o/r', max_checks: 5, signal: abort.signal });
+    expect(mocks.worthCheck).toHaveBeenCalledTimes(1);
+    const run = result.evidence.find((item) => item.kind === 'hunt_run');
+    expect(run).toMatchObject({ status: 'partial', partial_reason: 'cancelled' });
+    expect(result.not_checked.join(' ')).toMatch(/cancelled/);
+    expect(result.not_checked.join(' ')).not.toMatch(/exceeded max_checks/);
+  });
 });
