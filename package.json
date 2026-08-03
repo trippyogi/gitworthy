@@ -29,6 +29,7 @@
     "bench:frozen": "tsx scripts/bench-frozen.ts",
     "mcp:self-test": "tsx scripts/mcp-self-test.ts",
     "docs:links": "tsx scripts/docs-links.ts",
+    "schemas:inventory": "tsx scripts/schema-inventory.ts",
     "test:upgrade": "tsx scripts/upgrade-smoke.ts"
   },
   "dependencies": {

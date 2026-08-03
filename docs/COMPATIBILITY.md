@@ -35,6 +35,7 @@ Schema id today: **`1.0-draft.1`** (`src/contracts/common.ts`). Draft means fiel
 - `test/contracts.test.ts` (`toCheckResult`)
 - `test/adapters.test.ts` (CLI/MCP parity samples)
 - `test/store-migrate.test.ts`
+- `docs/SCHEMA_INVENTORY.json` via `pnpm schemas:inventory`
 
 ## Upgrade checklist (maintainers)
 

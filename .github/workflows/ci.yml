@@ -37,10 +37,14 @@ jobs:
         run: pnpm release:verify
 
   package-smoke:
-    name: Package smoke
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+    name: Package smoke (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
     needs: quality
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -56,4 +60,5 @@ jobs:
       - run: pnpm mcp:self-test
       - name: Upgrade smoke (published → packed → rollback)
         run: pnpm test:upgrade
-        continue-on-error: true
+        # Network/npm registry flakes should not block every PR forever; still run on all OSes.
+        continue-on-error: ${{ matrix.os != 'ubuntu-latest' }}

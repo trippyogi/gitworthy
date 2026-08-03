@@ -20,10 +20,12 @@ pnpm eval:live      # needs token + network
 
 ## Promotion
 
-1. Capture a public run (`--capture`).
-2. Adjudicate ground truth (verdict, disposition, failure mode, evidence URLs).
+1. Prefer **beta / dogfood captures** over solo fixture farming ([`BETA.md`](./BETA.md)).
+2. Adjudicate ground truth (verdict, disposition, failure_mode, evidence URLs).
 3. Build a provider fixture pack.
 4. Land under `eval/frozen/cases/` + `eval/frozen/fixtures/`.
+
+Before growing volume, read the taxonomy in [`CORPUS.md`](./CORPUS.md): suite pass rate ≠ verdict precision denominator.
 
 Do not invent frozen cases without adjudication. Heuristic-only SKIP must not appear in the corpus.
 

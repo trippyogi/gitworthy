@@ -2,27 +2,32 @@
 
 Maintainer checklist derived from GW-038. This is not a substitute for the issue — it tracks what is still open after engineering slices.
 
+## Sequencing (product)
+
+1. **GW-034 beta now** on a pinned build — see [`BETA.md`](./BETA.md).
+2. Grow frozen corpus **from beta + dogfood** (wrong ACT / false SKIP / surprising VERIFY).
+3. Mechanism packs (contention fixtures, etc.) are secondary coverage.
+4. Do not quintuple mechanism-only cases hoping precision improves — see [`CORPUS.md`](./CORPUS.md).
+
 ## Decision quality
 
 | Gate | Status |
 |---|---|
-| ≥30 frozen adjudicated cases (0.6 floor) | Met (`eval/frozen/INVENTORY.md`) |
-| ≥60 / 75 / 125 / 150 corpus milestones | Open — needs human adjudication + promotion |
-| ≥30 hard-SKIP adjudicated | Open |
-| ≥30 investigated ACT | Open (10 ACT in frozen today) |
-| Zero false hard SKIP in release corpus | Ongoing |
-| ACT precision ≥90% on investigated ACT | Measured by `pnpm eval:report` |
+| ≥30 frozen cases, suite green | Met — **30/30 pass** today (not a 12-failure corpus) |
+| Verdict-scored precision denominator | Thin (**5** worth_check cases) — grow via beta |
+| ≥60 / 75 / 125 / 150 volume milestones | Open — prefer beta-sourced promotions |
+| ≥30 hard-SKIP adjudicated (verdict-scored) | Open |
+| ≥30 investigated ACT (verdict-scored) | Open (1 ACT in precision math today) |
+| Zero false hard SKIP | Met on current verdict-scored set |
+| ACT precision ≥90% @ 1.0 | Gate once denominator is large enough |
 
-## Product / docs
+## Real-usage / beta
 
 | Gate | Status |
 |---|---|
-| Doctor capability matrix | Shipped (GW-031 slice) |
-| Human CLI + quiet/verbose | Shipped (GW-030 slice) |
-| MCP descriptions/annotations/structuredContent | Shipped (GW-032) |
-| Beta docs set | Shipped (GW-033 slice) |
-| External beta users (3–5) | **Human** |
-| Multi-host + multi-OS dogfood | **Human** |
+| Design-partner beta (3–5) | **Run now** — [`BETA.md`](./BETA.md) |
+| Docs set for public beta | Shipped (GW-033 slice) |
+| Multi-host + multi-OS dogfood | Via beta + CI OS smoke matrix |
 
 ## Contracts / reliability
 
@@ -31,8 +36,8 @@ Maintainer checklist derived from GW-038. This is not a substitute for the issue
 | `1.0-draft.1` → stable freeze | Open (GW-035; after beta) |
 | Compatibility suite | Partial (`docs/COMPATIBILITY.md` + migrate/legacy tests) |
 | Hunt cancel + partial resume | Shipped (SIGINT / AbortSignal) |
-| Cross-platform / soak / fuzz / mutation | Open (GW-036) |
-| RC install / upgrade / rollback | Open (GW-037) |
+| Cross-platform / soak / fuzz / mutation | Partial (OS package-smoke matrix; seeded input fuzz; policy mutation guards) |
+| RC install / upgrade / rollback | Partial (`pnpm test:upgrade` published→packed→rollback) |
 
 ## Honest note
 
