@@ -201,12 +201,14 @@ async function checkDataStore(): Promise<{
     if (quarantineCount > 0) warnings.push(`${quarantineCount} quarantined ledger blob(s)`);
 
     let trackODebt = 0;
+    let trackODebtError: string | undefined;
     try {
       const debt = await findTrackODebt();
       trackODebt = debt.count;
       if (trackODebt > 0) warnings.push(`Track O debt: ${trackODebt} open-lane target(s) without terminal`);
-    } catch {
-      // Store may be empty / unreadable for outcomes; data_store writability already checked.
+    } catch (error) {
+      trackODebtError = error instanceof Error ? error.message : String(error);
+      warnings.push(`Track O debt scan failed: ${trackODebtError}`);
     }
 
     const detail = {
@@ -216,7 +218,8 @@ async function checkDataStore(): Promise<{
       quarantine_count: quarantineCount,
       migration_markers: migrationMarkers,
       index_targets: indexTargets,
-      track_o_debt: trackODebt
+      track_o_debt: trackODebt,
+      ...(trackODebtError ? { track_o_debt_error: trackODebtError } : {})
     };
 
     if (warnings.length > 0) {
@@ -231,7 +234,7 @@ async function checkDataStore(): Promise<{
           'Review quarantined records under the ledger quarantine directory; re-run `gitworthy ledger migrate` or rebuild indexes if schemas look inconsistent.'
         );
       }
-      if (trackODebt > 0) {
+      if (trackODebt > 0 || trackODebtError) {
         remediations.push(
           'Run `gitworthy outcome reconcile` (dry-run) then `gitworthy outcome reconcile --write` for clear terminals. Ambiguous closes need manual `outcome record`.'
         );
