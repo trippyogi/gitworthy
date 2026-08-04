@@ -77,7 +77,7 @@ export type ReconcileItem = {
 
 export type ReconcileReport = {
   dry_run: boolean;
-  author: string | null;
+  author: string;
   debt_count: number;
   wrote: number;
   skipped: number;
@@ -208,8 +208,7 @@ export async function findTrackODebt(input: {
 } = {}): Promise<{ count: number; rows: TrackODebtRow[] }> {
   const outcomes = await listOutcomes({
     repo: input.repo,
-    issue_number: input.issue_number,
-    limit: 50_000
+    issue_number: input.issue_number
   });
 
   const byTarget = new Map<string, OutcomeEvent[]>();
@@ -279,27 +278,15 @@ export async function reconcileOutcomes(input: {
   const debt = await findTrackODebt({ repo: input.repo, issue_number: input.issue_number });
   const fetchPr = input.fetchPr ?? fetchPrTerminalSnapshot;
 
-  let author: string | null = null;
+  let author: string;
   try {
     author = await resolveAuthor(input.author);
   } catch (error) {
-    return {
-      dry_run,
-      author: null,
-      debt_count: debt.count,
-      wrote: 0,
-      skipped: 0,
-      needs_adjudication: 0,
-      items: debt.rows.map((row) => ({
-        repo: row.repo,
-        issue_number: row.issue_number,
-        decision_id: row.decision_id,
-        run_id: row.run_id,
-        pr_url: row.pr_url,
-        status: 'error',
-        note: `failed to resolve author: ${error instanceof Error ? error.message : String(error)}`
-      }))
-    };
+    throw new Error(
+      `outcome reconcile could not resolve author (pass --author login, or set GITHUB_TOKEN/GH_TOKEN): ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
   }
 
   const items: ReconcileItem[] = [];
@@ -317,7 +304,7 @@ export async function reconcileOutcomes(input: {
     };
 
     // Idempotency: re-check terminals in case of concurrent writes.
-    const latest = await listOutcomes({ repo: row.repo, issue_number: row.issue_number, limit: 50 });
+    const latest = await listOutcomes({ repo: row.repo, issue_number: row.issue_number });
     if (hasTerminalOutcome(latest)) {
       skipped += 1;
       items.push({ ...base, status: 'skipped_terminal', note: 'terminal outcome already present' });

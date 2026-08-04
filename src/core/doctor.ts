@@ -220,10 +220,22 @@ async function checkDataStore(): Promise<{
     };
 
     if (warnings.length > 0) {
-      const trackORemediation =
-        trackODebt > 0
-          ? 'Run `gitworthy outcome reconcile` (dry-run) then `gitworthy outcome reconcile --write` for clear terminals. Ambiguous closes need manual `outcome record`.'
-          : undefined;
+      const remediations: string[] = [];
+      if (staleLocks > 0) {
+        remediations.push(
+          'Inspect ~/.gitworthy/store/.locks (or GITWORTHY_STORE_DIR). Remove only locks older than the stale window after confirming no live process holds them. Rebuild indexes with `gitworthy store rebuild-indexes` if needed.'
+        );
+      }
+      if (quarantineCount > 0) {
+        remediations.push(
+          'Review quarantined records under the ledger quarantine directory; re-run `gitworthy ledger migrate` or rebuild indexes if schemas look inconsistent.'
+        );
+      }
+      if (trackODebt > 0) {
+        remediations.push(
+          'Run `gitworthy outcome reconcile` (dry-run) then `gitworthy outcome reconcile --write` for clear terminals. Ambiguous closes need manual `outcome record`.'
+        );
+      }
       return {
         evidence: { kind: 'data_store', ...detail },
         checked: [
@@ -235,11 +247,7 @@ async function checkDataStore(): Promise<{
           'data_store',
           'warn',
           `Data store is writable but needs attention: ${warnings.join('; ')}.`,
-          staleLocks > 0
-            ? 'Inspect ~/.gitworthy/store/.locks (or GITWORTHY_STORE_DIR). Remove only locks older than the stale window after confirming no live process holds them. Rebuild indexes with `gitworthy store rebuild-indexes` if needed.'
-            : quarantineCount > 0
-              ? 'Review quarantined records under the ledger quarantine directory; re-run `gitworthy ledger migrate` or rebuild indexes if schemas look inconsistent.'
-              : trackORemediation,
+          remediations.join(' '),
           detail
         )
       };
