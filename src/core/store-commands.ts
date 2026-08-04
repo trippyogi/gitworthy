@@ -159,6 +159,13 @@ export async function store_outcome_reconcile(input: {
   issue_number?: number;
   author?: string;
 } = {}): Promise<Envelope> {
+  if (input.write === true && input.dry_run === true) {
+    throw new GitworthyError({
+      code: 'invalid_usage',
+      message: 'store_outcome_reconcile: pass write=true or dry_run=true, not both.',
+      not_checked: ['outcome reconcile did not run']
+    });
+  }
   const dryRun = input.write === true ? false : input.dry_run !== false;
   try {
     const report = await reconcileOutcomes({
