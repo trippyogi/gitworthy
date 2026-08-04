@@ -127,16 +127,19 @@ function classify(pr: GhPull, repo: string, author: string, closedBy: string | n
   };
 }
 
-async function alreadyReconstructed(repo: string, issueNumber: number): Promise<boolean> {
+async function alreadyHasDecision(repo: string, issueNumber: number): Promise<'reconstructed' | 'snapshot' | null> {
   const rows = await listDecisions({ repo, issue_number: issueNumber, limit: 50 });
-  return rows.some((d) => d.reconstructed === true);
+  if (rows.some((d) => d.reconstructed === true)) return 'reconstructed';
+  if (rows.length > 0) return 'snapshot';
+  return null;
 }
 
 async function writeReconstructed(row: Classified): Promise<'wrote' | 'skipped' | 'dry-run'> {
   if (row.event === 'drop') return 'skipped';
 
-  if (await alreadyReconstructed(row.repo, row.number)) {
-    console.log('skip existing reconstructed', `${row.repo}#${row.number}`);
+  const existing = await alreadyHasDecision(row.repo, row.number);
+  if (existing) {
+    console.log(`skip existing ${existing}`, `${row.repo}#${row.number}`);
     return 'skipped';
   }
 
@@ -155,17 +158,7 @@ async function writeReconstructed(row: Classified): Promise<'wrote' | 'skipped' 
     issue_url: `https://github.com/${row.repo}/issues/${row.number}`
   };
 
-  await putRunRecord({
-    run_id: runId,
-    command: 'track_o_reconstructed',
-    generated_at: at,
-    summary: `Track O reconstructed backfill for ${row.repo}#${row.number}`,
-    target: { repo: row.repo, issue_number: row.number },
-    decision_id: decisionId,
-    checked: ['track_o_phase2_backfill'],
-    not_checked: ['no live T0 snapshot; reconstructed partition only']
-  });
-
+  // Decision first so a mid-write failure never leaves a run pointing at a missing decision.
   await putDecisionRecord({
     decision_id: decisionId,
     run_id: runId,
@@ -178,6 +171,17 @@ async function writeReconstructed(row: Classified): Promise<'wrote' | 'skipped' 
     signals: [],
     reconstructed: true,
     has_track_o_covariates: true
+  });
+
+  await putRunRecord({
+    run_id: runId,
+    command: 'track_o_reconstructed',
+    generated_at: at,
+    summary: `Track O reconstructed backfill for ${row.repo}#${row.number}`,
+    target: { repo: row.repo, issue_number: row.number },
+    decision_id: decisionId,
+    checked: ['track_o_phase2_backfill'],
+    not_checked: ['no live T0 snapshot; reconstructed partition only']
   });
 
   await putTrackOCovariates({
@@ -213,10 +217,17 @@ async function main(): Promise<void> {
     '--json', 'repository,number,title,state,url,closedAt'
   ]);
 
-  const third = items.filter((it) => !SELF_OWNERS.has((it.repository.nameWithOwner || '').split('/')[0]!));
+  const excludeOwners = new Set([...SELF_OWNERS, author.toLowerCase()]);
+  const third = items.filter((it) => {
+    const owner = (it.repository.nameWithOwner || '').split('/')[0]?.toLowerCase() ?? '';
+    return !excludeOwners.has(owner);
+  });
   const terminal = third.filter((it) => it.state === 'merged' || it.state === 'closed');
   const open = third.filter((it) => it.state === 'open');
 
+  if (items.length >= 200) {
+    console.warn('warn: gh search returned 200 hits (limit); inventory may be truncated — re-run with a narrower query if needed');
+  }
   console.log(`author=${author} inventory third_party=${third.length} terminal=${terminal.length} open_skipped=${open.length}`);
   console.log(`mode=${dryRun ? 'dry-run' : 'write'} store=${process.env.GITWORTHY_STORE_DIR ?? '~/.gitworthy/store'}`);
 
