@@ -10,14 +10,23 @@
  * Reconstructed rows must never mix into snapshot-backed headline metrics.
  */
 import { execFileSync } from 'node:child_process';
-import { putDecisionRecord, putOutcomeEvent, putRunRecord } from '../src/lib/store.js';
-import { putTrackOCovariates } from '../src/lib/track-o-covariates.js';
+import { getRunRecord, putDecisionRecord, putOutcomeEvent, putRunRecord } from '../src/lib/store.js';
+import { getTrackOCovariates, putTrackOCovariates } from '../src/lib/track-o-covariates.js';
 import { listDecisions, listOutcomes } from '../src/lib/store-query.js';
 import { newDecisionId, newRunId } from '../src/contracts/common.js';
 import type { CloseReason } from '../src/contracts/outcomes.js';
 import type { DecisionRecord } from '../src/contracts/store.js';
 
 const SELF_OWNERS = new Set(['trippyogi', 'metatravelers']);
+
+function ownerLogin(nameWithOwner: string): string {
+  return (nameWithOwner.split('/')[0] ?? '').toLowerCase();
+}
+
+function isSelfOwned(nameWithOwner: string, author: string): boolean {
+  const owner = ownerLogin(nameWithOwner);
+  return owner.length > 0 && (owner === author.toLowerCase() || SELF_OWNERS.has(owner));
+}
 const writeMode = process.argv.includes('--write');
 const dryRun = !writeMode;
 
@@ -143,8 +152,12 @@ async function targetGate(repo: string, issueNumber: number): Promise<
   return { action: 'write', resume: reconstructed };
 }
 
-async function writeReconstructed(row: Classified): Promise<'wrote' | 'skipped' | 'dry-run'> {
+async function writeReconstructed(row: Classified, author: string): Promise<'wrote' | 'skipped' | 'dry-run'> {
   if (row.event === 'drop') return 'skipped';
+  if (isSelfOwned(row.repo, author)) {
+    console.log('skip self-owned', `${row.repo}#${row.number}`);
+    return 'skipped';
+  }
 
   const gate = await targetGate(row.repo, row.number);
   if (gate.action === 'skip') {
@@ -182,7 +195,10 @@ async function writeReconstructed(row: Classified): Promise<'wrote' | 'skipped' 
       reconstructed: true,
       has_track_o_covariates: true
     });
+  }
 
+  // Always ensure run + covariates exist (covers resume after partial failure).
+  if (!(await getRunRecord(runId))) {
     await putRunRecord({
       run_id: runId,
       command: 'track_o_reconstructed',
@@ -193,7 +209,9 @@ async function writeReconstructed(row: Classified): Promise<'wrote' | 'skipped' 
       checked: ['track_o_phase2_backfill'],
       not_checked: ['no live T0 snapshot; reconstructed partition only']
     });
+  }
 
+  if (!(await getTrackOCovariates(decisionId))) {
     await putTrackOCovariates({
       decision_id: decisionId,
       run_id: runId,
@@ -223,29 +241,29 @@ async function writeReconstructed(row: Classified): Promise<'wrote' | 'skipped' 
 
 async function main(): Promise<void> {
   const author = resolveAuthor();
-  // Closed-only inventory so open PRs do not consume the search quota.
+  // Closed-only + org excludes so self-owned PRs do not consume the search quota.
+  const searchExtras = [...SELF_OWNERS].filter((o) => o !== author.toLowerCase()).map((o) => `-org:${o}`);
   const items = ghJson<SearchPr[]>([
     'search', 'prs', '--author', author, '--state', 'closed', '--limit', '200',
-    '--json', 'repository,number,title,state,url,closedAt'
+    '--json', 'repository,number,title,state,url,closedAt',
+    '--', ...searchExtras
   ]);
   const openHits = ghJson<SearchPr[]>([
     'search', 'prs', '--author', author, '--state', 'open', '--limit', '100',
-    '--json', 'repository,number,title,state,url'
+    '--json', 'repository,number,title,state,url',
+    '--', ...searchExtras
   ]);
 
-  const excludeOwners = new Set([...SELF_OWNERS, author.toLowerCase()]);
-  const third = items.filter((it) => {
-    const owner = (it.repository.nameWithOwner || '').split('/')[0]?.toLowerCase() ?? '';
-    return !excludeOwners.has(owner);
-  });
+  const third = items.filter((it) => !isSelfOwned(it.repository.nameWithOwner || '', author));
   const terminal = third.filter((it) => it.state === 'merged' || it.state === 'closed');
-  const open = openHits.filter((it) => {
-    const owner = (it.repository.nameWithOwner || '').split('/')[0]?.toLowerCase() ?? '';
-    return !excludeOwners.has(owner);
-  });
+  const open = openHits.filter((it) => !isSelfOwned(it.repository.nameWithOwner || '', author));
+  const leaked = items.filter((it) => isSelfOwned(it.repository.nameWithOwner || '', author));
 
   if (items.length >= 200) {
     console.warn('warn: gh closed-PR search returned 200 hits (limit); inventory may be truncated');
+  }
+  if (leaked.length > 0) {
+    console.warn(`warn: search returned ${leaked.length} self-owned hit(s) despite -org filters; dropping them locally`);
   }
   console.log(`author=${author} inventory third_party_closed=${third.length} terminal=${terminal.length} open_skipped=${open.length}`);
   console.log(`mode=${dryRun ? 'dry-run' : 'write'} store=${process.env.GITWORTHY_STORE_DIR ?? '~/.gitworthy/store'}`);
@@ -269,7 +287,7 @@ async function main(): Promise<void> {
       console.log('drop', `${row.repo}#${row.number}`, row.note);
       continue;
     }
-    const result = await writeReconstructed(row);
+    const result = await writeReconstructed(row, author);
     if (result === 'wrote' || result === 'dry-run') wrote += 1;
     else skipped += 1;
   }
