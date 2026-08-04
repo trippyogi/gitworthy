@@ -50,7 +50,11 @@ export const DecisionRecordSchema = z.object({
    * (what the deterministic engine saw). Covariates live in a separate store
    * blob under `track-o/covariates/` and are never read by the verdict path.
    */
-  has_track_o_covariates: z.boolean().optional().default(false)
+  has_track_o_covariates: z.boolean().optional().default(false),
+  /**
+   * Phase 2 backfill: no live T0 snapshot. Keep out of snapshot-backed headline metrics.
+   */
+  reconstructed: z.boolean().optional().default(false)
 });
 
 export const TargetIndexSchema = z.object({

@@ -185,6 +185,10 @@
     "has_track_o_covariates": {
       "default": false,
       "type": "boolean"
+    },
+    "reconstructed": {
+      "default": false,
+      "type": "boolean"
     }
   },
   "required": [
@@ -202,7 +206,8 @@
     "findings",
     "reasons",
     "signals",
-    "has_track_o_covariates"
+    "has_track_o_covariates",
+    "reconstructed"
   ],
   "additionalProperties": false
 }
