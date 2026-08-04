@@ -138,16 +138,6 @@ export function classifyPrTerminal(
   }
 
   const body = (pr.body ?? '').toLowerCase();
-  if (/superseded by|already (fixed|landed|merged)|duplicate of #|closed in favor of|replaced by #/i.test(body)) {
-    return {
-      action: 'write',
-      event: 'closed_unmerged',
-      close_reason: 'superseded',
-      note: 'body indicates supersession',
-      occurred_at
-    };
-  }
-
   const closedBy = pr.closed_by;
   if (closedBy && closedBy.toLowerCase() === author.toLowerCase()) {
     if (/\b(maintainers? (rejected|declined)|wontfix|won't fix|not interested)\b/i.test(body)) {
@@ -167,6 +157,7 @@ export function classifyPrTerminal(
     };
   }
 
+  // Body phrases like "duplicate of #" are too weak for auto-write — queue for humans.
   return {
     action: 'needs_adjudication',
     note: `closed unmerged; closer=${closedBy ?? 'unknown'} — do not auto-label`,

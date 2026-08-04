@@ -157,8 +157,9 @@ MCP: `store_outcome_reconcile` (default `dry_run`; set `write: true` to persist)
 Rules:
 
 - Joins the **existing** `decision_id` / `run_id` from the open-lane row — never creates reconstructed decisions.
-- **Writes:** `merged`; `closed_unmerged`+`withdrawn` when `closed_by` is the author; `closed_unmerged`+`superseded` only from clear body signals.
-- **Does not write:** maintainer closes without a clear signal → `needs_adjudication` in the report.
+- **Writes:** `merged`; `closed_unmerged`+`withdrawn` when `closed_by` is the author (and clear body maintainer-reject → `rejected`).
+- **Does not write:** maintainer closes / ambiguous body phrases → `needs_adjudication` in the report (label with `outcome record --close-reason`).
+- Copies `acted_against_skip` from open-lane rows onto the terminal when present.
 - Idempotent: skips targets that already have a terminal event.
 - Doctor `data_store` surfaces `track_o_debt` (count of open-lane targets without terminal).
 
