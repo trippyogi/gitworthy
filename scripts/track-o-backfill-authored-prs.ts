@@ -2,7 +2,8 @@
  * Track O Phase 2: backfill reconstructed outcomes for authored third-party PRs.
  *
  * Usage:
- *   pnpm exec tsx scripts/track-o-backfill-authored-prs.ts [--dry-run]
+ *   pnpm exec tsx scripts/track-o-backfill-authored-prs.ts [--author=@me]          # dry-run (default)
+ *   pnpm exec tsx scripts/track-o-backfill-authored-prs.ts [--author=@me] --write  # persist
  *
  * Writes to GITWORTHY_STORE_DIR (default ~/.gitworthy/store).
  * Excludes self-owned orgs (trippyogi, MetaTravelers). Open PRs are listed but not labeled.
@@ -11,11 +12,23 @@
 import { execFileSync } from 'node:child_process';
 import { putDecisionRecord, putOutcomeEvent, putRunRecord } from '../src/lib/store.js';
 import { putTrackOCovariates } from '../src/lib/track-o-covariates.js';
+import { listDecisions } from '../src/lib/store-query.js';
 import { newDecisionId, newRunId } from '../src/contracts/common.js';
 import type { CloseReason } from '../src/contracts/outcomes.js';
 
 const SELF_OWNERS = new Set(['trippyogi', 'MetaTravelers']);
-const dryRun = process.argv.includes('--dry-run');
+const writeMode = process.argv.includes('--write');
+const dryRun = !writeMode;
+
+function argValue(name: string): string | undefined {
+  const eq = process.argv.find((a) => a.startsWith(`${name}=`));
+  if (eq) return eq.slice(name.length + 1);
+  const idx = process.argv.indexOf(name);
+  if (idx >= 0 && process.argv[idx + 1] && !process.argv[idx + 1]!.startsWith('-')) {
+    return process.argv[idx + 1];
+  }
+  return undefined;
+}
 
 type SearchPr = {
   repository: { nameWithOwner: string };
@@ -38,6 +51,10 @@ type GhPull = {
   comments: number;
 };
 
+type GhIssue = {
+  closed_by: { login: string } | null;
+};
+
 type Classified = {
   repo: string;
   number: number;
@@ -46,6 +63,7 @@ type Classified = {
   event: 'merged' | 'rejected' | 'closed_unmerged' | 'drop';
   close_reason?: CloseReason;
   note: string;
+  occurred_at: string;
 };
 
 function ghJson<T>(args: string[]): T {
@@ -53,8 +71,22 @@ function ghJson<T>(args: string[]): T {
   return JSON.parse(raw) as T;
 }
 
-function classify(pr: GhPull, repo: string): Classified {
-  const base = { repo, number: pr.number, title: pr.title, url: pr.html_url };
+function resolveAuthor(): string {
+  const raw = argValue('--author') ?? '@me';
+  if (raw === '@me' || raw === 'me') {
+    return ghJson<{ login: string }>(['api', 'user']).login;
+  }
+  return raw.replace(/^@/, '');
+}
+
+function classify(pr: GhPull, repo: string, author: string, closedBy: string | null): Classified {
+  const base = {
+    repo,
+    number: pr.number,
+    title: pr.title,
+    url: pr.html_url,
+    occurred_at: pr.merged_at ?? pr.closed_at ?? new Date().toISOString()
+  };
   if (pr.merged) {
     return { ...base, event: 'merged', note: 'merged into default branch' };
   }
@@ -76,7 +108,7 @@ function classify(pr: GhPull, repo: string): Classified {
 
   // Author-closed without merge → withdrawn by default.
   // Do NOT treat code words like "reject duplicate ids" in the patch as maintainer rejection.
-  if (pr.user?.login?.toLowerCase() === 'trippyogi') {
+  if (closedBy && closedBy.toLowerCase() === author.toLowerCase()) {
     if (/\b(maintainers? (rejected|declined)|wontfix|won't fix|not interested)\b/i.test(body)) {
       return { ...base, event: 'rejected', note: 'body explicitly indicates maintainer rejection' };
     }
@@ -84,29 +116,44 @@ function classify(pr: GhPull, repo: string): Classified {
       ...base,
       event: 'closed_unmerged',
       close_reason: 'withdrawn',
-      note: 'closed unmerged; defaulting to withdrawn (author-owned close heuristic) — re-adjudicate if wrong'
+      note: 'closed unmerged by author; defaulting to withdrawn — re-adjudicate if wrong'
     };
   }
 
-  return { ...base, event: 'drop', note: 'closed unmerged but closer unclear; drop per Phase 2 rule' };
+  return {
+    ...base,
+    event: 'drop',
+    note: `closed unmerged but closer=${closedBy ?? 'unknown'}; drop per Phase 2 rule`
+  };
 }
 
-async function writeReconstructed(row: Classified): Promise<void> {
-  if (row.event === 'drop') return;
+async function alreadyReconstructed(repo: string, issueNumber: number): Promise<boolean> {
+  const rows = await listDecisions({ repo, issue_number: issueNumber, limit: 50 });
+  return rows.some((d) => d.reconstructed === true);
+}
+
+async function writeReconstructed(row: Classified): Promise<'wrote' | 'skipped' | 'dry-run'> {
+  if (row.event === 'drop') return 'skipped';
+
+  if (await alreadyReconstructed(row.repo, row.number)) {
+    console.log('skip existing reconstructed', `${row.repo}#${row.number}`);
+    return 'skipped';
+  }
+
+  if (dryRun) {
+    console.log('[dry-run]', row.event, row.close_reason ?? '', `${row.repo}#${row.number}`, row.note);
+    return 'dry-run';
+  }
+
   const decisionId = newDecisionId();
   const runId = newRunId();
-  const at = new Date().toISOString();
+  const at = row.occurred_at;
   const target = {
     input_repo: row.repo,
     canonical_repo: row.repo,
     issue_number: row.number,
     issue_url: `https://github.com/${row.repo}/issues/${row.number}`
   };
-
-  if (dryRun) {
-    console.log('[dry-run]', row.event, row.close_reason ?? '', `${row.repo}#${row.number}`, row.note);
-    return;
-  }
 
   await putRunRecord({
     run_id: runId,
@@ -156,11 +203,13 @@ async function writeReconstructed(row: Classified): Promise<void> {
   });
 
   console.log('wrote', row.event, row.close_reason ?? '', `${row.repo}#${row.number}`);
+  return 'wrote';
 }
 
 async function main(): Promise<void> {
+  const author = resolveAuthor();
   const items = ghJson<SearchPr[]>([
-    'search', 'prs', '--author', 'trippyogi', '--limit', '200',
+    'search', 'prs', '--author', author, '--limit', '200',
     '--json', 'repository,number,title,state,url,closedAt'
   ]);
 
@@ -168,29 +217,34 @@ async function main(): Promise<void> {
   const terminal = third.filter((it) => it.state === 'merged' || it.state === 'closed');
   const open = third.filter((it) => it.state === 'open');
 
-  console.log(`inventory third_party=${third.length} terminal=${terminal.length} open_skipped=${open.length}`);
+  console.log(`author=${author} inventory third_party=${third.length} terminal=${terminal.length} open_skipped=${open.length}`);
   console.log(`mode=${dryRun ? 'dry-run' : 'write'} store=${process.env.GITWORTHY_STORE_DIR ?? '~/.gitworthy/store'}`);
 
   const classified: Classified[] = [];
   for (const it of terminal) {
     const repo = it.repository.nameWithOwner;
     const pr = ghJson<GhPull>(['api', `repos/${repo}/pulls/${it.number}`]);
-    classified.push(classify(pr, repo));
+    const issue = pr.merged
+      ? { closed_by: null }
+      : ghJson<GhIssue>(['api', `repos/${repo}/issues/${it.number}`]);
+    classified.push(classify(pr, repo, author, issue.closed_by?.login ?? null));
   }
 
   let wrote = 0;
   let dropped = 0;
+  let skipped = 0;
   for (const row of classified) {
     if (row.event === 'drop') {
       dropped += 1;
       console.log('drop', `${row.repo}#${row.number}`, row.note);
       continue;
     }
-    await writeReconstructed(row);
-    wrote += 1;
+    const result = await writeReconstructed(row);
+    if (result === 'wrote' || result === 'dry-run') wrote += 1;
+    else skipped += 1;
   }
 
-  console.log(`done wrote=${wrote} dropped=${dropped} open_pending=${open.length}`);
+  console.log(`done wrote=${wrote} skipped=${skipped} dropped=${dropped} open_pending=${open.length}`);
   console.log('partition=reconstructed (do not mix into snapshot-backed ACT precision)');
 }
 

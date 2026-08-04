@@ -152,7 +152,7 @@ pnpm exec tsx scripts/track-o-backfill-authored-prs.ts --author=@me
 pnpm exec tsx scripts/track-o-backfill-authored-prs.ts --author=@me --write
 ```
 
-Heuristic close reasons for unmerged closes default to `withdrawn` when the author closed; override by re-running `outcome record` with the correct `--close-reason`. Prefer hand labels for known superseded cases (script includes a small allowlist).
+Heuristic close reasons for unmerged closes default to `withdrawn` when **`closed_by` matches the author**; otherwise the row is dropped. Override labels with `outcome record --close-reason`. Prefer hand labels for known superseded cases (script includes a small allowlist). Re-runs skip targets that already have a `reconstructed` decision.
 
 ## Sequencing
 
