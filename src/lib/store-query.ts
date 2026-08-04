@@ -101,6 +101,7 @@ export async function recordOutcome(input: {
   close_reason?: 'superseded' | 'stale' | 'withdrawn';
   acted_against_skip?: boolean;
   pr_url?: string;
+  occurred_at?: string;
 }): Promise<OutcomeEvent> {
   const index = await getTargetIndex(input.repo, input.issue_number);
   let decisionId = input.decision_id;
@@ -136,7 +137,7 @@ export async function recordOutcome(input: {
     run_id: runId,
     target: { repo: input.repo.toLowerCase(), issue_number: input.issue_number },
     event: input.event,
-    occurred_at: new Date().toISOString(),
+    occurred_at: input.occurred_at ?? new Date().toISOString(),
     source: input.source ?? 'cli',
     data: input.data ?? {},
     notes: input.notes ?? '',

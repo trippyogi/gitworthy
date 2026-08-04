@@ -87,8 +87,21 @@ export const TOOL_META = {
     title: 'Record outcome',
     role: 'primary',
     description:
-      'Record a local outcome event (selected/pr_opened/merged/closed_unmerged/etc.) for a target. For closed_unmerged pass close_reason (superseded|stale|withdrawn). Set acted_against_skip when contributing against a soft SKIP (Track O). Writes only to the local store — never mutates GitHub.',
+      'Record a local outcome event (selected/pr_opened/merged/closed_unmerged/etc.) for a target. For closed_unmerged pass close_reason (superseded|stale|withdrawn). Set acted_against_skip when contributing against a soft SKIP (Track O). Writes only to the local store — never mutates GitHub. On execute lane: record selected when claiming, then pr_opened with pr_url when the PR exists. Terminals: prefer store_outcome_reconcile after merges/closes.',
     annotations: { ...writeLocal, title: 'Record outcome' }
+  },
+  store_outcome_reconcile: {
+    title: 'Reconcile outcomes',
+    role: 'primary',
+    description:
+      'Close Track O loops: scan local pr_opened / selected+pr_url debt without a terminal, fetch GitHub PR state, and propose or write clear terminals (merged; author-withdrawn). Ambiguous maintainer closes go to needs_adjudication — never auto-superseded/rejected. Default dry_run=true; set write=true to persist. Does not promote to eval/frozen/.',
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+      title: 'Reconcile outcomes'
+    }
   },
   scan: {
     title: 'Scan issues',

@@ -24,6 +24,8 @@ Schemas: `schemas/gitworthy-run-record.v1.schema.json`, `gitworthy-decision-reco
 gitworthy store target owner/repo#123 --json
 gitworthy decision list [--repo owner/repo] [--json]
 gitworthy outcome record owner/repo#123 --event selected --decision-id … --json
+gitworthy outcome record owner/repo#123 --event pr_opened --pr-url https://github.com/owner/repo/pull/1 --decision-id … --json
+gitworthy outcome reconcile [--write] --json
 gitworthy outcome record owner/repo#123 --event closed_unmerged --close-reason superseded [--acted-against-skip] [--pr-url url] --json
 gitworthy store rebuild-indexes --json
 gitworthy ledger migrate [--force] --json
@@ -36,7 +38,7 @@ gitworthy recheck owner/repo#123 --json
 
 - `ledger migrate` lifts legacy ledger entries into the versioned store (idempotent marker; `--force` re-runs).
 - `store rebuild-indexes` rebuilds indexes from durable records; it does not delete runs/decisions.
-- Doctor’s `data_store` capability warns on stale locks / quarantine without mutating data.
+- Doctor’s `data_store` capability warns on stale locks / quarantine / Track O debt without mutating data.
 
 ## Captures
 

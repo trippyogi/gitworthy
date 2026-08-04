@@ -8,9 +8,10 @@ import { githubJson, githubToken } from '../lib/github.js';
 import { packageVersion } from '../lib/package-meta.js';
 import { npmMetadata } from '../lib/registry.js';
 import { storeRoot } from '../lib/store-fs.js';
+import { findTrackODebt } from '../lib/outcome-reconcile.js';
 import { createEnvelope, Envelope } from './envelope.js';
 
-export const CAPABILITIES_VERSION = 1 as const;
+export const CAPABILITIES_VERSION = 2 as const;
 
 export type CapabilityStatus = 'pass' | 'warn' | 'fail' | 'skipped' | 'inconclusive';
 
@@ -199,27 +200,57 @@ async function checkDataStore(): Promise<{
     if (staleLocks > 0) warnings.push(`${staleLocks} stale lock file(s) (>30s)`);
     if (quarantineCount > 0) warnings.push(`${quarantineCount} quarantined ledger blob(s)`);
 
+    let trackODebt = 0;
+    let trackODebtError: string | undefined;
+    try {
+      const debt = await findTrackODebt();
+      trackODebt = debt.count;
+      if (trackODebt > 0) warnings.push(`Track O debt: ${trackODebt} open-lane target(s) without terminal`);
+    } catch (error) {
+      trackODebtError = error instanceof Error ? error.message : String(error);
+      warnings.push(`Track O debt scan failed: ${trackODebtError}`);
+    }
+
     const detail = {
       dir,
       writable: true,
       stale_locks: staleLocks,
       quarantine_count: quarantineCount,
       migration_markers: migrationMarkers,
-      index_targets: indexTargets
+      index_targets: indexTargets,
+      track_o_debt: trackODebt,
+      ...(trackODebtError ? { track_o_debt_error: trackODebtError } : {})
     };
 
     if (warnings.length > 0) {
+      const remediations: string[] = [];
+      if (staleLocks > 0) {
+        remediations.push(
+          'Inspect ~/.gitworthy/store/.locks (or GITWORTHY_STORE_DIR). Remove only locks older than the stale window after confirming no live process holds them. Rebuild indexes with `gitworthy store rebuild-indexes` if needed.'
+        );
+      }
+      if (quarantineCount > 0) {
+        remediations.push(
+          'Review quarantined records under the ledger quarantine directory; re-run `gitworthy ledger migrate` or rebuild indexes if schemas look inconsistent.'
+        );
+      }
+      if (trackODebt > 0 || trackODebtError) {
+        remediations.push(
+          'Run `gitworthy outcome reconcile` (dry-run) then `gitworthy outcome reconcile --write` for clear terminals. Ambiguous closes need manual `outcome record`.'
+        );
+      }
       return {
         evidence: { kind: 'data_store', ...detail },
-        checked: [`checked data store directory is writable (${dir})`],
+        checked: [
+          `checked data store directory is writable (${dir})`,
+          `checked Track O debt (${trackODebt})`
+        ],
         not_checked: [],
         capability: capability(
           'data_store',
           'warn',
           `Data store is writable but needs attention: ${warnings.join('; ')}.`,
-          staleLocks > 0
-            ? 'Inspect ~/.gitworthy/store/.locks (or GITWORTHY_STORE_DIR). Remove only locks older than the stale window after confirming no live process holds them. Rebuild indexes with `gitworthy store rebuild-indexes` if needed.'
-            : 'Review quarantined records under the ledger quarantine directory; re-run `gitworthy ledger migrate` or rebuild indexes if schemas look inconsistent.',
+          remediations.join(' '),
           detail
         )
       };
@@ -227,12 +258,15 @@ async function checkDataStore(): Promise<{
 
     return {
       evidence: { kind: 'data_store', ...detail },
-      checked: [`checked data store directory is writable (${dir})`],
+      checked: [
+        `checked data store directory is writable (${dir})`,
+        `checked Track O debt (${trackODebt})`
+      ],
       not_checked: [],
       capability: capability(
         'data_store',
         'pass',
-        `Data store is writable (${dir}); migrations=${migrationMarkers}, index targets=${indexTargets}.`,
+        `Data store is writable (${dir}); migrations=${migrationMarkers}, index targets=${indexTargets}, Track O debt=${trackODebt}.`,
         undefined,
         detail
       )

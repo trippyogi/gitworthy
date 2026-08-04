@@ -33,6 +33,7 @@ import {
   store_migrate_ledger,
   store_outcome_list,
   store_outcome_record,
+  store_outcome_reconcile,
   store_outcome_show,
   store_recheck,
   store_rebuild_indexes,
@@ -120,6 +121,7 @@ Usage:
   gitworthy outcome show <event_id> [--json]
   gitworthy outcome list [--repo owner/repo] [--issue 123] [--limit 50] [--json]
   gitworthy outcome record owner/repo#123 --event selected [--decision-id id] [--run-id id] [--notes text] [--close-reason superseded|stale|withdrawn] [--acted-against-skip] [--pr-url url] [--json]
+  gitworthy outcome reconcile [--repo owner/repo] [--issue 123] [--author @me] [--write] [--json]
   gitworthy capture list [--limit 50] [--json]
   gitworthy capture show <capture_id> [--json]
   gitworthy case promote <capture_id> --verdict ACT --disposition greenfield --rationale text --evidence-url url --out path [--force] [--json]
@@ -290,6 +292,8 @@ const CLI_OPTIONS = {
   'close-reason': { type: 'string' },
   'acted-against-skip': { type: 'boolean' },
   'pr-url': { type: 'string' },
+  write: { type: 'boolean' },
+  author: { type: 'string' },
   'out-dir': { type: 'string' },
   out: { type: 'string' },
   rationale: { type: 'string' },
@@ -835,8 +839,19 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
           acted_against_skip: parsed.values['acted-against-skip'] === true ? true : undefined,
           pr_url: stringValue(parsed.values['pr-url'])
         }) as Record<string, unknown>);
+      } else if (action === 'reconcile') {
+        commandName = 'store_outcome_reconcile';
+        const repoFilter = stringValue(parsed.values.repo);
+        const issueRaw = stringValue(parsed.values.issue);
+        output = toStampedLegacyResult('store_outcome_reconcile', await store_outcome_reconcile({
+          write: parsed.values.write === true,
+          dry_run: parsed.values.write === true ? false : true,
+          repo: repoFilter ? parseArg(RepoRefSchema, repoFilter, 'invalid_repo_ref') : undefined,
+          issue_number: issueRaw ? issueNumberArg(issueRaw, 'outcome reconcile --issue requires a positive integer.') : undefined,
+          author: stringValue(parsed.values.author)
+        }) as Record<string, unknown>);
       } else {
-        usageError('outcome requires show, list, or record.');
+        usageError('outcome requires show, list, record, or reconcile.');
       }
     } else if (command === 'capture') {
       const action = first;

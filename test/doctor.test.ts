@@ -90,7 +90,7 @@ describe('doctor', () => {
     const result = await doctor();
     expect(result.verdict_summary).toContain('ready');
     expect(result.verdict).toBe('ACT');
-    expect(result.capabilities_version).toBe(1);
+    expect(result.capabilities_version).toBe(2);
     expect(result.signals).toEqual([]);
     expect(result.evidence).toContainEqual(expect.objectContaining({ kind: 'auth', token_present: true }));
     expect(result.evidence).toContainEqual(expect.objectContaining({ kind: 'auth', ok: true, login: 'octocat' }));

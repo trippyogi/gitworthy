@@ -12,7 +12,8 @@ Host setup (Cursor / ChatGPT / Hermes / HTTP): see the README MCP section and [`
 | `worth_check` | Single-issue ACT/VERIFY/SKIP |
 | `hunt` | Bounded discovery + preflight (`resume_run_id` for partials) |
 | `brief` / `brief_show` | Decision brief from local store |
-| `store_outcome_record` | Local outcome feedback loop |
+| `store_outcome_record` | Local outcome feedback loop (`selected` / `pr_opened` / terminals) |
+| `store_outcome_reconcile` | Close Track O debt against GitHub PR state (dry-run by default) |
 
 Evidence tools support investigation; they are not substitutes for `worth_check` / `hunt` verdicts.
 
@@ -20,7 +21,7 @@ Evidence tools support investigation; they are not substitutes for `worth_check`
 
 | Role | Tools |
 |---|---|
-| primary | `doctor`, `worth_check`, `hunt`, `brief`, `brief_show`, `store_outcome_record` |
+| primary | `doctor`, `worth_check`, `hunt`, `brief`, `brief_show`, `store_outcome_record`, `store_outcome_reconcile` |
 | evidence | `scan`, `org_scan`, `branch_scan`, `issue_vs_main`, `release_gap`, `dupe_cluster`, `related_cluster`, `linked_work`, `contention`, `scope_check`, `contrib_policy`, `list_probe_templates` |
 | config | `config_validate`, `config_show`, `profile_show` |
 | store | `ledger_*`, `store_target_show`, `store_decision_list`, `store_recheck`, `store_export` |

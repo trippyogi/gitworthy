@@ -14,6 +14,7 @@ import {
 import { CloseReasonSchema, OutcomeEventNameSchema } from '../contracts/outcomes.js';
 import { persistCheckResultBestEffort, getDecisionRecord } from '../lib/store.js';
 import { toCheckResult } from '../contracts/serialize.js';
+import { reconcileOutcomes } from '../lib/outcome-reconcile.js';
 
 export async function store_run_show(input: { run_id: string }): Promise<Envelope> {
   const record = await showRun(input.run_id);
@@ -143,6 +144,57 @@ export async function store_outcome_record(input: {
       code: 'store_outcome_failed',
       message: error instanceof Error ? error.message : String(error),
       not_checked: ['outcome was not recorded']
+    });
+  }
+}
+
+/**
+ * Reconcile open-lane Track O debt against live GitHub PR state.
+ * Default dry_run=true; pass dry_run=false (CLI --write) to persist terminals.
+ */
+export async function store_outcome_reconcile(input: {
+  dry_run?: boolean;
+  write?: boolean;
+  repo?: string;
+  issue_number?: number;
+  author?: string;
+} = {}): Promise<Envelope> {
+  if (input.write === true && input.dry_run === true) {
+    throw new GitworthyError({
+      code: 'invalid_usage',
+      message: 'store_outcome_reconcile: pass write=true or dry_run=true, not both.',
+      not_checked: ['outcome reconcile did not run']
+    });
+  }
+  const dryRun = input.write === true ? false : input.dry_run !== false;
+  try {
+    const report = await reconcileOutcomes({
+      dry_run: dryRun,
+      repo: input.repo,
+      issue_number: input.issue_number,
+      author: input.author
+    });
+    const mode = report.dry_run ? 'dry-run' : 'write';
+    return createEnvelope({
+      verdict_summary:
+        `outcome reconcile (${mode}): debt=${report.debt_count} wrote=${report.wrote} ` +
+        `needs_adjudication=${report.needs_adjudication} skipped=${report.skipped}.`,
+      evidence: [report],
+      checked: [
+        `scanned ${report.debt_count} Track O debt target(s)`,
+        report.dry_run ? 'dry-run (no store writes)' : `wrote ${report.wrote} terminal outcome(s)`
+      ],
+      not_checked: [
+        'reconcile does not auto-label superseded/rejected without clear signals',
+        'reconcile does not promote to eval/frozen/'
+      ],
+      cached: false
+    });
+  } catch (error) {
+    throw new GitworthyError({
+      code: 'store_outcome_reconcile_failed',
+      message: error instanceof Error ? error.message : String(error),
+      not_checked: ['outcome reconcile did not complete']
     });
   }
 }

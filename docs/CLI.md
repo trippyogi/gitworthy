@@ -22,11 +22,12 @@ gitworthy check owner/repo#123 [--npm-package name] [--json]
 gitworthy hunt owner/repo|org [--max-checks 3] [--manifest path] [--json]
 gitworthy brief <decision_id> [--format human|json|markdown]
 gitworthy outcome record owner/repo#123 --event selected [--decision-id id] [--close-reason superseded|stale|withdrawn] [--acted-against-skip] [--pr-url url] [--json]
+gitworthy outcome reconcile [--repo owner/repo] [--issue 123] [--author @me] [--write] [--json]
 ```
 
 ### Doctor
 
-Environment capability matrix (`pass` / `warn` / `fail` / `skipped` / `inconclusive`) with remediations. Exit uses verdict mapping (`ACT`/`VERIFY`/`SKIP`). `--full` adds safe `git ls-remote`.
+Environment capability matrix (`pass` / `warn` / `fail` / `skipped` / `inconclusive`) with remediations. Exit uses verdict mapping (`ACT`/`VERIFY`/`SKIP`). `--full` adds safe `git ls-remote`. `data_store` includes `track_o_debt` (open-lane outcomes without a terminal).
 
 ### Check (`worth_check`)
 
