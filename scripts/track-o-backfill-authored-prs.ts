@@ -241,8 +241,8 @@ async function writeReconstructed(row: Classified, author: string): Promise<'wro
 
 async function main(): Promise<void> {
   const author = resolveAuthor();
-  // Closed-only + org excludes so self-owned PRs do not consume the search quota.
-  const searchExtras = [...SELF_OWNERS].filter((o) => o !== author.toLowerCase()).map((o) => `-org:${o}`);
+  // Ask gh to exclude self-owned orgs from the search quota (best-effort; still filter locally).
+  const searchExtras = [...new Set([...SELF_OWNERS, author.toLowerCase()])].map((o) => `-org:${o}`);
   const items = ghJson<SearchPr[]>([
     'search', 'prs', '--author', author, '--state', 'closed', '--limit', '200',
     '--json', 'repository,number,title,state,url,closedAt',
@@ -259,11 +259,15 @@ async function main(): Promise<void> {
   const open = openHits.filter((it) => !isSelfOwned(it.repository.nameWithOwner || '', author));
   const leaked = items.filter((it) => isSelfOwned(it.repository.nameWithOwner || '', author));
 
-  if (items.length >= 200) {
+  if (items.length >= 200 && leaked.length > 0) {
+    console.warn(
+      `warn: closed-PR search hit the 200 cap with ${leaked.length} self-owned rows still present; third-party inventory may be incomplete`
+    );
+  } else if (items.length >= 200) {
     console.warn('warn: gh closed-PR search returned 200 hits (limit); inventory may be truncated');
   }
   if (leaked.length > 0) {
-    console.warn(`warn: search returned ${leaked.length} self-owned hit(s) despite -org filters; dropping them locally`);
+    console.warn(`warn: search returned ${leaked.length} self-owned hit(s); dropping them locally`);
   }
   console.log(`author=${author} inventory third_party_closed=${third.length} terminal=${terminal.length} open_skipped=${open.length}`);
   console.log(`mode=${dryRun ? 'dry-run' : 'write'} store=${process.env.GITWORTHY_STORE_DIR ?? '~/.gitworthy/store'}`);
