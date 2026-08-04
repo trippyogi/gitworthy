@@ -12,11 +12,12 @@
 import { execFileSync } from 'node:child_process';
 import { putDecisionRecord, putOutcomeEvent, putRunRecord } from '../src/lib/store.js';
 import { putTrackOCovariates } from '../src/lib/track-o-covariates.js';
-import { listDecisions } from '../src/lib/store-query.js';
+import { listDecisions, listOutcomes } from '../src/lib/store-query.js';
 import { newDecisionId, newRunId } from '../src/contracts/common.js';
 import type { CloseReason } from '../src/contracts/outcomes.js';
+import type { DecisionRecord } from '../src/contracts/store.js';
 
-const SELF_OWNERS = new Set(['trippyogi', 'MetaTravelers']);
+const SELF_OWNERS = new Set(['trippyogi', 'metatravelers']);
 const writeMode = process.argv.includes('--write');
 const dryRun = !writeMode;
 
@@ -127,19 +128,27 @@ function classify(pr: GhPull, repo: string, author: string, closedBy: string | n
   };
 }
 
-async function alreadyHasDecision(repo: string, issueNumber: number): Promise<'reconstructed' | 'snapshot' | null> {
-  const rows = await listDecisions({ repo, issue_number: issueNumber, limit: 50 });
-  if (rows.some((d) => d.reconstructed === true)) return 'reconstructed';
-  if (rows.length > 0) return 'snapshot';
-  return null;
+async function targetGate(repo: string, issueNumber: number): Promise<
+  | { action: 'skip'; reason: 'outcome' | 'snapshot' }
+  | { action: 'write'; resume?: DecisionRecord }
+> {
+  const outcomes = await listOutcomes({ repo, issue_number: issueNumber, limit: 20 });
+  if (outcomes.length > 0) return { action: 'skip', reason: 'outcome' };
+
+  const decisions = await listDecisions({ repo, issue_number: issueNumber, limit: 50 });
+  const snapshot = decisions.find((d) => d.reconstructed !== true);
+  if (snapshot) return { action: 'skip', reason: 'snapshot' };
+
+  const reconstructed = decisions.find((d) => d.reconstructed === true);
+  return { action: 'write', resume: reconstructed };
 }
 
 async function writeReconstructed(row: Classified): Promise<'wrote' | 'skipped' | 'dry-run'> {
   if (row.event === 'drop') return 'skipped';
 
-  const existing = await alreadyHasDecision(row.repo, row.number);
-  if (existing) {
-    console.log(`skip existing ${existing}`, `${row.repo}#${row.number}`);
+  const gate = await targetGate(row.repo, row.number);
+  if (gate.action === 'skip') {
+    console.log(`skip existing ${gate.reason}`, `${row.repo}#${row.number}`);
     return 'skipped';
   }
 
@@ -148,8 +157,8 @@ async function writeReconstructed(row: Classified): Promise<'wrote' | 'skipped' 
     return 'dry-run';
   }
 
-  const decisionId = newDecisionId();
-  const runId = newRunId();
+  const decisionId = gate.resume?.decision_id ?? newDecisionId();
+  const runId = gate.resume?.run_id ?? newRunId();
   const at = row.occurred_at;
   const target = {
     input_repo: row.repo,
@@ -158,40 +167,42 @@ async function writeReconstructed(row: Classified): Promise<'wrote' | 'skipped' 
     issue_url: `https://github.com/${row.repo}/issues/${row.number}`
   };
 
-  // Decision first so a mid-write failure never leaves a run pointing at a missing decision.
-  await putDecisionRecord({
-    decision_id: decisionId,
-    run_id: runId,
-    created_at: at,
-    target,
-    // Placeholder verdict — excluded from snapshot-backed ACT precision by reconstructed=true.
-    verdict: 'VERIFY',
-    disposition: 'review',
-    reasons: ['track_o_reconstructed_no_t0_verdict', row.note],
-    signals: [],
-    reconstructed: true,
-    has_track_o_covariates: true
-  });
+  if (!gate.resume) {
+    // Decision first so a mid-write failure never leaves a run pointing at a missing decision.
+    await putDecisionRecord({
+      decision_id: decisionId,
+      run_id: runId,
+      created_at: at,
+      target,
+      // Placeholder verdict — excluded from snapshot-backed ACT precision by reconstructed=true.
+      verdict: 'VERIFY',
+      disposition: 'review',
+      reasons: ['track_o_reconstructed_no_t0_verdict', row.note],
+      signals: [],
+      reconstructed: true,
+      has_track_o_covariates: true
+    });
 
-  await putRunRecord({
-    run_id: runId,
-    command: 'track_o_reconstructed',
-    generated_at: at,
-    summary: `Track O reconstructed backfill for ${row.repo}#${row.number}`,
-    target: { repo: row.repo, issue_number: row.number },
-    decision_id: decisionId,
-    checked: ['track_o_phase2_backfill'],
-    not_checked: ['no live T0 snapshot; reconstructed partition only']
-  });
+    await putRunRecord({
+      run_id: runId,
+      command: 'track_o_reconstructed',
+      generated_at: at,
+      summary: `Track O reconstructed backfill for ${row.repo}#${row.number}`,
+      target: { repo: row.repo, issue_number: row.number },
+      decision_id: decisionId,
+      checked: ['track_o_phase2_backfill'],
+      not_checked: ['no live T0 snapshot; reconstructed partition only']
+    });
 
-  await putTrackOCovariates({
-    decision_id: decisionId,
-    run_id: runId,
-    target: { repo: row.repo, issue_number: row.number },
-    captured_at: at,
-    reconstructed: true,
-    covariates: {}
-  });
+    await putTrackOCovariates({
+      decision_id: decisionId,
+      run_id: runId,
+      target: { repo: row.repo, issue_number: row.number },
+      captured_at: at,
+      reconstructed: true,
+      covariates: {}
+    });
+  }
 
   await putOutcomeEvent({
     decision_id: decisionId,
@@ -206,15 +217,20 @@ async function writeReconstructed(row: Classified): Promise<'wrote' | 'skipped' 
     data: { title: row.title, reconstructed: true }
   });
 
-  console.log('wrote', row.event, row.close_reason ?? '', `${row.repo}#${row.number}`);
+  console.log(gate.resume ? 'resumed' : 'wrote', row.event, row.close_reason ?? '', `${row.repo}#${row.number}`);
   return 'wrote';
 }
 
 async function main(): Promise<void> {
   const author = resolveAuthor();
+  // Closed-only inventory so open PRs do not consume the search quota.
   const items = ghJson<SearchPr[]>([
-    'search', 'prs', '--author', author, '--limit', '200',
+    'search', 'prs', '--author', author, '--state', 'closed', '--limit', '200',
     '--json', 'repository,number,title,state,url,closedAt'
+  ]);
+  const openHits = ghJson<SearchPr[]>([
+    'search', 'prs', '--author', author, '--state', 'open', '--limit', '100',
+    '--json', 'repository,number,title,state,url'
   ]);
 
   const excludeOwners = new Set([...SELF_OWNERS, author.toLowerCase()]);
@@ -223,12 +239,15 @@ async function main(): Promise<void> {
     return !excludeOwners.has(owner);
   });
   const terminal = third.filter((it) => it.state === 'merged' || it.state === 'closed');
-  const open = third.filter((it) => it.state === 'open');
+  const open = openHits.filter((it) => {
+    const owner = (it.repository.nameWithOwner || '').split('/')[0]?.toLowerCase() ?? '';
+    return !excludeOwners.has(owner);
+  });
 
   if (items.length >= 200) {
-    console.warn('warn: gh search returned 200 hits (limit); inventory may be truncated — re-run with a narrower query if needed');
+    console.warn('warn: gh closed-PR search returned 200 hits (limit); inventory may be truncated');
   }
-  console.log(`author=${author} inventory third_party=${third.length} terminal=${terminal.length} open_skipped=${open.length}`);
+  console.log(`author=${author} inventory third_party_closed=${third.length} terminal=${terminal.length} open_skipped=${open.length}`);
   console.log(`mode=${dryRun ? 'dry-run' : 'write'} store=${process.env.GITWORTHY_STORE_DIR ?? '~/.gitworthy/store'}`);
 
   const classified: Classified[] = [];
