@@ -56,6 +56,17 @@ Wall time is usually **N × worth_check**, not one slow check. Prefer a narrow f
 
 Do **not** worth_check every scan row. `worth_check` auto-records to the local scout ledger. `hunt` returns no ACT/SKIP signals of its own — read each `hunt_candidate.worth_check`.
 
+## Execute lane + Track O
+
+After you select work:
+
+1. `outcome record … --event selected --decision-id …`
+2. When a PR exists: `outcome record … --event pr_opened --pr-url … --decision-id …`
+3. After merge/close: `outcome reconcile` (dry-run), then `outcome reconcile --write` for clear terminals.
+4. Doctor warns on Track O debt (`pr_opened` / `selected`+`pr_url` without a terminal).
+
+Ambiguous maintainer closes stay in `needs_adjudication` — label with `outcome record` + `--close-reason`. Never invent frozen fixtures from reconcile.
+
 ## Commands
 
 ```sh

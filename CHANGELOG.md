@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Track O Phase 1.5: `outcome reconcile` / MCP `store_outcome_reconcile` closes open-lane debt against GitHub PR state; doctor surfaces `track_o_debt`; execute-lane skill/workflow docs require `selected` → `pr_opened` then reconcile.
 - Docs set for public beta (GW-033): VERDICTS, CLI, CONFIG, DATA, EVALS, SECURITY_MODEL, TROUBLESHOOTING, COMPATIBILITY; README docs router; `pnpm docs:links` in CI.
 - Hunt cooperative cancellation via `AbortSignal` / CLI SIGINT with partial persist + resume (GW-036 slice).
 - Upgrade smoke script `pnpm test:upgrade` (published → packed workspace → rollback) for GW-037 prep.

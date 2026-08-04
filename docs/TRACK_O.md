@@ -140,6 +140,28 @@ Agents on **another machine** do not share this corpus unless you sync that stor
 | `snapshot_backed` | Check ran with live T0 decision (+ covariates flag) |
 | `reconstructed` | Phase 2 history backfill; **never mix into headline rates** |
 
+## Phase 1.5 — outcome reconcile (closes the loop)
+
+After execute-lane `pr_opened` (or `selected` + `pr_url`), terminal labels should not stay manual forever.
+
+```sh
+# Dry-run (default): list debt + proposed events / needs_adjudication
+gitworthy outcome reconcile [--repo owner/repo] [--issue 123] [--author @me] [--json]
+
+# Persist clear terminals only (merged; author-withdrawn; body-superseded)
+gitworthy outcome reconcile --write [--json]
+```
+
+MCP: `store_outcome_reconcile` (default `dry_run`; set `write: true` to persist).
+
+Rules:
+
+- Joins the **existing** `decision_id` / `run_id` from the open-lane row — never creates reconstructed decisions.
+- **Writes:** `merged`; `closed_unmerged`+`withdrawn` when `closed_by` is the author; `closed_unmerged`+`superseded` only from clear body signals.
+- **Does not write:** maintainer closes without a clear signal → `needs_adjudication` in the report.
+- Idempotent: skips targets that already have a terminal event.
+- Doctor `data_store` surfaces `track_o_debt` (count of open-lane targets without terminal).
+
 ## Phase 2 — personal history backfill
 
 Reconstruct **clear terminal** outcomes from your own third-party PRs (exclude self-owned orgs). Rows are flagged `reconstructed: true` / `data.reconstructed` and must **not** enter snapshot-backed ACT precision.
@@ -152,15 +174,16 @@ pnpm exec tsx scripts/track-o-backfill-authored-prs.ts --author=@me
 pnpm exec tsx scripts/track-o-backfill-authored-prs.ts --author=@me --write
 ```
 
-Heuristic close reasons for unmerged closes default to `withdrawn` when **`closed_by` matches the author**; otherwise the row is dropped. Override labels with `outcome record --close-reason`. Prefer hand labels for known superseded cases (script includes a small allowlist). Re-runs skip targets that already have any decision (reconstructed or snapshot-backed).
+Heuristic close reasons for unmerged closes default to `withdrawn` when **`closed_by` matches the author**; otherwise the row is dropped. Override labels with `outcome record --close-reason`. Prefer hand labels for known superseded cases (script includes a small allowlist). Re-runs skip targets that already have any decision (reconstructed or snapshot-backed). Run **reconcile first** for live `pr_opened` debt; use backfill only when there is no snapshot-backed decision.
 
 ## Sequencing
 
 1. Phase 0 schemas + `TRACK_O.md` — done (`#80`)  
 2. Phase 1 covariates at check time — done (`#80`)  
-3. Beta / Track F remain the 1.0 priority  
-4. Phase 2 personal history backfill — script in repo; run locally (never commit store)  
-5. Phase 3 stranger harvest only if 1+2 are thin (and only with synthesized T0 + caveats)
+3. Phase 1.5 outcome reconcile + Track O debt in doctor — this change set  
+4. Beta / Track F remain the 1.0 priority  
+5. Phase 2 personal history backfill — script in repo; run locally (never commit store)  
+6. Phase 3 stranger harvest only if 1+2 are thin (and only with synthesized T0 + caveats)
 
 ## Final gate (do not report Track O “complete” without)
 

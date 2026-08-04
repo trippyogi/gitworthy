@@ -232,7 +232,11 @@ The host agent may now use its normal coding workflow. Gitworthy does not replac
 
 ### 6. Record the outcome
 
-Record what happened so future checks and calibration can distinguish a useful decision from an abandoned attempt.
+Execute lane **must** close the loop so Track O can calibrate:
+
+1. On take/claim: `outcome record … --event selected --decision-id …`
+2. When the PR URL is known: `outcome record … --event pr_opened --pr-url https://github.com/…/pull/N --decision-id …`
+3. Terminals: prefer `outcome reconcile` (dry-run, then `--write`) after merges/closes. Ambiguous closes stay in `needs_adjudication` — label those with `outcome record` + `--close-reason`.
 
 Useful outcome events include:
 
@@ -247,7 +251,12 @@ Useful outcome events include:
 - already fixed;
 - abandoned.
 
-Use the outcome commands supported by the installed Gitworthy version.
+```sh
+gitworthy outcome reconcile --json
+gitworthy outcome reconcile --write --json
+```
+
+Doctor warns when Track O debt > 0 (`pr_opened` / `selected`+`pr_url` without a terminal).
 
 ## When to call individual tools
 

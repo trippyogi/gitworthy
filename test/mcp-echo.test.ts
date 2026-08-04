@@ -42,6 +42,7 @@ describe('MCP tools', () => {
       'store_export',
       'store_migrate_ledger',
       'store_outcome_record',
+      'store_outcome_reconcile',
       'store_recheck',
       'store_rebuild_indexes',
       'store_target_show',

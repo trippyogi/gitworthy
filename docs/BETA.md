@@ -21,8 +21,9 @@ Record the exact version in every feedback note.
 1. `doctor --json` (paste redacted capabilities summary, no tokens).
 2. One bounded hunt on a **suggested** repo (below), `--json` or MCP equivalent.
 3. One `worth_check` / check on a candidate they might actually touch.
-4. Optional: `outcome record … --event selected` (or abandoned) with a one-line note.
-5. Send back: version, host (Cursor / other), redacted JSON or capture id, and anything that felt wrong.
+4. Execute lane: `outcome record … --event selected`, then `pr_opened --pr-url …` when a PR exists. After merges/closes: `outcome reconcile` (then `--write`).
+5. Wrong verdict? `worth_check --capture` and send the capture id (or redacted JSON).
+6. Send back: version, host (Cursor / other), redacted JSON or capture id, and anything that felt wrong.
 
 MCP setup: README + [`MCP.md`](./MCP.md) + [`AGENT_WORKFLOW.md`](./AGENT_WORKFLOW.md).
 
