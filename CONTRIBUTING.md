@@ -4,7 +4,8 @@ Thanks for helping harden gitworthy. The 1.0 goal is a trustworthy, local-first 
 
 ## Before you start
 
-1. Read `README.md`, `SKILL.md`, and `ROADMAP.md`.
+1. Read `README.md`, `SKILL.md` (or `skills/gitworthy/SKILL.md`), and `ROADMAP.md`.
+2. For Agent Plugins packaging, see [`docs/AGENT_PLUGINS.md`](./docs/AGENT_PLUGINS.md).
 2. Prefer an existing roadmap issue (`GW-*` / milestone) over inventing a new feature.
 3. For security-sensitive reports, follow `SECURITY.md` (private disclosure).
 

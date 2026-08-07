@@ -1,3 +1,13 @@
+﻿---
+name: gitworthy
+description: Preflight GitHub contribution targets before investing implementation work. Use before claiming, forking, or opening PRs on external issues; enforces policy → hunt/worth_check → revalidation and Track O outcome discipline.
+license: MIT
+compatibility: Requires Node.js >= 22, network access to GitHub, and GITHUB_TOKEN (or GH_TOKEN) in the environment for accurate linked_work.
+metadata:
+  author: trippyogi
+  homepage: https://github.com/trippyogi/gitworthy
+---
+
 # gitworthy skill
 
 Use gitworthy before spending time on an external repository issue or feature request.
@@ -144,3 +154,4 @@ For accurate `linked_work`, `GITHUB_TOKEN` must see issue **timeline cross-refer
 - Prefer public repositories. Do not capture or export private repository content by default.
 - Never place tokens in config files, fixtures, or chat logs.
 - Security vulnerabilities in gitworthy itself: follow `SECURITY.md` (private disclosure).
+
