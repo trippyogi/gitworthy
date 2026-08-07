@@ -50,6 +50,6 @@ Checklist: [`BETA.md`](./BETA.md), [`EVALS.md`](./EVALS.md).
 - Auto-generated frozen fixtures without adjudication
 - Invented `superseded` / `rejected` labels from reconcile `needs_adjudication` rows
 
-## Agent packaging
+## Agent Plugins
 
-Prefer installing Gitworthy so the agent gets both the MCP tools and the contribution skill (see README MCP / skill sections). Packaging does not replace capture → promote for Track F.
+Compatible clients can load Gitworthy as one skill+MCP package — see [`AGENT_PLUGINS.md`](./AGENT_PLUGINS.md). That improves **distribution**; it does not replace capture → promote for Track F.

@@ -18,7 +18,7 @@
     "test:package": "tsx scripts/package-smoke.ts",
     "schemas:generate": "tsx scripts/generate-schemas.ts",
     "schemas:check": "tsx scripts/generate-schemas.ts --check",
-    "check": "pnpm lint && pnpm typecheck && pnpm build && pnpm test:unit && pnpm schemas:check",
+    "check": "pnpm lint && pnpm typecheck && pnpm build && pnpm test:unit && pnpm schemas:check && pnpm agent-plugins:check",
     "release:verify": "tsx scripts/release-verify.ts",
     "dev": "tsx src/cli/index.ts",
     "eval": "tsx eval/run-eval.ts",
@@ -29,6 +29,7 @@
     "bench:frozen": "tsx scripts/bench-frozen.ts",
     "mcp:self-test": "tsx scripts/mcp-self-test.ts",
     "docs:links": "tsx scripts/docs-links.ts",
+    "agent-plugins:check": "tsx scripts/agent-plugins-check.ts",
     "schemas:inventory": "tsx scripts/schema-inventory.ts",
     "test:upgrade": "tsx scripts/upgrade-smoke.ts"
   },
@@ -52,6 +53,9 @@
   "files": [
     "dist",
     "schemas",
+    "plugin.json",
+    "mcp.json",
+    "skills",
     "README.md",
     "LICENSE",
     "SKILL.md",

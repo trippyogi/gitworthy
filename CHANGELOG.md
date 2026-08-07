@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Agent Plugins v1.0.0 packaging: `plugin.json`, `mcp.json`, canonical `skills/gitworthy/SKILL.md`, CI sync check (`pnpm agent-plugins:check`).
 - Docs: [`CORPUS_CONTRIB.md`](./docs/CORPUS_CONTRIB.md) — how dogfooders grow Track O (local) vs Track F (public fixtures) without mixing corpora.
 - Track O Phase 2: `outcome backfill` / MCP `store_outcome_backfill` reconstructs terminal outcomes from authored third-party PRs (`reconstructed` partition; dry-run default).
 - Track O Phase 1.5: `outcome reconcile` / MCP `store_outcome_reconcile` closes open-lane debt against GitHub PR state; doctor surfaces `track_o_debt`; execute-lane skill/workflow docs require `selected` → `pr_opened` then reconcile.
