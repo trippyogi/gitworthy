@@ -25,7 +25,7 @@ Record the exact version in every feedback note.
 5. Wrong verdict? `worth_check --capture` and send the capture id (or redacted JSON).
 6. Send back: version, host (Cursor / other), redacted JSON or capture id, and anything that felt wrong.
 
-MCP setup: README + [`MCP.md`](./MCP.md) + [`AGENT_WORKFLOW.md`](./AGENT_WORKFLOW.md).
+MCP setup: README + [`MCP.md`](./MCP.md) + [`AGENT_WORKFLOW.md`](./AGENT_WORKFLOW.md). Corpus growth rules: [`CORPUS_CONTRIB.md`](./CORPUS_CONTRIB.md).
 
 ## Suggested targets (spread these)
 

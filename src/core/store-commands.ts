@@ -15,6 +15,7 @@ import { CloseReasonSchema, OutcomeEventNameSchema } from '../contracts/outcomes
 import { persistCheckResultBestEffort, getDecisionRecord } from '../lib/store.js';
 import { toCheckResult } from '../contracts/serialize.js';
 import { reconcileOutcomes } from '../lib/outcome-reconcile.js';
+import { runTrackOBackfill } from '../lib/track-o-backfill.js';
 
 export async function store_run_show(input: { run_id: string }): Promise<Envelope> {
   const record = await showRun(input.run_id);
@@ -195,6 +196,58 @@ export async function store_outcome_reconcile(input: {
       code: 'store_outcome_reconcile_failed',
       message: error instanceof Error ? error.message : String(error),
       not_checked: ['outcome reconcile did not complete']
+    });
+  }
+}
+
+/**
+ * Track O Phase 2: reconstruct terminal outcomes from authored third-party PRs.
+ * Default dry_run; pass write=true to persist. Rows are reconstructed — never mix into snapshot metrics.
+ */
+export async function store_outcome_backfill(input: {
+  dry_run?: boolean;
+  write?: boolean;
+  author?: string;
+} = {}): Promise<Envelope> {
+  if (input.write === true && input.dry_run === true) {
+    throw new GitworthyError({
+      code: 'invalid_usage',
+      message: 'store_outcome_backfill: pass write=true or dry_run=true, not both.',
+      not_checked: ['outcome backfill did not run']
+    });
+  }
+  const write = input.write === true ? true : input.dry_run === false;
+  try {
+    const report = await runTrackOBackfill({
+      write,
+      author: input.author,
+      // Keep progress off stdout so MCP / --json envelopes stay clean.
+      log: (line) => {
+        process.stderr.write(`${line}\n`);
+      }
+    });
+    const mode = report.dry_run ? 'dry-run' : 'write';
+    return createEnvelope({
+      verdict_summary:
+        `outcome backfill (${mode}): author=${report.author} third_party_closed=${report.third_party_closed} ` +
+        `terminal=${report.terminal} wrote=${report.wrote} skipped=${report.skipped} dropped=${report.dropped} ` +
+        `open_pending=${report.open_pending}.`,
+      evidence: [report],
+      checked: [
+        `inventoried ${report.third_party_closed} third-party closed PR(s)`,
+        report.dry_run ? 'dry-run (no store writes)' : `wrote ${report.wrote} reconstructed outcome(s)`
+      ],
+      not_checked: [
+        'reconstructed rows must not mix into snapshot-backed ACT precision',
+        'backfill does not promote to eval/frozen/'
+      ],
+      cached: false
+    });
+  } catch (error) {
+    throw new GitworthyError({
+      code: 'store_outcome_backfill_failed',
+      message: error instanceof Error ? error.message : String(error),
+      not_checked: ['outcome backfill did not complete']
     });
   }
 }

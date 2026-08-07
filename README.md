@@ -315,6 +315,7 @@ See [SKILL.md](./SKILL.md) for the strict contribution gates and [docs/AGENT_WOR
 | [docs/DATA.md](./docs/DATA.md) | Local store, outcomes, captures |
 | [docs/EVALS.md](./docs/EVALS.md) | Frozen / live / private eval |
 | [docs/CORPUS.md](./docs/CORPUS.md) | Corpus taxonomy (pass rate vs precision) |
+| [docs/CORPUS_CONTRIB.md](./docs/CORPUS_CONTRIB.md) | How to grow Track O vs Track F |
 | [docs/TRACK_O.md](./docs/TRACK_O.md) | Outcome calibration (Track O; not a release gate) |
 | [docs/BETA.md](./docs/BETA.md) | Design-partner beta (GW-034) |
 | [docs/SECURITY_MODEL.md](./docs/SECURITY_MODEL.md) | Trust boundaries |

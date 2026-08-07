@@ -70,4 +70,4 @@ If suite pass rate dropped below ~0.95 with unexplained failures, that is an **e
 3. **Track O** (outcome calibration) runs in parallel and does **not** change the 1.0 frozen gate — see [`TRACK_O.md`](./TRACK_O.md). Snapshot-at-check ships so OSS PRs can join later.
 4. Promote mechanism packs as secondary — they help coverage, not the human blockers.
 
-See [`BETA.md`](./BETA.md).
+See [`BETA.md`](./BETA.md). How partners and dogfooders grow Track O vs Track F: [`CORPUS_CONTRIB.md`](./CORPUS_CONTRIB.md).

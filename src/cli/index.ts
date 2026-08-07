@@ -34,6 +34,7 @@ import {
   store_outcome_list,
   store_outcome_record,
   store_outcome_reconcile,
+  store_outcome_backfill,
   store_outcome_show,
   store_recheck,
   store_rebuild_indexes,
@@ -122,6 +123,7 @@ Usage:
   gitworthy outcome list [--repo owner/repo] [--issue 123] [--limit 50] [--json]
   gitworthy outcome record owner/repo#123 --event selected [--decision-id id] [--run-id id] [--notes text] [--close-reason superseded|stale|withdrawn] [--acted-against-skip] [--pr-url url] [--json]
   gitworthy outcome reconcile [--repo owner/repo] [--issue 123] [--author @me] [--write] [--json]
+  gitworthy outcome backfill [--author @me] [--write] [--json]
   gitworthy capture list [--limit 50] [--json]
   gitworthy capture show <capture_id> [--json]
   gitworthy case promote <capture_id> --verdict ACT --disposition greenfield --rationale text --evidence-url url --out path [--force] [--json]
@@ -850,8 +852,15 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
           issue_number: issueRaw ? issueNumberArg(issueRaw, 'outcome reconcile --issue requires a positive integer.') : undefined,
           author: stringValue(parsed.values.author)
         }) as Record<string, unknown>);
+      } else if (action === 'backfill') {
+        commandName = 'store_outcome_backfill';
+        output = toStampedLegacyResult('store_outcome_backfill', await store_outcome_backfill({
+          write: parsed.values.write === true,
+          dry_run: parsed.values.write === true ? false : true,
+          author: stringValue(parsed.values.author)
+        }) as Record<string, unknown>);
       } else {
-        usageError('outcome requires show, list, record, or reconcile.');
+        usageError('outcome requires show, list, record, reconcile, or backfill.');
       }
     } else if (command === 'capture') {
       const action = first;
