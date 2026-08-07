@@ -103,6 +103,19 @@ export const TOOL_META = {
       title: 'Reconcile outcomes'
     }
   },
+  store_outcome_backfill: {
+    title: 'Backfill outcomes',
+    role: 'primary',
+    description:
+      'Phase 2 reconstructed backfill; dry_run default; write=true to persist; never mix into snapshot-backed metrics.',
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+      title: 'Backfill outcomes'
+    }
+  },
   scan: {
     title: 'Scan issues',
     role: 'evidence',

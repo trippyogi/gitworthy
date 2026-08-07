@@ -28,6 +28,7 @@ import {
   store_migrate_ledger,
   store_outcome_record,
   store_outcome_reconcile,
+  store_outcome_backfill,
   store_recheck,
   store_rebuild_indexes,
   store_target_show,
@@ -349,6 +350,12 @@ export function createMcpServer(): McpServer {
     author: z.string().optional()
   }), async (input) =>
     withToolErrors('store_outcome_reconcile', () => store_outcome_reconcile(input ?? {}), stamp('store_outcome_reconcile')));
+  server.registerTool('store_outcome_backfill', toolConfig('store_outcome_backfill', {
+    dry_run: z.boolean().optional(),
+    write: z.boolean().optional(),
+    author: z.string().optional()
+  }), async (input) =>
+    withToolErrors('store_outcome_backfill', () => store_outcome_backfill(input ?? {}), stamp('store_outcome_backfill')));
   server.registerTool('store_recheck', toolConfig('store_recheck', { repo: z.string(), issue_number: z.number(), npm_package: z.string().optional() }), async (input) =>
     withToolErrors('store_recheck', () => store_recheck(input), stamp('store_recheck')));
   server.registerTool('store_export', toolConfig('store_export', { out_dir: z.string(), repo: z.string().optional(), issue_number: z.number().optional() }), async (input) =>

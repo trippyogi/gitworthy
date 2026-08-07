@@ -169,13 +169,17 @@ Reconstruct **clear terminal** outcomes from your own third-party PRs (exclude s
 
 ```sh
 # Inventory + dry-run (default)
-pnpm exec tsx scripts/track-o-backfill-authored-prs.ts --author=@me
+gitworthy outcome backfill [--author=@me] [--json]
 
 # Write into local store
-pnpm exec tsx scripts/track-o-backfill-authored-prs.ts --author=@me --write
+gitworthy outcome backfill [--author=@me] --write [--json]
 ```
 
-Heuristic close reasons for unmerged closes default to `withdrawn` when **`closed_by` matches the author**; otherwise the row is dropped. Override labels with `outcome record --close-reason`. Prefer hand labels for known superseded cases (script includes a small allowlist). Re-runs skip targets that already have any decision (reconstructed or snapshot-backed). Run **reconcile first** for live `pr_opened` debt; use backfill only when there is no snapshot-backed decision.
+MCP: `store_outcome_backfill` (default `dry_run`; set `write: true` to persist).
+
+Heuristic close reasons for unmerged closes default to `withdrawn` when **`closed_by` matches the author**; otherwise the row is dropped. Override labels with `outcome record --close-reason`. Prefer hand labels for known superseded cases (backfill includes a small allowlist). Re-runs skip targets that already have any decision (reconstructed or snapshot-backed). Run **reconcile first** for live `pr_opened` debt; use backfill only when there is no snapshot-backed decision.
+
+Legacy script (same lib): `pnpm exec tsx scripts/track-o-backfill-authored-prs.ts`.
 
 ## Sequencing
 
@@ -183,7 +187,7 @@ Heuristic close reasons for unmerged closes default to `withdrawn` when **`close
 2. Phase 1 covariates at check time — done (`#80`)  
 3. Phase 1.5 outcome reconcile + Track O debt in doctor — this change set  
 4. Beta / Track F remain the 1.0 priority  
-5. Phase 2 personal history backfill — script in repo; run locally (never commit store)  
+5. Phase 2 personal history backfill — `gitworthy outcome backfill` (never commit store)  
 6. Phase 3 stranger harvest only if 1+2 are thin (and only with synthesized T0 + caveats)
 
 ## Final gate (do not report Track O “complete” without)

@@ -26,6 +26,7 @@ export {
   store_outcome_list,
   store_outcome_record,
   store_outcome_reconcile,
+  store_outcome_backfill,
   store_target_show,
   store_export,
   store_recheck
