@@ -220,7 +220,11 @@ export async function store_outcome_backfill(input: {
   try {
     const report = await runTrackOBackfill({
       write,
-      author: input.author
+      author: input.author,
+      // Keep progress off stdout so MCP / --json envelopes stay clean.
+      log: (line) => {
+        process.stderr.write(`${line}\n`);
+      }
     });
     const mode = report.dry_run ? 'dry-run' : 'write';
     return createEnvelope({

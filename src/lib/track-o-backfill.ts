@@ -250,7 +250,9 @@ export async function runTrackOBackfill(input: {
   write?: boolean;
   log?: (line: string) => void;
 } = {}): Promise<TrackOBackfillReport> {
-  const log = input.log ?? ((line: string) => console.log(line));
+  const log = input.log ?? ((line: string) => {
+    process.stderr.write(`${line}\n`);
+  });
   const dryRun = input.write !== true;
   const author = resolveAuthor(input.author ?? '@me');
 
