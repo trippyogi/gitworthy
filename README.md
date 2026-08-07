@@ -128,7 +128,7 @@ npx -y gitworthy@latest mcp --http --host 127.0.0.1 --port 8787
 }
 ```
 
-Non-loopback binds require `GITWORTHY_MCP_TOKEN`. Keep `GITHUB_TOKEN` on the server. Full deploy and Cloud Agent notes: [docs/HTTP_MCP.md](./docs/HTTP_MCP.md). Tool descriptions, annotations, and structured results: [docs/MCP.md](./docs/MCP.md).
+Non-loopback binds require `GITWORTHY_MCP_TOKEN`. Keep `GITHUB_TOKEN` on the server. Full deploy and Cloud Agent notes: [docs/HTTP_MCP.md](./docs/HTTP_MCP.md). Tool descriptions, annotations, and structured results: [docs/MCP.md](./docs/MCP.md). Portable **Agent Plugins** packaging (skill + MCP): [docs/AGENT_PLUGINS.md](./docs/AGENT_PLUGINS.md).
 
 Give the agent a policy like this:
 
@@ -309,6 +309,7 @@ See [SKILL.md](./SKILL.md) for the strict contribution gates and [docs/AGENT_WOR
 | [docs/VERDICTS.md](./docs/VERDICTS.md) | ACT / VERIFY / SKIP and dispositions |
 | [docs/CLI.md](./docs/CLI.md) | CLI reference and exit codes |
 | [docs/MCP.md](./docs/MCP.md) | MCP tools, annotations, structured results |
+| [docs/AGENT_PLUGINS.md](./docs/AGENT_PLUGINS.md) | Agent Plugins v1 packaging (skill + MCP) |
 | [docs/HTTP_MCP.md](./docs/HTTP_MCP.md) | Streamable HTTP MCP |
 | [docs/CONFIG.md](./docs/CONFIG.md) | Config, manifests, profiles |
 | [docs/DATA.md](./docs/DATA.md) | Local store, outcomes, captures |

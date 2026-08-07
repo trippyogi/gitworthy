@@ -36,9 +36,34 @@ if (requireCleanTree) {
   }
 }
 
-const requiredFiles = ['dist/cli/index.js', 'dist/mcp/server.js', 'README.md', 'LICENSE', 'SKILL.md'];
+const requiredFiles = [
+  'dist/cli/index.js',
+  'dist/mcp/server.js',
+  'README.md',
+  'LICENSE',
+  'SKILL.md',
+  'plugin.json',
+  'mcp.json',
+  'skills/gitworthy/SKILL.md',
+  'docs/AGENT_PLUGINS.md'
+];
 for (const file of requiredFiles) {
   if (!existsSync(join(root, file))) failures.push(`missing required path ${file}`);
+}
+
+const pluginJson = readJson<{ version: string; name: string; $schema: string }>(join(root, 'plugin.json'));
+if (pluginJson.version !== packageJson.version) {
+  failures.push(`plugin.json version ${pluginJson.version} != package.json ${packageJson.version}`);
+}
+if (pluginJson.name !== 'gitworthy') {
+  failures.push(`plugin.json name must be gitworthy`);
+}
+
+try {
+  execFileSync('pnpm', ['agent-plugins:check'], { cwd: root, stdio: 'pipe', encoding: 'utf8' });
+} catch (error) {
+  const err = error as { stdout?: string; stderr?: string };
+  failures.push(`agent-plugins-check failed:\n${err.stderr ?? err.stdout ?? String(error)}`);
 }
 
 if (!existsSync(join(root, 'dist'))) {

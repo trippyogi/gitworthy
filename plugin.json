@@ -1,0 +1,21 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "gitworthy",
+  "version": "0.4.1",
+  "description": "Pre-flight decision layer for software contribution targets (ACT / VERIFY / SKIP).",
+  "author": {
+    "name": "Jeremy McKeehen",
+    "url": "https://github.com/trippyogi"
+  },
+  "homepage": "https://github.com/trippyogi/gitworthy#readme",
+  "repository": "https://github.com/trippyogi/gitworthy",
+  "license": "MIT",
+  "keywords": [
+    "github",
+    "mcp",
+    "oss",
+    "contribution",
+    "triage",
+    "agent-skills"
+  ]
+}
