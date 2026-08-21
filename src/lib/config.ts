@@ -15,11 +15,17 @@ import {
   type TargetOrgEntry,
   type TargetRepoEntry
 } from '../contracts/index.js';
+import type { ContributionProfile } from '../contracts/contribution-profile.js';
+import { parseContributionProfile } from '../core/contribution-profile.js';
 import { writeJsonAtomic } from './store-fs.js';
 
 export type ConfigLayer = 'defaults' | 'user' | 'repo' | 'env' | 'input' | 'manifest';
 export type ConfigSource = { layer: ConfigLayer; path?: string; detail?: string };
-export type EffectiveConfigValues = ConfigDefaults & { skill_profile?: SkillProfileV1 | string; target_manifest?: TargetManifest };
+export type EffectiveConfigValues = ConfigDefaults & {
+  skill_profile?: SkillProfileV1 | string;
+  target_manifest?: TargetManifest;
+  contribution_profile?: ContributionProfile;
+};
 export type EffectiveConfig = {
   schema_version: typeof CONFIG_SCHEMA_VERSION;
   values: EffectiveConfigValues;
@@ -207,7 +213,15 @@ function envConfig(env: Env): Partial<EffectiveConfigValues> {
 }
 
 function configLayerValues(config: ConfigFile): Partial<EffectiveConfigValues> {
-  return { ...config.defaults, skill_profile: config.profile, target_manifest: config.manifest, manifest_path: config.manifest_path ?? config.defaults?.manifest_path };
+  return {
+    ...config.defaults,
+    skill_profile: config.profile,
+    target_manifest: config.manifest,
+    contribution_profile: config.contribution_profile
+      ? parseContributionProfile(config.contribution_profile)
+      : undefined,
+    manifest_path: config.manifest_path ?? config.defaults?.manifest_path
+  };
 }
 
 function firstRepo(manifest: TargetManifest): string | undefined {
