@@ -92,6 +92,24 @@ describe('loadEffectiveConfig', () => {
     expect(effective.provenance.max_checks.layer).toBe('defaults');
   });
 
+  it('loads an optional contribution_profile without requiring Hermes domains', async () => {
+    const dir = await tempDir('gitworthy-config-contrib-profile-');
+    const repoPath = path.join(dir, 'repo.json');
+    await writeJson(repoPath, {
+      schema_version: '1.0-draft.1',
+      contribution_profile: {
+        stale_pr_days: 21,
+        platforms: ['windows'],
+        mode_weights: { REVIEW: 1.2 }
+      }
+    });
+    const effective = await loadEffectiveConfig({ repoPath, env: {} });
+    expect(effective.values.contribution_profile?.stale_pr_days).toBe(21);
+    expect(effective.values.contribution_profile?.platforms).toEqual(['windows']);
+    expect(effective.values.contribution_profile?.mode_weights.REVIEW).toBe(1.2);
+    expect(effective.values.contribution_profile?.domains).toEqual([]);
+  });
+
   it('lets target manifest overrides beat built-in defaults', async () => {
     const dir = await tempDir('gitworthy-config-manifest-override-');
     const manifestPath = path.join(dir, 'targets.json');

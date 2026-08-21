@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { SCHEMA_VERSION } from './common.js';
 import { OrgOrUserLoginSchema, RepoRefSchema } from './inputs.js';
+import { ContributionProfileSchema } from './contribution-profile.js';
 
 export const CONFIG_SCHEMA_VERSION = SCHEMA_VERSION;
 
@@ -114,6 +115,7 @@ export const ConfigFileSchema = z.object({
   schema_version: z.literal(CONFIG_SCHEMA_VERSION),
   defaults: ConfigDefaultsSchema.optional(),
   profile: SkillProfileV1Schema.optional(),
+  contribution_profile: ContributionProfileSchema.optional(),
   manifest: TargetManifestSchema.optional(),
   manifest_path: NonEmptyStringSchema.optional()
 }).strict();
