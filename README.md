@@ -69,6 +69,10 @@ Contribution goal, repository, or organization
           queue it   inspect   drop it
              │
              ▼
+     optional `portfolio`
+     (mode + dispatch, not a new verdict)
+             │
+             ▼
        Ranked candidate shortlist
              │
              ▼
@@ -278,6 +282,8 @@ Every core result includes a structured envelope:
 ```sh
 gitworthy check owner/repo#123 [--npm-package name] [--json]
 gitworthy hunt owner/repo [--manifest path] [--max-checks 3] [--json]
+gitworthy portfolio owner/repo [--max-items 10] [--json]
+gitworthy prs owner/repo [--json]
 gitworthy scan owner/repo [--label "help wanted"] [--json]
 gitworthy org owner [--manifest path] [--max-repos 8] [--json]
 gitworthy policy owner/repo [--json]

@@ -18,6 +18,10 @@ import { EvalCaseSchema, EvalCaseCatalogSchema, EvalQualityReportSchema, EvalSui
 import { ProviderFixturePackSchema } from '../src/contracts/provider-fixtures.js';
 import { ContentionReportSchema } from '../src/contracts/contention.js';
 import { RoutingDecisionSchema } from '../src/contracts/routing.js';
+import { PortfolioItemSchema } from '../src/contracts/portfolio.js';
+import { PrScanResultSchema } from '../src/contracts/pr-scan.js';
+import { OpportunityTargetSchema } from '../src/contracts/opportunities.js';
+import { ContributionProfileSchema } from '../src/contracts/contribution-profile.js';
 import {
   TrackOCovariatesRecordSchema,
   TrackOContingencyTableSchema,
@@ -53,6 +57,10 @@ const docs: Array<{ file: string; schema: z.ZodType }> = [
   { file: 'gitworthy-provider-fixture-pack.v1.schema.json', schema: ProviderFixturePackSchema },
   { file: 'gitworthy-contention-report.v1.schema.json', schema: ContentionReportSchema },
   { file: 'gitworthy-routing-decision.v1.schema.json', schema: RoutingDecisionSchema },
+  { file: 'gitworthy-opportunity-target.v1.schema.json', schema: OpportunityTargetSchema },
+  { file: 'gitworthy-pr-scan.v1.schema.json', schema: PrScanResultSchema },
+  { file: 'gitworthy-portfolio-item.v1.schema.json', schema: PortfolioItemSchema },
+  { file: 'gitworthy-contribution-profile.v1.schema.json', schema: ContributionProfileSchema },
   { file: 'gitworthy-track-o-join-key.v1.schema.json', schema: TrackOJoinKeySchema },
   { file: 'gitworthy-track-o-covariates.v1.schema.json', schema: TrackOCovariatesRecordSchema },
   { file: 'gitworthy-track-o-contingency.v1.schema.json', schema: TrackOContingencyTableSchema }

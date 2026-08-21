@@ -49,3 +49,11 @@ Calibration cases that shaped gitworthy v0.3.3. Each entry separates what the to
 **Outcome.** v0.3.3 emits `released_fix` only when versions match, a probe was requested, and `probe.matched === true`. `--npm-package` alone reports release state; use `--probe-glob` + `--probe-contains` for issue-specific artifact evidence.
 
 **Product lesson.** Package state is not issue state.
+
+## Case 5 — Hunt vs portfolio (contribution routing)
+
+**Situation.** An issue can be ACT/greenfield while an open closer exists on a sibling, or a stale PR is the better next action than a new implementation.
+
+**Gitworthy result.** `worth_check` keeps ACT/VERIFY/SKIP. `portfolio` adds `primary_mode` and `dispatch_state` so WIP or a closer can queue/block BUILD without rewriting the verdict.
+
+**Product lesson.** Verdict is evidence about proceeding; contribution mode is the form of work; dispatch is local capacity.

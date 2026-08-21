@@ -61,6 +61,18 @@ Origin lesson: an issue can be correctly scored worth working on while multiple 
 
 Milestone: **Contention — In-flight dig-quality**.
 
+## Contribution routing (after contention)
+
+Extends the 1.0 question from *should I invest in this issue now?* to *where can the next unit of effort create the most value?* Verdicts stay ACT/VERIFY/SKIP.
+
+| ID | Slice | Outcome |
+|---|---|---|
+| `GW-043`–`046` | Core | Routing decision, issue routing, contribution profile, PR scan |
+| `GW-047` | Portfolio | CLI `portfolio` / `prs`, MCP `portfolio` / `pr_scan` |
+| `GW-048`–`050` | Later | Local watch, routing eval, CI/history/eval-anomaly ingest |
+
+**Invariants:** routing never mutates verdict; BUILD is not `safe_to_publish`; no Hermes-specific defaults in global config.
+
 ## Post-1.0 (not started)
 
 Likely layers after the local engine is proven:

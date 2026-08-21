@@ -14,6 +14,8 @@ import {
   generateBrief,
   hunt,
   resumeHunt,
+  portfolio,
+  pr_scan,
   issue_vs_main,
   ledger_list,
   ledger_lookup,
@@ -68,6 +70,8 @@ import {
   parseArg,
   parseIssueRef,
   parseToolInput,
+  PortfolioInputSchema,
+  PrScanInputSchema,
   toCheckResult,
   toErrorResult,
   toStampedLegacyResult
@@ -95,6 +99,8 @@ Usage:
   gitworthy profile show [--path path] [--json]
   gitworthy check owner/repo#123 [--npm-package name] [--probe-glob glob] [--probe-contains text] [--probe-template id] [--capture] [--capture-local-private] [--json]
   gitworthy hunt owner/repo|org [--manifest path] [--max-checks 3] [--label ...] [--keywords ...] [--since 90d] [--limit 25] [--max-repos 8] [--max-pages 1] [--skill-profile ...] [--explain-ranking] [--skip-policy-gate] [--no-land-hints] [--capture] [--capture-local-private] [--json]
+  gitworthy portfolio owner/repo|org [--org] [--max-checks 3] [--max-items 10] [--include-watch] [--no-prs] [--label ...] [--keywords ...] [--json]
+  gitworthy prs owner/repo [--include-bots] [--include-merged] [--json]
   gitworthy branches owner/repo keyword[,keyword] [--json] [--force-refresh]
   gitworthy issue owner/repo 123 [--json]
   gitworthy release owner/repo package-name [--probe-glob glob] [--probe-contains text] [--probe-template id] [--json]
@@ -278,6 +284,11 @@ const CLI_OPTIONS = {
   'max-repos': { type: 'string' },
   'max-pages': { type: 'string' },
   'max-checks': { type: 'string' },
+  'max-items': { type: 'string' },
+  'include-watch': { type: 'boolean' },
+  'no-prs': { type: 'boolean' },
+  'include-bots': { type: 'boolean' },
+  'include-merged': { type: 'boolean' },
   'explain-ranking': { type: 'boolean' },
   'no-land-hints': { type: 'boolean' },
   capture: { type: 'boolean' },
@@ -611,6 +622,58 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
       commandName = 'contrib_policy';
       const repo = repoArg(first, 'policy requires owner/repo.');
       output = toStampedLegacyResult('contrib_policy', await contrib_policy({ repo, force_refresh: parsed.values['force-refresh'] === true }) as Record<string, unknown>);
+    } else if (command === 'portfolio') {
+      commandName = 'portfolio';
+      const target = first;
+      if (!target) usageError('portfolio requires owner/repo or an org/user login.');
+      if (parsed.values.org === true && target.includes('/')) {
+        usageError('portfolio --org expects an org or user login, not owner/repo. Omit --org for a single repo.');
+      }
+      const asOrg = parsed.values.org === true || !target.includes('/');
+      const maxChecksRaw = stringValue(parsed.values['max-checks']);
+      const maxChecks = maxChecksRaw ? Number(maxChecksRaw) : undefined;
+      if (maxChecksRaw && (!Number.isFinite(maxChecks) || (maxChecks as number) < 1)) {
+        usageError('--max-checks must be a positive number.');
+      }
+      const maxItemsRaw = stringValue(parsed.values['max-items']);
+      const maxItems = maxItemsRaw ? Number(maxItemsRaw) : undefined;
+      if (maxItemsRaw && (!Number.isFinite(maxItems) || (maxItems as number) < 1)) {
+        usageError('--max-items must be a positive number.');
+      }
+      const filters = scanFilters(parsed.values);
+      const rawInput = compact({
+        ...(asOrg
+          ? { org: orgArg(target, 'portfolio requires owner/repo or an org/user login.') }
+          : { repo: repoArg(target, 'portfolio requires owner/repo or an org/user login.') }),
+        label: filters.label,
+        keywords: filters.keywords,
+        since: filters.since,
+        scan_limit: filters.limit,
+        max_repos: stringValue(parsed.values['max-repos']) ? Number(stringValue(parsed.values['max-repos'])) : undefined,
+        max_checks: maxChecks,
+        max_items: maxItems,
+        include_watch: parsed.values['include-watch'] === true ? true : undefined,
+        include_prs: parsed.values['no-prs'] === true ? false : undefined,
+        skill_profile: filters.skill_profile
+      });
+      const portfolioInput = parseToolInput(PortfolioInputSchema, rawInput);
+      const effective = await loadEffectiveConfig({
+        input: { repo: portfolioInput.repo, org: portfolioInput.org }
+      });
+      output = toStampedLegacyResult('portfolio', await portfolio({
+        ...portfolioInput,
+        skill_profile: typeof portfolioInput.skill_profile === 'string' ? portfolioInput.skill_profile : undefined,
+        contribution_profile: effective.values.contribution_profile
+      }) as Record<string, unknown>);
+    } else if (command === 'prs') {
+      commandName = 'pr_scan';
+      const repo = repoArg(first, 'prs requires owner/repo.');
+      const prInput = parseToolInput(PrScanInputSchema, compact({
+        repo,
+        include_bots: parsed.values['include-bots'] === true ? true : undefined,
+        include_merged: parsed.values['include-merged'] === true ? true : undefined
+      }));
+      output = toStampedLegacyResult('pr_scan', await pr_scan(prInput) as Record<string, unknown>);
     } else if (command === 'hunt') {
       commandName = 'hunt';
       const huntTarget = first;

@@ -20,6 +20,8 @@ Exit codes: `0` ACT/success · `10` VERIFY · `20` SKIP · `2` invalid input · 
 gitworthy doctor [--full] [--json]
 gitworthy check owner/repo#123 [--npm-package name] [--json]
 gitworthy hunt owner/repo|org [--max-checks 3] [--manifest path] [--json]
+gitworthy portfolio owner/repo|org [--org] [--max-checks 3] [--max-items 10] [--json]
+gitworthy prs owner/repo [--json]
 gitworthy brief <decision_id> [--format human|json|markdown]
 gitworthy outcome record owner/repo#123 --event selected [--decision-id id] [--close-reason superseded|stale|withdrawn] [--acted-against-skip] [--pr-url url] [--json]
 gitworthy outcome reconcile [--repo owner/repo] [--issue 123] [--author @me] [--write] [--json]
@@ -35,7 +37,7 @@ Single-issue preflight. Optional `--probe-glob` / `--probe-contains` / `--probe-
 
 ### Hunt
 
-Bounded discovery + serial preflights. Resume:
+Bounded **issue** discovery + serial preflights. Hunt is scouting, not contribution routing. Resume:
 
 ```sh
 gitworthy run list [--repo owner/repo] [--json]
@@ -44,10 +46,26 @@ gitworthy run resume <run_id> [--json]
 
 Cancel with Ctrl+C; hunt persists partial progress when possible.
 
+### Portfolio
+
+Rank issues and PRs by contribution mode. No global ACT/VERIFY/SKIP. `dispatch_state` is capacity, not a rewrite of `primary_mode`.
+
+```sh
+gitworthy portfolio owner/repo [--max-checks 3] [--max-items 10] [--json]
+gitworthy portfolio org-name --org [--json]
+```
+
+### PR scan
+
+```sh
+gitworthy prs owner/repo [--include-bots] [--include-merged] [--json]
+```
+
 ## Evidence / store commands
 
 ```sh
 gitworthy scan owner/repo [--label …] [--keywords …] [--json]
+gitworthy prs owner/repo [--json]
 gitworthy branches owner/repo keyword[,keyword] [--json]
 gitworthy linked owner/repo 123 [--json]
 gitworthy contention owner/repo 123 [--json]

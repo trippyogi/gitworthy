@@ -1,0 +1,545 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "pr_scan_version": {
+      "type": "number",
+      "const": 1
+    },
+    "repo": {
+      "type": "string",
+      "minLength": 1
+    },
+    "inventory_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "filtered_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "enriched_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "budget_truncated": {
+      "default": false,
+      "type": "boolean"
+    },
+    "opportunities": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "issue"
+                  },
+                  "repo": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 140,
+                    "pattern": "^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?\\/[A-Za-z0-9._](?:[A-Za-z0-9._-]*[A-Za-z0-9])?$"
+                  },
+                  "issue_number": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "kind",
+                  "repo",
+                  "issue_number"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "pull_request"
+                  },
+                  "repo": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 140,
+                    "pattern": "^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?\\/[A-Za-z0-9._](?:[A-Za-z0-9._-]*[A-Za-z0-9])?$"
+                  },
+                  "pr_number": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "linked_issue_number": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "kind",
+                  "repo",
+                  "pr_number"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "eval_anomaly"
+                  },
+                  "repo": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 140,
+                    "pattern": "^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?\\/[A-Za-z0-9._](?:[A-Za-z0-9._-]*[A-Za-z0-9])?$"
+                  },
+                  "external_id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "source": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "kind",
+                  "external_id",
+                  "source"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "inventory": {
+            "type": "object",
+            "properties": {
+              "target": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "issue"
+                      },
+                      "repo": {
+                        "type": "string",
+                        "minLength": 3,
+                        "maxLength": 140,
+                        "pattern": "^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?\\/[A-Za-z0-9._](?:[A-Za-z0-9._-]*[A-Za-z0-9])?$"
+                      },
+                      "issue_number": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "repo",
+                      "issue_number"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "pull_request"
+                      },
+                      "repo": {
+                        "type": "string",
+                        "minLength": 3,
+                        "maxLength": 140,
+                        "pattern": "^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?\\/[A-Za-z0-9._](?:[A-Za-z0-9._-]*[A-Za-z0-9])?$"
+                      },
+                      "pr_number": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "linked_issue_number": {
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "repo",
+                      "pr_number"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "eval_anomaly"
+                      },
+                      "repo": {
+                        "type": "string",
+                        "minLength": 3,
+                        "maxLength": 140,
+                        "pattern": "^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?\\/[A-Za-z0-9._](?:[A-Za-z0-9._-]*[A-Za-z0-9])?$"
+                      },
+                      "external_id": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "source": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "external_id",
+                      "source"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "repo": {
+                "type": "string",
+                "minLength": 1
+              },
+              "number": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "title": {
+                "type": "string"
+              },
+              "author": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "draft": {
+                "type": "boolean"
+              },
+              "state": {
+                "type": "string",
+                "enum": [
+                  "open",
+                  "closed"
+                ]
+              },
+              "merged": {
+                "type": "boolean"
+              },
+              "created_at": {
+                "type": "string"
+              },
+              "updated_at": {
+                "type": "string"
+              },
+              "linked_issue_number": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "changed_files": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "review_state": {
+                "type": "string"
+              },
+              "ci_state": {
+                "type": "string"
+              },
+              "cheap_rank": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "filtered_reason": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "target",
+              "repo",
+              "number",
+              "title",
+              "author",
+              "draft",
+              "state",
+              "merged",
+              "created_at",
+              "updated_at",
+              "cheap_rank"
+            ],
+            "additionalProperties": false
+          },
+          "enriched": {
+            "type": "boolean"
+          },
+          "enrichment": {
+            "type": "object",
+            "properties": {
+              "linked_issue_number": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "issue_open": {
+                "type": "boolean"
+              },
+              "closes_issue": {
+                "default": false,
+                "type": "boolean"
+              },
+              "review_states": {
+                "default": [],
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "maintainer_reviewed": {
+                "default": false,
+                "type": "boolean"
+              },
+              "maintainer_positive_review": {
+                "default": false,
+                "type": "boolean"
+              },
+              "requested_changes": {
+                "default": false,
+                "type": "boolean"
+              },
+              "approved": {
+                "default": false,
+                "type": "boolean"
+              },
+              "ci_state": {
+                "default": "unknown",
+                "type": "string",
+                "enum": [
+                  "success",
+                  "failure",
+                  "pending",
+                  "unknown"
+                ]
+              },
+              "additions": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "deletions": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "changed_files": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "touched_paths": {
+                "default": [],
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "has_tests": {
+                "default": false,
+                "type": "boolean"
+              },
+              "competing_closers": {
+                "default": 0,
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "contention_gaps": {
+                "default": [],
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "stale": {
+                "default": false,
+                "type": "boolean"
+              },
+              "stale_days": {
+                "type": "number",
+                "minimum": 0
+              },
+              "maintainer_interest": {
+                "default": false,
+                "type": "boolean"
+              },
+              "substantive": {
+                "default": false,
+                "type": "boolean"
+              },
+              "credible_work": {
+                "default": false,
+                "type": "boolean"
+              },
+              "healthy_active": {
+                "default": false,
+                "type": "boolean"
+              },
+              "looks_like_bug": {
+                "default": false,
+                "type": "boolean"
+              },
+              "cross_platform": {
+                "default": false,
+                "type": "boolean"
+              },
+              "enormous_refactor": {
+                "default": false,
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "closes_issue",
+              "review_states",
+              "maintainer_reviewed",
+              "maintainer_positive_review",
+              "requested_changes",
+              "approved",
+              "ci_state",
+              "touched_paths",
+              "has_tests",
+              "competing_closers",
+              "contention_gaps",
+              "stale",
+              "maintainer_interest",
+              "substantive",
+              "credible_work",
+              "healthy_active",
+              "looks_like_bug",
+              "cross_platform",
+              "enormous_refactor"
+            ],
+            "additionalProperties": false
+          },
+          "hint_mode": {
+            "type": "string",
+            "enum": [
+              "REVIEW",
+              "WATCH",
+              "SALVAGE",
+              "PASS"
+            ]
+          },
+          "hint_reasons": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "hard_constraints": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "salvage_facts": {
+            "type": "object",
+            "properties": {
+              "substantive_prior_attempt": {
+                "type": "boolean"
+              },
+              "stale_open_pr": {
+                "type": "boolean"
+              },
+              "maintainer_interest": {
+                "type": "boolean"
+              },
+              "credible_work_remains": {
+                "type": "boolean"
+              },
+              "healthy_active_closer": {
+                "type": "boolean"
+              },
+              "issue_open": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "substantive_prior_attempt",
+              "stale_open_pr",
+              "maintainer_interest",
+              "credible_work_remains",
+              "healthy_active_closer"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "target",
+          "inventory",
+          "enriched",
+          "hint_mode",
+          "hint_reasons",
+          "hard_constraints"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "checked": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "not_checked": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "pr_scan_version",
+    "repo",
+    "inventory_count",
+    "filtered_count",
+    "enriched_count",
+    "budget_truncated",
+    "opportunities",
+    "checked",
+    "not_checked"
+  ],
+  "additionalProperties": false
+}

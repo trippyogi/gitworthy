@@ -36,8 +36,11 @@ Gitworthy separates scouting from execution because these have different cost an
 
 ### Scout lane
 
+Hunt scouts issues. Portfolio ranks contribution modes (issues + PRs) without replacing hunt or mutating verdicts.
+
 ```text
 discover → filter → rank → preflight → shortlist
+optional: portfolio (mode + dispatch_state)
 ```
 
 The scout lane searches broadly but checks narrowly. Its output is a queue of candidates, not finished work and not permission to open pull requests.

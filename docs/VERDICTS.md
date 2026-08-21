@@ -21,6 +21,7 @@ Invalid invocation exits `2`. Operational failure exits `1`.
 3. **Failed mandatory checks cap at `VERIFY`** — never invent `SKIP` from a provider outage.
 4. Every result includes meaningful **`checked`** and **`not_checked`**.
 5. **`ACT` is a queue entry, not permission to ship.** Always re-run `worth_check` / `store_recheck` immediately before implementation.
+6. **Contribution routing does not mutate verdicts.** `primary_mode` is the best form of contribution; `dispatch_state` is whether local capacity allows starting now. Portfolio has no global ACT/VERIFY/SKIP.
 
 ## Dispositions
 
@@ -43,6 +44,15 @@ Findings carry `strength` and `effect`:
 ## Hunt has no global verdict
 
 `hunt` is a triage orchestrator. Inspect each candidate’s nested `worth_check.verdict` / `disposition`. Partial hunts (`status: partial`, `partial_reason`, resume via `resume_run_id`) preserve completed candidates.
+
+## Portfolio vs hunt
+
+| Surface | Question | Output |
+|---|---|---|
+| **Hunt** | Which issues look worth a worth_check? | Nested ACT/VERIFY/SKIP per candidate |
+| **Portfolio** | Where can the next unit of effort create the most value? | Ranked `primary_mode` + `dispatch_state` |
+
+Vocabulary: **Verdict** = evidence about proceeding. **Disposition** = constraint/path. **Contribution mode** = best form of contribution. **Portfolio score** = relative priority. **Dispatch state** = whether local capacity permits starting now. `BUILD` ≠ `safe_to_publish`.
 
 ## Next actions
 

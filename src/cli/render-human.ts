@@ -16,6 +16,8 @@ type HumanResult = {
   metrics?: Record<string, unknown>;
   signals?: string[];
   capabilities?: Array<{ id?: string; status?: string; summary?: string; remediation?: string }>;
+  items?: Array<Record<string, unknown>>;
+  capacity?: { used?: Record<string, number>; limits?: Record<string, number>; confidence?: string };
 };
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -87,9 +89,51 @@ function metricsLines(metrics: Record<string, unknown> | undefined, verbose: boo
   return ['Counters', `  ${parts.join(' · ')}`, ''];
 }
 
+function portfolioLines(result: HumanResult): string[] | undefined {
+  if (result.command !== 'portfolio' && result.command !== 'pr_scan') return undefined;
+  const items = Array.isArray(result.items)
+    ? result.items
+    : Array.isArray((result as { opportunities?: Array<Record<string, unknown>> }).opportunities)
+      ? (result as { opportunities: Array<Record<string, unknown>> }).opportunities
+      : [];
+  const lines = [
+    result.command === 'portfolio' ? 'portfolio' : 'pr_scan',
+    typeof result.verdict_summary === 'string' ? result.verdict_summary : (typeof result.summary === 'string' ? result.summary : ''),
+    '',
+    'Opportunities'
+  ];
+  if (items.length === 0) lines.push('  none');
+  for (const item of items.slice(0, 12)) {
+    const target = asRecord(item.target);
+    const label = target.kind === 'pull_request'
+      ? `${String(target.repo ?? '')}#pr${String(target.pr_number ?? '')}`
+      : `${String(target.repo ?? '')}#${String(target.issue_number ?? '')}`;
+    const mode = typeof item.primary_mode === 'string' ? item.primary_mode : typeof item.hint_mode === 'string' ? item.hint_mode : '?';
+    const dispatch = typeof item.dispatch_state === 'string' ? item.dispatch_state : 'n/a';
+    const score = typeof item.score === 'number' ? item.score.toFixed(2) : '?';
+    const verdict = typeof item.verdict === 'string' ? ` verdict=${item.verdict}` : '';
+    lines.push(`  ${mode} · ${dispatch} · ${score} · ${label}${verdict}`);
+  }
+  lines.push('');
+  if (result.capacity) {
+    const used = Object.entries(result.capacity.used ?? {}).map(([mode, count]) => `${mode}=${count}`).join(', ') || 'none';
+    const limits = Object.entries(result.capacity.limits ?? {}).map(([mode, count]) => `${mode}=${count}`).join(', ') || 'none';
+    lines.push('Capacity', `  used ${used}`, `  limits ${limits}`, `  confidence ${result.capacity.confidence ?? 'unknown'}`, '');
+  }
+  if (Array.isArray(result.not_checked) && result.not_checked.length > 0) {
+    lines.push(...bulletSection('Not checked', result.not_checked.slice(0, 8).map((item) => `  ${item}`)));
+  }
+  return lines;
+}
+
 /** Render primary command results for humans. Falls back to one-line summary for unknown shapes. */
 export function renderHuman(output: unknown, options: { verbose?: boolean } = {}): string {
   const result = asRecord(output) as HumanResult;
+  const portfolio = portfolioLines(result);
+  if (portfolio) {
+    while (portfolio.length > 0 && portfolio[portfolio.length - 1] === '') portfolio.pop();
+    return `${portfolio.join('\n')}\n`;
+  }
   const verdict = typeof result.verdict === 'string' ? result.verdict : undefined;
   const disposition = typeof result.disposition === 'string' ? result.disposition : undefined;
   const summary = typeof result.verdict_summary === 'string'

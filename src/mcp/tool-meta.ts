@@ -66,8 +66,15 @@ export const TOOL_META = {
     title: 'Hunt',
     role: 'primary',
     description:
-      'Discover and preflight contribution targets in a repo or org. Bounded max_checks (default ~3); resumes via resume_run_id. Prefer over raw scan when you need verdicts. Cost scales with max_repos × pages × checks. Persists local run progress; optional capture is local-only — never mutates GitHub.',
+      'Discover and preflight issue candidates in a repo or org. Bounded max_checks (default ~3); resumes via resume_run_id. Prefer over raw scan when you need ACT/VERIFY/SKIP verdicts. Use portfolio for contribution-mode ranking across issues and PRs. Cost scales with max_repos × pages × checks. Persists local run progress; optional capture is local-only — never mutates GitHub.',
     annotations: { readOnlyHint: false, idempotentHint: false, openWorldHint: true, title: 'Hunt' }
+  },
+  portfolio: {
+    title: 'Portfolio',
+    role: 'primary',
+    description:
+      'Rank contribution opportunities (issues + PRs) by mode: BUILD/REVIEW/SALVAGE/REPRODUCE/EVAL/DOC/WATCH/PASS. Dispatch state is separate from primary_mode and from ACT/VERIFY/SKIP. Hunt remains issue scouting; portfolio is the broader routing surface. Never mutates GitHub. Capacity comes from local outcomes. WIP full queues BUILD without rewriting the mode.',
+    annotations: { readOnlyHint: false, idempotentHint: false, openWorldHint: true, title: 'Portfolio' }
   },
   brief: {
     title: 'Brief',
@@ -122,6 +129,13 @@ export const TOOL_META = {
     description:
       'Evidence/debug: list ranked open issues for one repo without full worth_check preflights. Prefer hunt for verdicts. Bounded by limit and max_pages.',
     annotations: { ...readGithub, title: 'Scan issues' }
+  },
+  pr_scan: {
+    title: 'PR scan',
+    role: 'evidence',
+    description:
+      'Bounded two-stage pull-request inventory (max 25) with enrichment of the top 5. Filters bots and merged PRs. Used by portfolio for REVIEW/WATCH/SALVAGE. Read-only GitHub; no automatic review comments.',
+    annotations: { ...readGithub, title: 'PR scan' }
   },
   org_scan: {
     title: 'Org scan',

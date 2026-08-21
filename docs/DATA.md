@@ -10,7 +10,7 @@ Nothing here is uploaded. Captures marked local-only must stay on the machine th
 |---|---|
 | `runs/` | Durable hunt/check run records |
 | `decisions/` | Versioned verdict decisions (**Track O T0 verdict-inputs snapshot**) |
-| `outcomes/` | Local outcome events (`selected`, `pr_opened`, `merged`, `closed_unmerged`, …) |
+| `outcomes/` | Local outcome events (`selected`, `pr_opened`, `merged`, `closed_unmerged`, …). Portfolio capacity treats unresolved selected/patch_started/pr_opened as active WIP. |
 | `track-o/covariates/` | Optional Track O analysis covariates (never read by the verdict path) |
 | `indexes/targets/` | Per-target indexes (rebuildable) |
 | `migrations/` | Migration markers |

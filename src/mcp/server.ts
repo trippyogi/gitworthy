@@ -11,6 +11,8 @@ import {
   dupe_cluster,
   generateBrief,
   hunt,
+  portfolio,
+  pr_scan,
   issue_vs_main,
   ledger_list,
   ledger_lookup,
@@ -57,6 +59,8 @@ import {
   DoctorInputSchema,
   DupeClusterInputSchema,
   HuntInputSchema,
+  PortfolioInputSchema,
+  PrScanInputSchema,
   IssueVsMainInputSchema,
   LedgerListInputSchema,
   LedgerLookupInputSchema,
@@ -370,6 +374,42 @@ export function createMcpServer(): McpServer {
     withToolErrors('brief', () => generateBrief(parseToolInput(BriefShowInputSchema, input))));
   server.registerTool('brief', toolConfig('brief', { decision_id: z.string(), config_path: z.string().optional(), cwd: z.string().optional() }), async (input) =>
     withToolErrors('brief', () => generateBrief(parseToolInput(BriefShowInputSchema, input))));
+  server.registerTool('portfolio', toolConfig('portfolio', {
+    repo: z.string().optional(),
+    org: z.string().optional(),
+    label: z.string().optional(),
+    keywords: z.array(z.string()).optional(),
+    since: z.string().optional(),
+    scan_limit: z.number().optional(),
+    max_repos: z.number().optional(),
+    max_checks: z.number().optional(),
+    max_items: z.number().optional(),
+    include_watch: z.boolean().optional(),
+    include_prs: z.boolean().optional(),
+    skill_profile: skillProfileSchema
+  }), async (input) => withToolErrors('portfolio', async () => {
+    const parsed = parseToolInput(PortfolioInputSchema, input);
+    const effective = await loadEffectiveConfig({
+      input: { repo: parsed.repo, org: parsed.org }
+    });
+    return stamp('portfolio')(await portfolio({
+      ...parsed,
+      skill_profile: typeof parsed.skill_profile === 'string' ? parsed.skill_profile : undefined,
+      contribution_profile: effective.values.contribution_profile
+    }));
+  }));
+  server.registerTool('pr_scan', toolConfig('pr_scan', {
+    repo: z.string(),
+    include_bots: z.boolean().optional(),
+    include_merged: z.boolean().optional(),
+    include_drafts: z.boolean().optional(),
+    include_generated: z.boolean().optional(),
+    stale_pr_days: z.number().optional(),
+    inventory_limit: z.number().optional(),
+    enrich_limit: z.number().optional()
+  }), async (input) => withToolErrors('pr_scan', async () => {
+    return stamp('pr_scan')(await pr_scan(parseToolInput(PrScanInputSchema, input)));
+  }));
   return server;
 }
 
