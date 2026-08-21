@@ -146,7 +146,9 @@ function applySafetyGate(
   findings: Array<{ type?: string; strength?: string }> = []
 ): PortfolioItem {
   const routing = item.routing;
-  const mandatoryFailed = (routing?.coverage.failed_checks.length ?? 0) > 0;
+  const mandatoryFailed = (routing?.coverage.failed_checks ?? []).some((check) => (
+    check === 'linked_work' || check === 'contrib_policy' || check === 'issue_vs_main'
+  ));
   const unsafe = findingsUnsafeForBuild(findings)
     || item.disposition === 'land_only'
     || item.disposition === 'blocked'

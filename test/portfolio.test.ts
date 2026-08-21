@@ -89,6 +89,53 @@ describe('portfolio capacity and dispatch', () => {
     expect(result).not.toHaveProperty('verdict');
   });
 
+  it('does not demote BUILD for advisory failed_checks', async () => {
+    const result = await portfolio({ repo: 'o/r', include_prs: false }, {
+      hunt: async () => ({
+        verdict_summary: 'hunt',
+        evidence: [{
+          kind: 'hunt_candidate',
+          repo: 'o/r',
+          issue_number: 6,
+          title: 'Fix crash',
+          worth_check: {
+            verdict: 'ACT',
+            disposition: 'greenfield',
+            findings: [],
+            routing: {
+              routing_version: 1,
+              primary_mode: 'BUILD',
+              alternate_modes: [],
+              build_contention: 'GREEN',
+              confidence: 'high',
+              reasons: ['greenfield'],
+              hard_constraints: [],
+              next_actions: [],
+              evidenceability: { score: 0.9, reasons: [] },
+              effort_bucket: 'fast',
+              coverage: {
+                mandatory_checks_complete: true,
+                failed_checks: ['branch_scan', 'dupe_cluster'],
+                skipped_checks: [],
+                budget_truncated: false,
+                rate_limit_degraded: false,
+                advisory_missing: []
+              }
+            }
+          }
+        }],
+        signals: [],
+        checked: ['hunt'],
+        not_checked: ['none'],
+        cached: false,
+        fetched_at: '2026-08-01T00:00:00.000Z'
+      }),
+      listOutcomes: async () => []
+    });
+    expect(result.items[0]?.primary_mode).toBe('BUILD');
+    expect(result.items[0]?.verdict).toBe('ACT');
+  });
+
   it('never keeps BUILD on a definitive closer and does not mutate verdict', async () => {
     const result = await portfolio({ repo: 'o/r', include_prs: false }, {
       hunt: async () => ({
