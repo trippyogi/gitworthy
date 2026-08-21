@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ContributionModeSchema } from './routing.js';
 
 /** Outcome event schema for the local durable store (Track O T1 labels map onto these events). */
 export const OutcomeEventNameSchema = z.enum([
@@ -46,7 +47,18 @@ export const OutcomeEventSchema = z.object({
   /** True when the contribution proceeded despite a soft SKIP (Track O anti-SKIP policy). */
   acted_against_skip: z.boolean().optional(),
   /** PR URL once known; join key companion to decision_id. */
-  pr_url: z.string().url().optional()
+  pr_url: z.string().url().optional(),
+  /** Optional routing annotation. Legacy outcomes without this still parse. */
+  contribution_mode: ContributionModeSchema.optional(),
+  investigation_class: z.enum([
+    'repro',
+    'ci_triage',
+    'history',
+    'review',
+    'salvage',
+    'docs',
+    'eval'
+  ]).optional()
 }).strict().superRefine((value, ctx) => {
   if (value.close_reason !== undefined && value.event !== 'closed_unmerged') {
     ctx.addIssue({

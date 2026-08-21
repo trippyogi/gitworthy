@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { DispositionSchema, SCHEMA_VERSION, SchemaVersionSchema, VerdictSchema } from './common.js';
+import { BuildContentionSchema, ContributionModeSchema } from './routing.js';
 
 /** Case/adjudication contract shared by frozen, live, and private eval suites (GW-021). */
 export const EVAL_CASE_VERSION = 1 as const;
@@ -35,7 +36,13 @@ export const EvalGroundTruthSchema = z.object({
   required_findings: z.array(z.string().min(1)).default([]),
   forbidden_findings: z.array(z.string().min(1)).default([]),
   required_signals: z.array(z.string().min(1)).default([]),
-  forbidden_signals: z.array(z.string().min(1)).default([])
+  forbidden_signals: z.array(z.string().min(1)).default([]),
+  routing: z.object({
+    primary_mode: ContributionModeSchema,
+    acceptable_modes: z.array(ContributionModeSchema).default([]),
+    forbidden_modes: z.array(ContributionModeSchema).default([]),
+    build_contention: BuildContentionSchema.optional()
+  }).strict().optional()
 }).strict();
 
 export const EvalCaseClassificationSchema = z.enum([

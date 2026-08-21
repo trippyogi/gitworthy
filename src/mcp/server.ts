@@ -16,6 +16,11 @@ import {
   ci_triage,
   history_scan,
   opportunity_ingest,
+  watch_add,
+  watch_list,
+  watch_show,
+  watch_recheck,
+  watch_remove,
   issue_vs_main,
   ledger_list,
   ledger_lookup,
@@ -380,6 +385,20 @@ export function createMcpServer(): McpServer {
     withToolErrors('brief', () => generateBrief(parseToolInput(BriefShowInputSchema, input))));
   server.registerTool('brief', toolConfig('brief', { decision_id: z.string(), config_path: z.string().optional(), cwd: z.string().optional() }), async (input) =>
     withToolErrors('brief', () => generateBrief(parseToolInput(BriefShowInputSchema, input))));
+  server.registerTool('watch_add', toolConfig('watch_add', {
+    repo: z.string(),
+    issue_number: z.number().optional(),
+    pr_number: z.number().optional(),
+    note: z.string().optional()
+  }), async (input) => withToolErrors('watch_add', async () => stamp('watch_add')(await watch_add(input as { repo: string; issue_number?: number; pr_number?: number; note?: string }))));
+  server.registerTool('watch_list', toolConfig('watch_list', {}), async () =>
+    withToolErrors('watch_list', async () => stamp('watch_list')(await watch_list())));
+  server.registerTool('watch_show', toolConfig('watch_show', { watch_id: z.string() }), async (input) =>
+    withToolErrors('watch_show', async () => stamp('watch_show')(await watch_show(String((input as { watch_id: string }).watch_id)))));
+  server.registerTool('watch_recheck', toolConfig('watch_recheck', { watch_id: z.string(), write: z.boolean().optional() }), async (input) =>
+    withToolErrors('watch_recheck', async () => stamp('watch_recheck')(await watch_recheck(input as { watch_id: string; write?: boolean }))));
+  server.registerTool('watch_remove', toolConfig('watch_remove', { watch_id: z.string() }), async (input) =>
+    withToolErrors('watch_remove', async () => stamp('watch_remove')(await watch_remove(String((input as { watch_id: string }).watch_id)))));
   server.registerTool('portfolio', toolConfig('portfolio', {
     repo: z.string().optional(),
     org: z.string().optional(),

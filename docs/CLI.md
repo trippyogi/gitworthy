@@ -76,11 +76,22 @@ gitworthy opportunity-ingest --source hermes-eval --id case-9 [--repo owner/repo
 
 History uses a matching local checkout (`GITWORTHY_LOCAL_REPO` or cwd origin). Remote clone is opt-in (`GITWORTHY_HISTORY_CLONE=1`).
 
+### Watch
+
+Local-only registry. Recheck compares fingerprints and reports field deltas. Never writes to GitHub.
+
+```sh
+gitworthy watch add owner/repo#123 [--note text] [--json]
+gitworthy watch list [--json]
+gitworthy watch recheck <watch_id> [--json]
+```
+
 ## Evidence / store commands
 
 ```sh
 gitworthy scan owner/repo [--label …] [--keywords …] [--json]
 gitworthy prs owner/repo [--json]
+gitworthy watch add owner/repo#123 [--json]
 gitworthy ci-triage --head-check name:conclusion [--json]
 gitworthy history owner/repo --path rel/file [--json]
 gitworthy opportunity-ingest --source name --id id [--json]

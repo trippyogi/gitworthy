@@ -52,6 +52,11 @@ describe('MCP tools', () => {
       'store_recheck',
       'store_rebuild_indexes',
       'store_target_show',
+      'watch_add',
+      'watch_list',
+      'watch_remove',
+      'watch_recheck',
+      'watch_show',
       'worth_check'
     ].sort());
     await client.close();

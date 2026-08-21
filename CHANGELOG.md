@@ -3,6 +3,8 @@
 ## Unreleased
 
 - Later routing slices (GW-050): honest CI triage classes, caller-supplied history scan with a default argv-only git helper, existing platform hints, and eval-anomaly opportunity ingest. CLI `ci-triage` / `history` / `opportunity-ingest` and MCP `ci_triage` / `history_scan` / `opportunity_ingest` are first-class; hunt stays issue scouting and portfolio stays contribution routing.
+- Routing eval (GW-049): optional `contribution_mode` on outcomes, additive eval `ground_truth.routing`, reconstructed routing corpus kept out of frozen headline accuracy, `false_build_occupied` stays 0 for definitive ownership.
+- Local watch registry (GW-048): `gitworthy watch add|list|show|recheck|remove` and MCP `watch_*`. Fingerprint recheck reports exact deltas. No auto-create from WATCH routes and no GitHub writes.
 - Contribution routing v2 (GW-043–047): `worth_check` can attach a `routing` decision; `gitworthy portfolio` / MCP `portfolio` ranks issue+PR opportunities by contribution mode with separate `dispatch_state`; `gitworthy prs` / MCP `pr_scan` is a bounded two-stage PR inventory. Verdict policy is unchanged. Hermes `contribution_profile` examples stay in docs, not global defaults. Org portfolio fans out PR scans to at most 5 hunt repos (inventory ≤25, enrich ≤5). Advisory `failed_checks` do not demote BUILD.
 - Agent Plugins v1.0.0 packaging: `plugin.json`, `mcp.json`, canonical `skills/gitworthy/SKILL.md`, CI sync check (`pnpm agent-plugins:check`).
 - Docs: [`CORPUS_CONTRIB.md`](./docs/CORPUS_CONTRIB.md) — how dogfooders grow Track O (local) vs Track F (public fixtures) without mixing corpora.
