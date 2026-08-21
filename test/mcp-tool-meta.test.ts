@@ -14,7 +14,7 @@ describe('MCP tool metadata', () => {
       expect(item.annotations.readOnlyHint === true || item.annotations.readOnlyHint === false).toBe(true);
     }
     expect(PRIMARY_TOOL_NAMES).toEqual(
-      expect.arrayContaining(['doctor', 'worth_check', 'hunt', 'brief', 'store_outcome_record', 'store_outcome_reconcile', 'store_outcome_backfill'])
+      expect.arrayContaining(['doctor', 'worth_check', 'hunt', 'portfolio', 'brief', 'store_outcome_record', 'store_outcome_reconcile', 'store_outcome_backfill'])
     );
   });
 

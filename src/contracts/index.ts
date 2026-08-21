@@ -213,6 +213,33 @@ export type {
   RouteCategoryHints
 } from './routing.js';
 
+export { OpportunityTargetSchema } from './opportunities.js';
+export type { OpportunityTarget } from './opportunities.js';
+
+export {
+  PR_SCAN_VERSION,
+  PR_INVENTORY_LIMIT,
+  PR_ENRICH_LIMIT,
+  PrScanFilterSchema,
+  PrScanResultSchema,
+  PrOpportunitySchema
+} from './pr-scan.js';
+export type { PrScanResult, PrOpportunity, PrScanFilter } from './pr-scan.js';
+
+export {
+  ContributionProfileSchema,
+  PlatformHintSchema
+} from './contribution-profile.js';
+export type { ContributionProfile } from './contribution-profile.js';
+
+export {
+  PORTFOLIO_VERSION,
+  DispatchStateSchema,
+  PortfolioCapacitySchema,
+  PortfolioItemSchema
+} from './portfolio.js';
+export type { DispatchState, PortfolioCapacity, PortfolioItem } from './portfolio.js';
+
 export { toCheckResult, toStampedLegacyResult, toErrorResult } from './serialize.js';
 
 export {
@@ -236,6 +263,8 @@ export {
   OrgScanInputSchema,
   HuntInputSchema,
   HuntInputObjectSchema,
+  PortfolioInputSchema,
+  PrScanInputSchema,
   CaptureShowInputSchema,
   CaptureListInputSchema,
   CasePromoteInputSchema,

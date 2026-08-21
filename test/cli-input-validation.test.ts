@@ -66,6 +66,21 @@ describe('CLI input validation', () => {
     expect(parsed.error.category).toBe('input');
   });
 
+  it('rejects portfolio --org combined with an owner/repo value', async () => {
+    const { code, stdout } = await run(['portfolio', 'owner/repo', '--org', '--json']);
+    expect(code).toBe(2);
+    const parsed = ErrorResultSchema.parse(JSON.parse(stdout));
+    expect(parsed.error.code).toBe('invalid_usage');
+    expect(parsed.error.message).toContain('--org expects an org or user login');
+  });
+
+  it('rejects prs without a repo', async () => {
+    const { code, stdout } = await run(['prs', '--json']);
+    expect(code).toBe(2);
+    const parsed = ErrorResultSchema.parse(JSON.parse(stdout));
+    expect(parsed.error.code).toBe('invalid_usage');
+  });
+
   it('rejects hunt --org combined with an owner/repo value', async () => {
     const { code, stdout } = await run(['hunt', 'owner/repo', '--org', '--json']);
     expect(code).toBe(2);

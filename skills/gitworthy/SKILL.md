@@ -54,7 +54,7 @@ When `no_pr_path` is present, read `feedback_channel` in evidence and map it to 
 Wall time is usually **N × worth_check**, not one slow check. Prefer a narrow funnel:
 
 1. `npx gitworthy doctor --json` once per machine/session if auth or rate limits are unsure.
-2. Prefer **`npx gitworthy hunt owner/repo --json`** or **`npx gitworthy hunt openclaw --json`** (org) — policy gate → scan → filter → ≤3 serial worth_checks in one call.
+2. Prefer **`npx gitworthy hunt owner/repo --json`** or **`npx gitworthy hunt openclaw --json`** (org) — policy gate → scan → filter → ≤3 serial worth_checks in one call. Use **`npx gitworthy portfolio owner/repo --json`** when you need contribution-mode ranking (BUILD/REVIEW/SALVAGE/…) across issues and PRs. Hunt remains issue scouting; portfolio does not replace ACT/VERIFY/SKIP.
 3. Or manual funnel: `policy` → `scan`/`org` → prefilter → ≤3–5 serial `worth_check`.
 4. **Prefilter** (also applied by `hunt` by default):
    - skip `likely_land_only: true` / assigned / `soft_ask: true` / thin descriptions unless hunting those

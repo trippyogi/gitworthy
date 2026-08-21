@@ -1,0 +1,165 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "mode_weights": {
+      "default": {},
+      "type": "object",
+      "properties": {
+        "BUILD": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2
+        },
+        "REVIEW": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2
+        },
+        "SALVAGE": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2
+        },
+        "REPRODUCE": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2
+        },
+        "EVAL": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2
+        },
+        "DOC": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2
+        },
+        "WATCH": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2
+        },
+        "PASS": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2
+        }
+      },
+      "additionalProperties": false
+    },
+    "domains": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "terms": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "weight": {
+            "default": 1,
+            "type": "number",
+            "exclusiveMinimum": 0
+          }
+        },
+        "required": [
+          "id",
+          "terms",
+          "weight"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "platforms": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "windows",
+          "linux",
+          "macos",
+          "wsl",
+          "container"
+        ]
+      }
+    },
+    "wip_limits": {
+      "default": {},
+      "type": "object",
+      "properties": {
+        "BUILD": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "REVIEW": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "SALVAGE": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "REPRODUCE": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "EVAL": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "DOC": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "WATCH": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "PASS": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "deep_investigation": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "additionalProperties": false
+    },
+    "stale_pr_days": {
+      "default": 14,
+      "type": "integer",
+      "exclusiveMinimum": 0,
+      "maximum": 9007199254740991
+    }
+  },
+  "required": [
+    "mode_weights",
+    "domains",
+    "platforms",
+    "wip_limits",
+    "stale_pr_days"
+  ],
+  "additionalProperties": false
+}

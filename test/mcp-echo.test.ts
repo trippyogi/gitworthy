@@ -33,6 +33,8 @@ describe('MCP tools', () => {
       'linked_work',
       'list_probe_templates',
       'org_scan',
+      'portfolio',
+      'pr_scan',
       'profile_show',
       'related_cluster',
       'release_gap',

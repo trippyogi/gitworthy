@@ -266,6 +266,7 @@ function compactCandidateEvidence(input: {
       checked: input.result.checked,
       not_checked: input.result.not_checked,
       limitations: input.result.not_checked.slice(0, 8),
+      ...(input.result.routing ? { routing: input.result.routing } : {}),
       ...(input.capturedCheck
         ? { run_id: input.capturedCheck.run_id, decision_id: input.capturedCheck.decision_id }
         : {})

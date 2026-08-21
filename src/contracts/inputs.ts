@@ -193,6 +193,33 @@ export const HuntInputObjectSchema = z.object({
 /** hunt target resolution happens after config loading so config-only MCP calls can work. */
 export const HuntInputSchema = HuntInputObjectSchema;
 
+export const PortfolioInputSchema = z.object({
+  repo: RepoRefSchema.optional(),
+  org: OrgOrUserLoginSchema.optional(),
+  label: z.string().optional(),
+  keywords: KeywordsSchema,
+  since: z.string().optional(),
+  scan_limit: LimitSchema.optional(),
+  max_repos: LimitSchema.optional(),
+  max_checks: LimitSchema.optional(),
+  max_items: LimitSchema.optional(),
+  include_watch: z.boolean().optional(),
+  include_prs: z.boolean().optional(),
+  skill_profile: SkillProfileSchema,
+  contribution_profile: z.unknown().optional()
+});
+
+export const PrScanInputSchema = z.object({
+  repo: RepoRefSchema,
+  include_bots: z.boolean().optional(),
+  include_merged: z.boolean().optional(),
+  include_drafts: z.boolean().optional(),
+  include_generated: z.boolean().optional(),
+  stale_pr_days: z.number().int().positive().optional(),
+  inventory_limit: z.number().int().positive().max(25).optional(),
+  enrich_limit: z.number().int().positive().max(5).optional()
+});
+
 export const CaptureShowInputSchema = z.object({
   capture_id: z.string().min(1)
 });

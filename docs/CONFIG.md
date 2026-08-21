@@ -26,6 +26,7 @@ gitworthy config validate --json
 | User/repo `config.json` | Defaults for hunt/scan limits, land hints, skill profile pointer |
 | Target manifest | Explicit repos/orgs/package mappings for multi-target hunts |
 | Skill profile | Advisory languages/topics/ecosystems for ranking |
+| `contribution_profile` | Optional mode weights, domains, platforms, WIP limits. Defaults are generic. A Hermes-shaped example lives in [`docs/examples/hermes-contribution-profile.yaml`](./examples/hermes-contribution-profile.yaml) and is **not** a global default. |
 
 Schemas (generated, CI-checked):
 

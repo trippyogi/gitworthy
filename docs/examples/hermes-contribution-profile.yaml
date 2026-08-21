@@ -1,0 +1,29 @@
+# Example-only contribution_profile for Hermes-shaped work.
+# Do not copy these domain weights into GitWorthy's global defaults.
+# Place under a repo or user config file as `contribution_profile:`.
+
+contribution_profile:
+  mode_weights:
+    BUILD: 1
+    REVIEW: 1.1
+    SALVAGE: 1
+    REPRODUCE: 1.1
+    EVAL: 1.2
+    DOC: 0.7
+    WATCH: 0.5
+    PASS: 0
+  domains:
+    - id: tool_calling
+      terms: [tool, mcp, function call, schema]
+      weight: 1.2
+    - id: eval_harness
+      terms: [eval, fixture, golden, replay]
+      weight: 1.1
+  platforms:
+    - linux
+    - macos
+  wip_limits:
+    BUILD: 2
+    SALVAGE: 1
+    deep_investigation: 1
+  stale_pr_days: 14
