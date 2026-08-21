@@ -100,7 +100,7 @@ export function computeCapacity(
     const lastActive = [...ordered].reverse().find((event) => ACTIVE_EVENTS.has(event.event));
     if (!lastActive) continue;
     if (lastTerminal && lastTerminal.occurred_at >= lastActive.occurred_at) continue;
-    const modeRaw = lastActive.data.contribution_mode;
+    const modeRaw = lastActive.contribution_mode ?? lastActive.data.contribution_mode;
     const mode = typeof modeRaw === 'string' ? modeRaw : 'BUILD';
     if (typeof modeRaw !== 'string') {
       missingMode += 1;
