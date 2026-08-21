@@ -443,10 +443,11 @@ export async function portfolio(input: PortfolioInput, deps: PortfolioDeps = {})
     candidates.map((item) => item.repo).filter((repo): repo is string => Boolean(repo))
   );
   if (input.repo) huntRepos.add(input.repo);
-  const rawOutcomes = await loadOutcomes({ repo: input.repo, limit: 500 });
   const outcomes = input.repo
-    ? rawOutcomes
-    : rawOutcomes.filter((event) => huntRepos.has(event.target.repo));
+    ? await loadOutcomes({ repo: input.repo, limit: 500 })
+    : (await Promise.all(
+      [...huntRepos].map((repo) => loadOutcomes({ repo, limit: 200 }))
+    )).flat();
   const capacity = computeCapacity(outcomes, profile);
 
   const items: PortfolioItem[] = [];

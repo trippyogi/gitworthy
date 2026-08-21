@@ -225,10 +225,10 @@ describe('portfolio capacity and dispatch', () => {
         cached: false,
         fetched_at: '2026-08-01T00:00:00.000Z'
       }),
-      listOutcomes: async () => [
-        outcome({ event: 'selected', target: { repo: 'other/x', issue_number: 9 }, data: { contribution_mode: 'BUILD' } }),
-        outcome({ event: 'pr_opened', target: { repo: 'other/y', issue_number: 8 }, data: { contribution_mode: 'BUILD' } })
-      ]
+      listOutcomes: async (input) => {
+        expect(input.repo).toBe('acme/one');
+        return [];
+      }
     });
     expect(result.capacity.used.BUILD ?? 0).toBe(0);
     expect(result.items[0]?.dispatch_state).toBe('ready');
