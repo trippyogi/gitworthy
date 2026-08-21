@@ -40,3 +40,4 @@ export type { ProbeTemplate, ProbeTemplateId } from './probe-templates.js';
 export { parseSkillProfile, resolveSkillProfile, scoreSkillFit } from './skill-fit.js';
 export type { SkillProfile } from './skill-fit.js';
 export { routeContribution, scoreEvidenceability } from '../decision/contribution-route.js';
+export { runReconstructedRoutingEval, scoreRoutingCases } from './routing-eval.js';
