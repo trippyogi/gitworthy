@@ -32,6 +32,14 @@ describe('GW-050a ci-triage', () => {
     expect(classifyCi({
       head: [{ name: 'test', conclusion: 'failure' }]
     }).class).toBe('unknown');
+    expect(classifyCi({
+      head: [{ name: 'test', conclusion: 'failure' }],
+      base: []
+    }).class).toBe('unknown');
+    expect(classifyCi({
+      head: [{ name: 'test', conclusion: 'failure' }],
+      base: [{ name: 'lint', conclusion: 'failure' }]
+    }).class).toBe('unknown');
     expect(JSON.stringify(classifyCi({
       head: [{ name: 'test', conclusion: 'failure' }],
       base: [{ name: 'test', conclusion: 'success' }]
@@ -84,6 +92,10 @@ describe('GW-050b history-scan', () => {
       expect(result.hits.length).toBeGreaterThan(0);
       expect(result.hits[0]?.subject).toMatch(/foo/);
       expect(result.checked.join(' ')).toMatch(/argv-only/);
+      const empty = await history_scan({ repo: 'acme/demo', paths: ['no-such-file.ts'] });
+      expect(empty.hits).toEqual([]);
+      expect(empty.not_checked.join(' ')).toMatch(/found no commits/);
+      expect(empty.not_checked.join(' ')).not.toMatch(/No matching local checkout/);
     } finally {
       if (previous === undefined) delete process.env.GITWORTHY_LOCAL_REPO;
       else process.env.GITWORTHY_LOCAL_REPO = previous;

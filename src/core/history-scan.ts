@@ -111,13 +111,12 @@ async function resolveHistoryCwd(repo: string): Promise<{ cwd: string; source: s
   }
 }
 
-/** Argv-only git log / pickaxe / blame. Never interpolates into a shell string. */
-export async function defaultHistoryLog(input: HistoryLogQuery): Promise<HistoryHit[]> {
+async function runDefaultHistory(input: HistoryLogQuery): Promise<{ hits: HistoryHit[]; checkout: string | null }> {
   const paths = [...new Set(input.paths.map(normalizeHistoryPath).filter((item): item is string => Boolean(item)))];
   const grep = [...new Set(input.grep.map(sanitizeHistoryNeedle).filter((item): item is string => Boolean(item)))];
-  if (paths.length === 0 && grep.length === 0) return [];
+  if (paths.length === 0 && grep.length === 0) return { hits: [], checkout: null };
   const resolved = await resolveHistoryCwd(input.repo);
-  if (!resolved) return [];
+  if (!resolved) return { hits: [], checkout: null };
   const limit = String(Math.min(input.limit, HISTORY_LIMIT));
   const hits: HistoryHit[] = [];
   try {
@@ -136,11 +135,19 @@ export async function defaultHistoryLog(input: HistoryLogQuery): Promise<History
     if (resolved.cleanup) await resolved.cleanup();
   }
   const seen = new Set<string>();
-  return hits.filter((hit) => {
-    if (seen.has(hit.sha)) return false;
-    seen.add(hit.sha);
-    return true;
-  }).slice(0, HISTORY_LIMIT);
+  return {
+    checkout: resolved.source,
+    hits: hits.filter((hit) => {
+      if (seen.has(hit.sha)) return false;
+      seen.add(hit.sha);
+      return true;
+    }).slice(0, HISTORY_LIMIT)
+  };
+}
+
+/** Argv-only git log / pickaxe / blame. Never interpolates into a shell string. */
+export async function defaultHistoryLog(input: HistoryLogQuery): Promise<HistoryHit[]> {
+  return (await runDefaultHistory(input)).hits;
 }
 
 export async function history_scan(input: HistoryScanInput, deps: HistoryScanDeps = {}): Promise<Envelope & { hits: HistoryHit[] }> {
@@ -165,9 +172,19 @@ export async function history_scan(input: HistoryScanInput, deps: HistoryScanDep
     });
   }
   const limit = Math.min(input.limit ?? HISTORY_LIMIT, HISTORY_LIMIT);
-  const helper = deps.log ?? defaultHistoryLog;
-  const hits = await helper({ repo: input.repo, paths, grep: [...symbols, ...terms], limit });
+  const query = { repo: input.repo, paths, grep: [...symbols, ...terms], limit };
   const usedDefault = !deps.log;
+  const ran = usedDefault
+    ? await runDefaultHistory(query)
+    : { hits: await deps.log!(query), checkout: 'injected' as string | null };
+  const hits = ran.hits;
+  const checkoutNote = usedDefault && !ran.checkout
+    ? 'No matching local checkout (GITWORTHY_LOCAL_REPO or cwd origin). Remote clone is opt-in via GITWORTHY_HISTORY_CLONE=1.'
+    : usedDefault && hits.length === 0
+      ? `Matching checkout (${ran.checkout}) found no commits in the bounded window.`
+      : usedDefault
+        ? `Used matching checkout (${ran.checkout}); did not execute repository code.`
+        : 'Used the injected log helper.';
   return {
     ...createEnvelope({
       verdict_summary: hits.length === 0
@@ -181,11 +198,7 @@ export async function history_scan(input: HistoryScanInput, deps: HistoryScanDep
       not_checked: [
         'History scan does not run unless the caller supplies paths, symbols, or terms.',
         'Patches were not inlined; only commit identity and paths are returned.',
-        usedDefault && hits.length === 0
-          ? 'No matching local checkout (GITWORTHY_LOCAL_REPO or cwd origin). Remote clone is opt-in via GITWORTHY_HISTORY_CLONE=1.'
-          : usedDefault
-            ? 'Used a matching local checkout; did not execute repository code.'
-            : 'Used the injected log helper.'
+        checkoutNote
       ]
     }),
     hits

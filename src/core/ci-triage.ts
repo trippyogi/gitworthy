@@ -59,13 +59,18 @@ export function classifyCi(input: { head: CiCheck[]; base?: CiCheck[] }): CiTria
     reasons.push('No failed conclusions on head or base.');
     return { class: 'unknown', reasons, failed_on_head: headFails, failed_on_base: baseFails };
   }
-  if (input.base === undefined) {
+  const baseSupplied = (input.base?.length ?? 0) > 0;
+  if (!baseSupplied) {
     reasons.push('Base check runs were not supplied; cannot distinguish head-only from shared.');
     return { class: 'unknown', reasons, failed_on_head: headFails, failed_on_base: baseFails };
   }
   const shared = headFails.filter((name) => baseFails.includes(name));
   if (shared.length > 0 && shared.length === headFails.length) {
     reasons.push('Every head failure also failed on base.');
+    return { class: 'shared_failure', reasons, failed_on_head: headFails, failed_on_base: baseFails };
+  }
+  if (shared.length > 0) {
+    reasons.push('Head and base failures overlap only in part.');
     return { class: 'shared_failure', reasons, failed_on_head: headFails, failed_on_base: baseFails };
   }
   if (headFails.length > 0 && baseFails.length === 0) {
@@ -76,8 +81,8 @@ export function classifyCi(input: { head: CiCheck[]; base?: CiCheck[] }): CiTria
     reasons.push('Base failed while head succeeded.');
     return { class: 'base_failure', reasons, failed_on_head: headFails, failed_on_base: baseFails };
   }
-  reasons.push('Head and base failures overlap only in part.');
-  return { class: 'shared_failure', reasons, failed_on_head: headFails, failed_on_base: baseFails };
+  reasons.push('Head and base failed disjoint checks; not treating that as a shared failure.');
+  return { class: 'unknown', reasons, failed_on_head: headFails, failed_on_base: baseFails };
 }
 
 function nextActionFor(classified: CiTriageResult): string {
@@ -115,7 +120,7 @@ export function ci_triage(input: { head: CiCheck[]; base?: CiCheck[] }): Envelop
       checked: ['classified supplied head/base check conclusions'],
       not_checked: [
         'CI triage never infers stale_fixture from metadata.',
-        input.base === undefined ? 'Base check runs were not supplied.' : 'Used caller-supplied base conclusions only.'
+        (input.base?.length ?? 0) === 0 ? 'Base check runs were not supplied.' : 'Used caller-supplied base conclusions only.'
       ]
     }),
     ...classified,
