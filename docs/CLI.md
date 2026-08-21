@@ -22,6 +22,9 @@ gitworthy check owner/repo#123 [--npm-package name] [--json]
 gitworthy hunt owner/repo|org [--max-checks 3] [--manifest path] [--json]
 gitworthy portfolio owner/repo|org [--org] [--max-checks 3] [--max-items 10] [--json]
 gitworthy prs owner/repo [--json]
+gitworthy ci-triage --head-check name:conclusion [--base-check name:conclusion] [--json]
+gitworthy history owner/repo --path rel/file [--symbol name] [--term text] [--json]
+gitworthy opportunity-ingest --source name --id external-id [--repo owner/repo] [--json]
 gitworthy brief <decision_id> [--format human|json|markdown]
 gitworthy outcome record owner/repo#123 --event selected [--decision-id id] [--close-reason superseded|stale|withdrawn] [--acted-against-skip] [--pr-url url] [--json]
 gitworthy outcome reconcile [--repo owner/repo] [--issue 123] [--author @me] [--write] [--json]
@@ -61,6 +64,18 @@ gitworthy portfolio org-name --org [--json]
 gitworthy prs owner/repo [--include-bots] [--include-merged] [--json]
 ```
 
+### CI triage / history / ingest
+
+Caller-supplied later slices. History is not automatic archaeology for every issue.
+
+```sh
+gitworthy ci-triage --head-check test:failure --base-check test:success [--json]
+gitworthy history owner/repo --path src/core/hunt.ts --symbol hunt [--json]
+gitworthy opportunity-ingest --source hermes-eval --id case-9 [--repo owner/repo] [--json]
+```
+
+History uses a matching local checkout (`GITWORTHY_LOCAL_REPO` or cwd origin). Remote clone is opt-in (`GITWORTHY_HISTORY_CLONE=1`).
+
 ### Watch
 
 Local-only registry. Recheck compares fingerprints and reports field deltas. Never writes to GitHub.
@@ -76,6 +91,10 @@ gitworthy watch recheck <watch_id> [--json]
 ```sh
 gitworthy scan owner/repo [--label …] [--keywords …] [--json]
 gitworthy prs owner/repo [--json]
+gitworthy watch add owner/repo#123 [--json]
+gitworthy ci-triage --head-check name:conclusion [--json]
+gitworthy history owner/repo --path rel/file [--json]
+gitworthy opportunity-ingest --source name --id id [--json]
 gitworthy branches owner/repo keyword[,keyword] [--json]
 gitworthy linked owner/repo 123 [--json]
 gitworthy contention owner/repo 123 [--json]

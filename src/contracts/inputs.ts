@@ -220,6 +220,34 @@ export const PrScanInputSchema = z.object({
   enrich_limit: z.number().int().positive().max(5).optional()
 });
 
+const CiCheckInputSchema = z.object({
+  name: z.string().min(1).max(200),
+  conclusion: z.string().max(80).optional().nullable(),
+  status: z.string().max(80).optional(),
+  attempt: z.number().int().optional()
+}).strict();
+
+export const CiTriageInputSchema = z.object({
+  head: z.array(CiCheckInputSchema).min(1).max(50),
+  base: z.array(CiCheckInputSchema).max(50).optional()
+}).strict();
+
+export const HistoryScanInputSchema = z.object({
+  repo: RepoRefSchema,
+  paths: z.array(z.string().min(1).max(240)).max(20).optional(),
+  symbols: z.array(z.string().min(1).max(80)).max(10).optional(),
+  terms: z.array(z.string().min(1).max(80)).max(10).optional(),
+  limit: LimitSchema.optional()
+}).strict();
+
+export const OpportunityIngestInputSchema = z.object({
+  external_id: z.string().min(1).max(200),
+  source: z.string().min(1).max(80),
+  repo: RepoRefSchema.optional(),
+  title: z.string().max(240).optional(),
+  detail: z.string().max(2000).optional()
+}).strict();
+
 export const CaptureShowInputSchema = z.object({
   capture_id: z.string().min(1)
 });

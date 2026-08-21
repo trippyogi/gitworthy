@@ -137,6 +137,27 @@ export const TOOL_META = {
       'Bounded two-stage pull-request inventory (max 25) with enrichment of the top 5. Filters bots and merged PRs. Used by portfolio for REVIEW/WATCH/SALVAGE. Read-only GitHub; no automatic review comments.',
     annotations: { ...readGithub, title: 'PR scan' }
   },
+  ci_triage: {
+    title: 'CI triage',
+    role: 'evidence',
+    description:
+      'Classify caller-supplied head/base check conclusions as head_only_failure, base_failure, shared_failure, flaky_suspected, or unknown. Never infers stale_fixture. Does not fetch GitHub Actions; the caller supplies conclusions. Hunt stays issue scouting; portfolio stays contribution routing.',
+    annotations: { ...readLocal, title: 'CI triage' }
+  },
+  history_scan: {
+    title: 'History scan',
+    role: 'evidence',
+    description:
+      'Bounded git history for caller-supplied paths, symbols, or terms only. Uses argv-only git log / pickaxe / blame against a matching local checkout. Not automatic archaeology for every scanned issue. Does not execute repository code.',
+    annotations: { ...readLocal, title: 'History scan' }
+  },
+  opportunity_ingest: {
+    title: 'Opportunity ingest',
+    role: 'evidence',
+    description:
+      'Accept an externally supplied eval anomaly (source + external_id) as an EVAL opportunity. Canonical name for ingest_eval_anomaly. GitWorthy does not scrape eval farms. Hunt stays issue scouting; portfolio stays contribution routing.',
+    annotations: { ...readLocal, title: 'Opportunity ingest' }
+  },
   org_scan: {
     title: 'Org scan',
     role: 'evidence',

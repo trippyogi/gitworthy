@@ -12,6 +12,9 @@ Host setup (Cursor / ChatGPT / Hermes / HTTP): see the README MCP section and [`
 | `worth_check` | Single-issue ACT/VERIFY/SKIP |
 | `hunt` | Bounded issue discovery + preflight (`resume_run_id` for partials) |
 | `portfolio` | Rank issues + PRs by contribution mode; dispatch is separate from verdict |
+| `ci_triage` | Classify caller-supplied CI conclusions (never `stale_fixture`) |
+| `history_scan` | Bounded git history for caller-supplied paths/symbols/terms |
+| `opportunity_ingest` | Accept an external eval anomaly as an EVAL opportunity |
 | `brief` / `brief_show` | Decision brief from local store |
 | `store_outcome_record` | Local outcome feedback loop (`selected` / `pr_opened` / terminals) |
 | `store_outcome_reconcile` | Close Track O debt against GitHub PR state (dry-run by default) |
@@ -24,7 +27,7 @@ Evidence tools support investigation; they are not substitutes for `worth_check`
 | Role | Tools |
 |---|---|
 | primary | `doctor`, `worth_check`, `hunt`, `portfolio`, `brief`, `brief_show`, `store_outcome_record`, `store_outcome_reconcile`, `store_outcome_backfill` |
-| evidence | `scan`, `org_scan`, `pr_scan`, `branch_scan`, `issue_vs_main`, `release_gap`, `dupe_cluster`, `related_cluster`, `linked_work`, `contention`, `scope_check`, `contrib_policy`, `list_probe_templates` |
+| evidence | `scan`, `org_scan`, `pr_scan`, `ci_triage`, `history_scan`, `opportunity_ingest`, `branch_scan`, `issue_vs_main`, `release_gap`, `dupe_cluster`, `related_cluster`, `linked_work`, `contention`, `scope_check`, `contrib_policy`, `list_probe_templates` |
 | config | `config_validate`, `config_show`, `profile_show` |
 | store | `ledger_*`, `watch_*`, `store_target_show`, `store_decision_list`, `store_recheck`, `store_export` |
 | admin | `store_migrate_ledger`, `store_rebuild_indexes`, `capture_*`, `case_promote` |

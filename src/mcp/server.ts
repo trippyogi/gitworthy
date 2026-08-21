@@ -13,6 +13,9 @@ import {
   hunt,
   portfolio,
   pr_scan,
+  ci_triage,
+  history_scan,
+  opportunity_ingest,
   watch_add,
   watch_list,
   watch_show,
@@ -66,6 +69,9 @@ import {
   HuntInputSchema,
   PortfolioInputSchema,
   PrScanInputSchema,
+  CiTriageInputSchema,
+  HistoryScanInputSchema,
+  OpportunityIngestInputSchema,
   IssueVsMainInputSchema,
   LedgerListInputSchema,
   LedgerLookupInputSchema,
@@ -428,6 +434,40 @@ export function createMcpServer(): McpServer {
     enrich_limit: z.number().optional()
   }), async (input) => withToolErrors('pr_scan', async () => {
     return stamp('pr_scan')(await pr_scan(parseToolInput(PrScanInputSchema, input)));
+  }));
+  server.registerTool('ci_triage', toolConfig('ci_triage', {
+    head: z.array(z.object({
+      name: z.string(),
+      conclusion: z.string().optional().nullable(),
+      status: z.string().optional(),
+      attempt: z.number().optional()
+    })),
+    base: z.array(z.object({
+      name: z.string(),
+      conclusion: z.string().optional().nullable(),
+      status: z.string().optional(),
+      attempt: z.number().optional()
+    })).optional()
+  }), async (input) => withToolErrors('ci_triage', async () => {
+    return stamp('ci_triage')(ci_triage(parseToolInput(CiTriageInputSchema, input)));
+  }));
+  server.registerTool('history_scan', toolConfig('history_scan', {
+    repo: z.string(),
+    paths: z.array(z.string()).optional(),
+    symbols: z.array(z.string()).optional(),
+    terms: z.array(z.string()).optional(),
+    limit: z.number().optional()
+  }), async (input) => withToolErrors('history_scan', async () => {
+    return stamp('history_scan')(await history_scan(parseToolInput(HistoryScanInputSchema, input)));
+  }));
+  server.registerTool('opportunity_ingest', toolConfig('opportunity_ingest', {
+    external_id: z.string(),
+    source: z.string(),
+    repo: z.string().optional(),
+    title: z.string().optional(),
+    detail: z.string().optional()
+  }), async (input) => withToolErrors('opportunity_ingest', async () => {
+    return stamp('opportunity_ingest')(opportunity_ingest(parseToolInput(OpportunityIngestInputSchema, input)));
   }));
   return server;
 }

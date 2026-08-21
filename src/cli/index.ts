@@ -16,6 +16,9 @@ import {
   resumeHunt,
   portfolio,
   pr_scan,
+  ci_triage,
+  history_scan,
+  opportunity_ingest,
   watch_add,
   watch_list,
   watch_show,
@@ -77,6 +80,9 @@ import {
   parseToolInput,
   PortfolioInputSchema,
   PrScanInputSchema,
+  CiTriageInputSchema,
+  HistoryScanInputSchema,
+  OpportunityIngestInputSchema,
   toCheckResult,
   toErrorResult,
   toStampedLegacyResult
@@ -106,6 +112,9 @@ Usage:
   gitworthy hunt owner/repo|org [--manifest path] [--max-checks 3] [--label ...] [--keywords ...] [--since 90d] [--limit 25] [--max-repos 8] [--max-pages 1] [--skill-profile ...] [--explain-ranking] [--skip-policy-gate] [--no-land-hints] [--capture] [--capture-local-private] [--json]
   gitworthy portfolio owner/repo|org [--org] [--max-checks 3] [--max-items 10] [--include-watch] [--no-prs] [--label ...] [--keywords ...] [--json]
   gitworthy prs owner/repo [--include-bots] [--include-merged] [--json]
+  gitworthy ci-triage --head-check name:conclusion [--base-check name:conclusion] [--json]
+  gitworthy history owner/repo --path rel/file [--symbol name] [--term text] [--json]
+  gitworthy opportunity-ingest --source name --id external-id [--repo owner/repo] [--title text] [--json]
   gitworthy watch add owner/repo#123|--pr N [--note text] [--json]
   gitworthy watch list|show|recheck|remove <watch_id> [--json]
   gitworthy branches owner/repo keyword[,keyword] [--json] [--force-refresh]
@@ -238,6 +247,16 @@ function exitFor(output: unknown): number {
   return 0;
 }
 
+function parseCiChecks(values: string[], flag: string): Array<{ name: string; conclusion: string }> {
+  return values.map((value) => {
+    const idx = value.lastIndexOf(':');
+    if (idx <= 0 || idx === value.length - 1) {
+      usageError(`${flag} expects name:conclusion (e.g. test:failure).`);
+    }
+    return { name: value.slice(0, idx), conclusion: value.slice(idx + 1) };
+  });
+}
+
 function scanFilters(values: Record<string, unknown>) {
   const maxPagesRaw = stringValue(values['max-pages']);
   const maxPages = maxPagesRaw ? Number(maxPagesRaw) : undefined;
@@ -296,6 +315,14 @@ const CLI_OPTIONS = {
   'no-prs': { type: 'boolean' },
   'include-bots': { type: 'boolean' },
   'include-merged': { type: 'boolean' },
+  'head-check': { type: 'string', multiple: true },
+  'base-check': { type: 'string', multiple: true },
+  symbol: { type: 'string', multiple: true },
+  term: { type: 'string', multiple: true },
+  source: { type: 'string' },
+  id: { type: 'string' },
+  title: { type: 'string' },
+  detail: { type: 'string' },
   pr: { type: 'string' },
   note: { type: 'string' },
   'explain-ranking': { type: 'boolean' },
@@ -683,6 +710,41 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
         include_merged: parsed.values['include-merged'] === true ? true : undefined
       }));
       output = toStampedLegacyResult('pr_scan', await pr_scan(prInput) as Record<string, unknown>);
+    } else if (command === 'ci-triage') {
+      commandName = 'ci_triage';
+      const head = parseCiChecks(stringValues(parsed.values['head-check']), '--head-check');
+      if (head.length === 0) usageError('ci-triage requires at least one --head-check name:conclusion.');
+      const baseValues = stringValues(parsed.values['base-check']);
+      const ciInput = parseToolInput(CiTriageInputSchema, compact({
+        head,
+        base: baseValues.length > 0 ? parseCiChecks(baseValues, '--base-check') : undefined
+      }));
+      output = toStampedLegacyResult('ci_triage', ci_triage(ciInput) as Record<string, unknown>);
+    } else if (command === 'history') {
+      commandName = 'history_scan';
+      const repo = repoArg(first, 'history requires owner/repo.');
+      const paths = stringValue(parsed.values.path)?.split(',').map((item) => item.trim()).filter(Boolean) ?? [];
+      const symbols = stringValues(parsed.values.symbol);
+      const terms = [...stringValues(parsed.values.term), ...(scanFilters(parsed.values).keywords ?? [])];
+      const limitRaw = stringValue(parsed.values.limit);
+      const historyInput = parseToolInput(HistoryScanInputSchema, compact({
+        repo,
+        paths: paths.length > 0 ? paths : undefined,
+        symbols: symbols.length > 0 ? symbols : undefined,
+        terms: terms.length > 0 ? terms : undefined,
+        limit: limitRaw ? Number(limitRaw) : undefined
+      }));
+      output = toStampedLegacyResult('history_scan', await history_scan(historyInput) as Record<string, unknown>);
+    } else if (command === 'opportunity-ingest') {
+      commandName = 'opportunity_ingest';
+      const ingestInput = parseToolInput(OpportunityIngestInputSchema, compact({
+        source: required(stringValue(parsed.values.source), 'opportunity-ingest requires --source.'),
+        external_id: required(stringValue(parsed.values.id), 'opportunity-ingest requires --id.'),
+        repo: stringValue(parsed.values.repo),
+        title: stringValue(parsed.values.title),
+        detail: stringValue(parsed.values.detail)
+      }));
+      output = toStampedLegacyResult('opportunity_ingest', opportunity_ingest(ingestInput) as Record<string, unknown>);
     } else if (command === 'hunt') {
       commandName = 'hunt';
       const huntTarget = first;

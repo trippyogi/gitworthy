@@ -6,9 +6,15 @@ type HumanResult = {
   command?: string;
   verdict?: string;
   disposition?: string;
+  primary_mode?: string;
+  class?: string;
+  confidence?: string;
+  reasons?: string[];
+  hits?: Array<{ sha?: string; subject?: string }>;
+  target?: Record<string, unknown>;
   verdict_summary?: string;
   summary?: string;
-  next_actions?: Array<{ kind?: string; message?: string }>;
+  next_actions?: Array<{ kind?: string; action?: string; message?: string }>;
   findings?: Array<{ type?: string; strength?: string; message?: string; url?: string; effect?: string }>;
   evidence?: Array<Record<string, unknown>>;
   checked?: string[];
@@ -89,6 +95,52 @@ function metricsLines(metrics: Record<string, unknown> | undefined, verbose: boo
   return ['Counters', `  ${parts.join(' · ')}`, ''];
 }
 
+function laterSliceLines(result: HumanResult): string[] | undefined {
+  if (result.command !== 'ci_triage' && result.command !== 'history_scan' && result.command !== 'opportunity_ingest') {
+    return undefined;
+  }
+  const mode = typeof result.class === 'string'
+    ? result.class
+    : typeof result.primary_mode === 'string'
+      ? result.primary_mode
+      : result.command === 'opportunity_ingest'
+        ? 'EVAL'
+        : result.command === 'history_scan'
+          ? 'HISTORY'
+          : undefined;
+  const verdict = typeof result.verdict === 'string' ? result.verdict : undefined;
+  const disposition = typeof result.disposition === 'string' ? result.disposition : undefined;
+  const confidence = typeof result.confidence === 'string' ? result.confidence : 'n/a';
+  const why = (result.reasons ?? []).filter((item) => typeof item === 'string');
+  const summary = typeof result.verdict_summary === 'string' ? result.verdict_summary : '';
+  const lines = [
+    [mode, verdict, disposition].filter(Boolean).join(' · ') || (result.command ?? 'result'),
+    summary,
+    '',
+    `Confidence  ${confidence}`,
+    ''
+  ];
+  if (why.length > 0) lines.push(...bulletSection('Why', why.slice(0, 6).map((item) => `  ${item}`)));
+  const next = nextActionLines(result);
+  if (next.length > 0) lines.push(...bulletSection('Next', next));
+  if (Array.isArray(result.hits) && result.hits.length > 0) {
+    lines.push(...bulletSection('Hits', result.hits.slice(0, 8).map((hit) => `  ${(hit.sha ?? '').slice(0, 12)} ${hit.subject ?? ''}`)));
+  }
+  if (result.target) {
+    const target = result.target;
+    lines.push(...bulletSection('Target', [
+      `  ${String(target.kind ?? 'target')} ${String(target.source ?? '')}:${String(target.external_id ?? target.repo ?? '')}`
+    ]));
+  }
+  if (Array.isArray(result.checked) && result.checked.length > 0) {
+    lines.push(...bulletSection('Checked', result.checked.slice(0, 12).map((item) => `  ${item}`)));
+  }
+  if (Array.isArray(result.not_checked) && result.not_checked.length > 0) {
+    lines.push(...bulletSection('Not checked', result.not_checked.slice(0, 12).map((item) => `  ${item}`)));
+  }
+  return lines;
+}
+
 function portfolioLines(result: HumanResult): string[] | undefined {
   if (result.command !== 'portfolio' && result.command !== 'pr_scan') return undefined;
   const items = Array.isArray(result.items)
@@ -129,6 +181,11 @@ function portfolioLines(result: HumanResult): string[] | undefined {
 /** Render primary command results for humans. Falls back to one-line summary for unknown shapes. */
 export function renderHuman(output: unknown, options: { verbose?: boolean } = {}): string {
   const result = asRecord(output) as HumanResult;
+  const later = laterSliceLines(result);
+  if (later) {
+    while (later.length > 0 && later[later.length - 1] === '') later.pop();
+    return `${later.join('\n')}\n`;
+  }
   const portfolio = portfolioLines(result);
   if (portfolio) {
     while (portfolio.length > 0 && portfolio[portfolio.length - 1] === '') portfolio.pop();
