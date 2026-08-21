@@ -12,7 +12,7 @@ export const PrScanFilterSchema = z.object({
   include_generated: z.boolean().default(false),
   stale_pr_days: z.number().int().positive().default(14),
   inventory_limit: z.number().int().positive().max(PR_INVENTORY_LIMIT).default(PR_INVENTORY_LIMIT),
-  enrich_limit: z.number().int().positive().max(PR_ENRICH_LIMIT).default(PR_ENRICH_LIMIT)
+  enrich_limit: z.number().int().nonnegative().max(PR_ENRICH_LIMIT).default(PR_ENRICH_LIMIT)
 }).strict();
 
 export const PrHintModeSchema = z.enum(['REVIEW', 'WATCH', 'SALVAGE', 'PASS']);
