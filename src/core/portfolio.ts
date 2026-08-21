@@ -203,12 +203,12 @@ function factsFromHunt(candidate: HuntCandidate): RouteFacts {
       claimRequired: findings.some((item) => item.type === 'claim_required')
     },
     coverage: {
-      mandatory_checks_complete: true,
+      mandatory_checks_complete: false,
       failed_checks: [],
-      skipped_checks: [],
+      skipped_checks: ['embedded_routing_missing'],
       budget_truncated: false,
       rate_limit_degraded: false,
-      advisory_missing: []
+      advisory_missing: ['quality', 'contention']
     }
   };
 }
@@ -368,7 +368,14 @@ export async function portfolio(input: PortfolioInput, deps: PortfolioDeps = {})
     skill_profile: input.skill_profile
   });
   const candidates = (huntResult.evidence as HuntCandidate[]).filter((item) => item.kind === 'hunt_candidate');
-  const outcomes = await loadOutcomes({ repo: input.repo, limit: 200 });
+  const huntRepos = new Set(
+    candidates.map((item) => item.repo).filter((repo): repo is string => Boolean(repo))
+  );
+  if (input.repo) huntRepos.add(input.repo);
+  const rawOutcomes = await loadOutcomes({ repo: input.repo, limit: 500 });
+  const outcomes = input.repo
+    ? rawOutcomes
+    : rawOutcomes.filter((event) => huntRepos.has(event.target.repo));
   const capacity = computeCapacity(outcomes, profile);
 
   const items: PortfolioItem[] = [];

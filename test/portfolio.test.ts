@@ -137,6 +137,56 @@ describe('portfolio capacity and dispatch', () => {
     expect(result.items[0]?.dispatch_state).toBe('blocked_by_constraint');
   });
 
+  it('scopes org capacity to hunt candidate repos only', async () => {
+    const result = await portfolio({ org: 'acme', include_prs: false, max_items: 5 }, {
+      hunt: async () => ({
+        verdict_summary: 'hunt',
+        evidence: [{
+          kind: 'hunt_candidate',
+          repo: 'acme/one',
+          issue_number: 1,
+          title: 'Fix crash',
+          worth_check: {
+            verdict: 'ACT',
+            disposition: 'greenfield',
+            findings: [],
+            routing: {
+              routing_version: 1,
+              primary_mode: 'BUILD',
+              alternate_modes: [],
+              build_contention: 'GREEN',
+              confidence: 'high',
+              reasons: ['greenfield'],
+              hard_constraints: [],
+              next_actions: [],
+              evidenceability: { score: 0.9, reasons: [] },
+              effort_bucket: 'fast',
+              coverage: {
+                mandatory_checks_complete: true,
+                failed_checks: [],
+                skipped_checks: [],
+                budget_truncated: false,
+                rate_limit_degraded: false,
+                advisory_missing: []
+              }
+            }
+          }
+        }],
+        signals: [],
+        checked: ['hunt'],
+        not_checked: ['none'],
+        cached: false,
+        fetched_at: '2026-08-01T00:00:00.000Z'
+      }),
+      listOutcomes: async () => [
+        outcome({ event: 'selected', target: { repo: 'other/x', issue_number: 9 }, data: { contribution_mode: 'BUILD' } }),
+        outcome({ event: 'pr_opened', target: { repo: 'other/y', issue_number: 8 }, data: { contribution_mode: 'BUILD' } })
+      ]
+    });
+    expect(result.capacity.used.BUILD ?? 0).toBe(0);
+    expect(result.items[0]?.dispatch_state).toBe('ready');
+  });
+
   it('rejects repo and org together', async () => {
     await expect(portfolio({ repo: 'o/r', org: 'acme' })).rejects.toMatchObject({
       code: 'portfolio_invalid_input'
