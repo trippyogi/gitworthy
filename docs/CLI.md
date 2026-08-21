@@ -61,6 +61,16 @@ gitworthy portfolio org-name --org [--json]
 gitworthy prs owner/repo [--include-bots] [--include-merged] [--json]
 ```
 
+### Watch
+
+Local-only registry. Recheck compares fingerprints and reports field deltas. Never writes to GitHub.
+
+```sh
+gitworthy watch add owner/repo#123 [--note text] [--json]
+gitworthy watch list [--json]
+gitworthy watch recheck <watch_id> [--json]
+```
+
 ## Evidence / store commands
 
 ```sh

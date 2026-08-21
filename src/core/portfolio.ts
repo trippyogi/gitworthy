@@ -404,8 +404,10 @@ export async function portfolio(input: PortfolioInput, deps: PortfolioDeps = {})
   }
 
   if (input.include_watch) {
-    const watch = deps.listWatch ? await deps.listWatch() : [];
-    if (watch.length === 0) notChecked.push('Watch registry is empty or not wired until the watch slice.');
+    const { listLocalWatches } = await import('./watch.js');
+    const watch = deps.listWatch ? await deps.listWatch() : await listLocalWatches();
+    if (watch.length === 0) notChecked.push('Watch registry is empty; WATCH routes never auto-create watches.');
+    checked.push(`included ${watch.length} local watches`);
   }
 
   const maxItems = Math.max(1, input.max_items ?? 10);
