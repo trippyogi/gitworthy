@@ -15,6 +15,7 @@ export { org_scan } from './org-scan.js';
 export { hunt, resumeHunt } from './hunt.js';
 export { portfolio } from './portfolio.js';
 export { pr_scan } from './pr-scan.js';
+export { watch_add, watch_list, watch_show, watch_recheck, watch_remove, listLocalWatches } from './watch.js';
 export { GENERIC_CONTRIBUTION_PROFILE, parseContributionProfile } from './contribution-profile.js';
 export { scoreOpportunity } from './opportunity-score.js';
 export { capture_show, capture_list, case_promote } from './capture-commands.js';

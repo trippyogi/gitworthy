@@ -16,6 +16,11 @@ import {
   resumeHunt,
   portfolio,
   pr_scan,
+  watch_add,
+  watch_list,
+  watch_show,
+  watch_recheck,
+  watch_remove,
   issue_vs_main,
   ledger_list,
   ledger_lookup,
@@ -101,6 +106,8 @@ Usage:
   gitworthy hunt owner/repo|org [--manifest path] [--max-checks 3] [--label ...] [--keywords ...] [--since 90d] [--limit 25] [--max-repos 8] [--max-pages 1] [--skill-profile ...] [--explain-ranking] [--skip-policy-gate] [--no-land-hints] [--capture] [--capture-local-private] [--json]
   gitworthy portfolio owner/repo|org [--org] [--max-checks 3] [--max-items 10] [--include-watch] [--no-prs] [--label ...] [--keywords ...] [--json]
   gitworthy prs owner/repo [--include-bots] [--include-merged] [--json]
+  gitworthy watch add owner/repo#123|--pr N [--note text] [--json]
+  gitworthy watch list|show|recheck|remove <watch_id> [--json]
   gitworthy branches owner/repo keyword[,keyword] [--json] [--force-refresh]
   gitworthy issue owner/repo 123 [--json]
   gitworthy release owner/repo package-name [--probe-glob glob] [--probe-contains text] [--probe-template id] [--json]
@@ -289,6 +296,8 @@ const CLI_OPTIONS = {
   'no-prs': { type: 'boolean' },
   'include-bots': { type: 'boolean' },
   'include-merged': { type: 'boolean' },
+  pr: { type: 'string' },
+  note: { type: 'string' },
   'explain-ranking': { type: 'boolean' },
   'no-land-hints': { type: 'boolean' },
   capture: { type: 'boolean' },
@@ -924,6 +933,44 @@ export async function runCli(argv = process.argv.slice(2), stdout: Write = (text
         }) as Record<string, unknown>);
       } else {
         usageError('outcome requires show, list, record, reconcile, or backfill.');
+      }
+    } else if (command === 'watch') {
+      const action = first;
+      if (action === 'add') {
+        commandName = 'watch_add';
+        const prRaw = stringValue(parsed.values.pr);
+        if (prRaw) {
+          const repo = repoArg(second, 'watch add --pr requires owner/repo.');
+          output = toStampedLegacyResult('watch_add', await watch_add({
+            repo,
+            pr_number: parseArg(IssueNumberStringSchema, prRaw, 'invalid_usage'),
+            note: stringValue(parsed.values.note)
+          }) as Record<string, unknown>);
+        } else {
+          const ref = parseIssueRef(required(second, 'watch add requires owner/repo#123 or owner/repo --pr N.'));
+          output = toStampedLegacyResult('watch_add', await watch_add({
+            repo: ref.repo,
+            issue_number: ref.issue_number,
+            note: stringValue(parsed.values.note)
+          }) as Record<string, unknown>);
+        }
+      } else if (action === 'list') {
+        commandName = 'watch_list';
+        output = toStampedLegacyResult('watch_list', await watch_list() as Record<string, unknown>);
+      } else if (action === 'show') {
+        commandName = 'watch_show';
+        output = toStampedLegacyResult('watch_show', await watch_show(required(second, 'watch show requires a watch_id.')) as Record<string, unknown>);
+      } else if (action === 'recheck') {
+        commandName = 'watch_recheck';
+        output = toStampedLegacyResult('watch_recheck', await watch_recheck({
+          watch_id: required(second, 'watch recheck requires a watch_id.'),
+          write: parsed.values.write !== false
+        }) as Record<string, unknown>);
+      } else if (action === 'remove') {
+        commandName = 'watch_remove';
+        output = toStampedLegacyResult('watch_remove', await watch_remove(required(second, 'watch remove requires a watch_id.')) as Record<string, unknown>);
+      } else {
+        usageError('watch requires add, list, show, recheck, or remove.');
       }
     } else if (command === 'capture') {
       const action = first;

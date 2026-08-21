@@ -312,6 +312,41 @@ export const TOOL_META = {
       'List local capture manifests.',
     annotations: { ...readLocal, title: 'List captures' }
   },
+  watch_add: {
+    title: 'Watch add',
+    role: 'store',
+    description:
+      'Create a local-only watch record for an issue or PR. Never writes to GitHub and is never created automatically from a WATCH routing mode.',
+    annotations: { ...writeLocal, title: 'Watch add' }
+  },
+  watch_list: {
+    title: 'Watch list',
+    role: 'store',
+    description:
+      'List local watch records. Local store read only; no GitHub calls.',
+    annotations: { ...readLocal, title: 'Watch list' }
+  },
+  watch_show: {
+    title: 'Watch show',
+    role: 'store',
+    description:
+      'Show one local watch record. Local store read only.',
+    annotations: { ...readLocal, title: 'Watch show' }
+  },
+  watch_recheck: {
+    title: 'Watch recheck',
+    role: 'store',
+    description:
+      'Fetch current target state, compare the stored fingerprint, and report exact field deltas. Updates the local record unless write=false. Never writes to GitHub.',
+    annotations: { readOnlyHint: false, idempotentHint: true, openWorldHint: true, title: 'Watch recheck' }
+  },
+  watch_remove: {
+    title: 'Watch remove',
+    role: 'store',
+    description:
+      'Delete a local watch record. Local-only; no GitHub mutation.',
+    annotations: { ...mutateLocal, title: 'Watch remove' }
+  },
   case_promote: {
     title: 'Promote capture',
     role: 'admin',
