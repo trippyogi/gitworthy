@@ -199,4 +199,12 @@ describe('decideFromSignals', () => {
       expect.objectContaining({ type: 'linked_pr_open_unclassified', strength: 'heuristic', effect: 'verify' })
     ]));
   });
+
+  it('does not attach contribution routing to the verdict policy result', () => {
+    const decision = decide(['released_fix']);
+    expect(decision.verdict).toBe('SKIP');
+    expect(decision.disposition).toBe('blocked');
+    expect(decision).not.toHaveProperty('routing');
+    expect(decision).not.toHaveProperty('primary_mode');
+  });
 });

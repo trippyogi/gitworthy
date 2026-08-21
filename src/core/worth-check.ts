@@ -8,7 +8,18 @@ import { createEnvelope, Envelope, GitworthyError, Signal } from './envelope.js'
 import { distinctiveTerms } from './terms.js';
 import { githubJson, GithubIssue } from '../lib/github.js';
 import { upsertLedgerEntry } from '../lib/ledger.js';
+import { stateFingerprint } from '../lib/state-fingerprint.js';
 import { decideFromSignals, type Disposition } from '../decision/policy.js';
+import { routeContribution } from '../decision/contribution-route.js';
+import { assessIssueQuality } from './candidate-quality.js';
+import type { Finding } from '../contracts/findings.js';
+import type {
+  RouteFacts,
+  RouteLinkedFacts,
+  RoutingCoverage,
+  RoutingDecision,
+  SourceSnapshot
+} from '../contracts/routing.js';
 
 type Input = { repo: string; issue_number: number; npm_package?: string; probe?: { file_glob?: string; contains?: string }; probe_template?: string };
 type SubResult = { name: string; ok: true; result: Envelope } | { name: string; ok: false; error: { code: string; message: string; not_checked: string[] } };
@@ -30,6 +41,19 @@ type WorthEnvelope = Envelope & {
   sub_results: SubResult[];
   timings_ms: Record<string, number>;
   perf: WorthPerf;
+  routing?: RoutingDecision;
+  source_snapshot?: SourceSnapshot;
+};
+
+type IssueSnapshot = {
+  state?: string;
+  updated_at?: string;
+  assignees: string[];
+  title?: string;
+  body?: string | null;
+  labels: string[];
+  comments?: number;
+  created_at?: string;
 };
 
 function linkedDensity(subResults: SubResult[]): { priorAttempts: number; referencedCommits: number; networkPrs: number; openCloser: string | null } {
@@ -108,11 +132,159 @@ export function chooseDisposition(input: {
   }).disposition;
 }
 
+function linkedPrEvidence(subResults: SubResult[]): Array<Record<string, unknown>> {
+  const linked = subResults.find((result) => result.ok && result.name === 'linked_work');
+  if (!linked?.ok) return [];
+  return linked.result.evidence.filter((item) =>
+    item.kind === 'linked_pr' && item.ignored_reason !== 'automation_author'
+  );
+}
+
+function isExplicitCloser(item: Record<string, unknown>): boolean {
+  return item.state === 'open'
+    && item.closes_issue === true
+    && item.source !== 'title_overlap'
+    && !(item.draft === true && item.closes_issue !== true);
+}
+
+function buildLinkedFacts(subResults: SubResult[], findings: Finding[]): RouteLinkedFacts {
+  const prs = linkedPrEvidence(subResults);
+  const activeClosers = prs.filter((item) => isExplicitCloser(item));
+  const activeRelated = prs.filter((item) => item.state === 'open' && !isExplicitCloser(item));
+  const closedUnmerged = prs.filter((item) => item.state === 'closed' && item.merged !== true);
+  const mergedClosers = prs.filter((item) => item.merged === true || item.state === 'merged');
+  return {
+    activeClosers: activeClosers.length,
+    activeRelatedPrs: activeRelated.length,
+    closedUnmergedAttempts: closedUnmerged.length,
+    mergedClosers: mergedClosers.length,
+    assigned: findings.some((item) => item.type === 'assigned'),
+    claimRequired: findings.some((item) => item.type === 'claim_required'),
+    issueOpen: true,
+    substantivePriorAttempt: closedUnmerged.some((item) => item.substantive === true)
+  };
+}
+
+function buildCoverage(subResults: SubResult[], shortCircuited: boolean, extraNotChecked: string[]): RoutingCoverage {
+  const failed = subResults.filter((result) => !result.ok);
+  const failedChecks = failed.map((result) => result.name);
+  const skipped = extraNotChecked
+    .map((note) => note.match(/^(issue_vs_main|branch_scan|dupe_cluster|release_gap)/)?.[1])
+    .filter((name): name is string => Boolean(name));
+  const rateLimited = failed.some((result) => result.ok === false && /rate/i.test(result.error.code + result.error.message));
+  const budgetTruncated = failed.some((result) => result.ok === false && /budget|truncat/i.test(result.error.code + result.error.message));
+  const mandatoryFailed = failedChecks.includes('linked_work')
+    || failedChecks.includes('contrib_policy')
+    || (!shortCircuited && failedChecks.includes('issue_vs_main'));
+  return {
+    mandatory_checks_complete: !mandatoryFailed,
+    failed_checks: failedChecks,
+    skipped_checks: skipped,
+    budget_truncated: budgetTruncated,
+    rate_limit_degraded: rateLimited,
+    snapshot_age_ms: 0,
+    advisory_missing: shortCircuited ? skipped : []
+  };
+}
+
+function categoryHintsFromIssue(issue?: IssueSnapshot): RouteFacts['categoryHints'] {
+  if (!issue) return undefined;
+  const labels = issue.labels.map((label) => label.toLowerCase());
+  const documentation = labels.some((label) => label === 'documentation' || label === 'docs' || label === 'doc');
+  const evaluation = labels.some((label) => label === 'eval' || label === 'benchmark' || label === 'evaluation');
+  const implementation = labels.some((label) => label === 'bug' || label === 'enhancement' || label === 'feature');
+  if ((!documentation && !evaluation) || implementation) return undefined;
+  return { documentation: documentation && !implementation, evaluation: evaluation && !implementation };
+}
+
+function buildSourceSnapshot(input: {
+  repo: string;
+  issueNumber: number;
+  issue?: IssueSnapshot;
+  subResults: SubResult[];
+  findings: Finding[];
+}): SourceSnapshot {
+  const linked_prs = linkedPrEvidence(input.subResults).flatMap((item) => {
+    const number = typeof item.number === 'number' ? item.number : undefined;
+    if (!number) return [];
+    return [{
+      number,
+      state: typeof item.state === 'string' ? item.state : 'unknown',
+      ...(typeof item.draft === 'boolean' ? { draft: item.draft } : {}),
+      ...(typeof item.merged === 'boolean' ? { merged: item.merged } : {}),
+      ...(typeof item.updated_at === 'string' ? { updated_at: item.updated_at } : {}),
+      ...(typeof item.head_sha === 'string' ? { head_sha: item.head_sha } : {}),
+      ...(typeof item.closes_issue === 'boolean' ? { closes_issue: item.closes_issue } : {})
+    }];
+  });
+  const assignees = input.issue?.assignees ?? [];
+  const fingerprint = stateFingerprint({
+    repo: input.repo,
+    issue_number: input.issueNumber,
+    issue_state: input.issue?.state,
+    issue_updated_at: input.issue?.updated_at,
+    assignees,
+    linked_prs,
+    contribution_policy: {
+      claim_required: input.findings.some((item) => item.type === 'claim_required'),
+      no_pr_path: input.findings.some((item) => item.type === 'no_pr_path')
+    }
+  });
+  return {
+    observed_at: new Date().toISOString(),
+    issue: input.issue
+      ? {
+        ...(input.issue.state ? { state: input.issue.state } : {}),
+        ...(input.issue.updated_at ? { updated_at: input.issue.updated_at } : {}),
+        assignees
+      }
+      : undefined,
+    linked_prs,
+    state_fingerprint: fingerprint
+  };
+}
+
+function buildRouteFacts(
+  decision: ReturnType<typeof decideFromSignals>,
+  subResults: SubResult[],
+  shortCircuited: boolean,
+  extraNotChecked: string[],
+  issue?: IssueSnapshot
+): RouteFacts {
+  const coverage = buildCoverage(subResults, shortCircuited, extraNotChecked);
+  const quality = issue && typeof issue.title === 'string'
+    ? assessIssueQuality({
+      title: issue.title,
+      body: issue.body,
+      labels: issue.labels,
+      assignees: issue.assignees,
+      comments: issue.comments ?? 0,
+      created_at: issue.created_at ?? new Date().toISOString(),
+      updated_at: issue.updated_at ?? new Date().toISOString()
+    })
+    : undefined;
+  return {
+    verdict: decision.verdict,
+    disposition: decision.disposition,
+    findings: decision.findings,
+    mandatoryFailures: coverage.failed_checks,
+    linked: buildLinkedFacts(subResults, decision.findings),
+    quality: quality
+      ? { looksLikeBug: quality.looks_like_bug, repro: quality.repro, softAsk: quality.soft_ask }
+      : decision.findings.some((item) => item.type === 'needs_repro')
+        ? { looksLikeBug: true, repro: 'missing', softAsk: false }
+        : undefined,
+    categoryHints: categoryHintsFromIssue(issue),
+    coverage
+  };
+}
+
 function finalize(
   sub_results: SubResult[],
   timings_ms: Record<string, number>,
   shortCircuited: boolean,
-  extraNotChecked: string[] = []
+  extraNotChecked: string[] = [],
+  context: { repo: string; issue_number: number; issue?: IssueSnapshot } = { repo: '', issue_number: 0 }
 ): WorthEnvelope {
   const errors = sub_results.filter((result) => !result.ok);
   const signals = [...new Set(sub_results.flatMap((result) => result.ok ? (result.result.signals ?? []) : []))] as Signal[];
@@ -151,6 +323,16 @@ function finalize(
     ])],
     cached: false
   });
+  const routing = routeContribution(buildRouteFacts(decision, sub_results, shortCircuited, extraNotChecked, context.issue));
+  const source_snapshot = context.repo
+    ? buildSourceSnapshot({
+      repo: context.repo,
+      issueNumber: context.issue_number,
+      issue: context.issue,
+      subResults: sub_results,
+      findings: decision.findings
+    })
+    : undefined;
   return {
     ...base,
     verdict: decision.verdict,
@@ -158,7 +340,9 @@ function finalize(
     reasons,
     sub_results,
     timings_ms,
-    perf: extractPerf(sub_results, shortCircuited)
+    perf: extractPerf(sub_results, shortCircuited),
+    routing,
+    ...(source_snapshot ? { source_snapshot } : {})
   };
 }
 
@@ -189,14 +373,26 @@ export async function worth_check(input: Input): Promise<WorthEnvelope> {
 
   // Cheap title fetch for branch keywords; overlaps with linked_work's issue fetch but avoids waiting on clone.
   let issueKeywords = [String(input.issue_number)];
+  let issueSnap: IssueSnapshot | undefined;
   const keywordsStarted = Date.now();
   try {
     const issue = await githubJson<GithubIssue>(`/repos/${input.repo}/issues/${input.issue_number}`);
     issueKeywords = distinctiveTerms(issue.title, 8);
+    issueSnap = {
+      state: issue.state,
+      updated_at: issue.updated_at,
+      assignees: (issue.assignees ?? []).map((assignee) => assignee.login),
+      title: issue.title,
+      body: issue.body,
+      labels: issue.labels.map((label) => label.name),
+      comments: issue.comments,
+      created_at: issue.created_at
+    };
   } catch {
     // Fall back to issue-number-only keywords; branch_scan still matches fix-<n> branches.
   }
   timings_ms.issue_keywords = Date.now() - keywordsStarted;
+  const context = { repo: input.repo, issue_number: input.issue_number, issue: issueSnap };
 
   // Phase 1: cheap blockers in parallel (no clone).
   const phase1Started = Date.now();
@@ -213,7 +409,7 @@ export async function worth_check(input: Input): Promise<WorthEnvelope> {
       ...(input.npm_package ? ['release_gap skipped after definitive open closing PR (perf short-circuit).'] : [])
     ];
     timings_ms.total = Date.now() - totalStarted;
-    const shortCircuitResult = finalize(phase1, timings_ms, true, skipped);
+    const shortCircuitResult = finalize(phase1, timings_ms, true, skipped, context);
     await recordLedgerBestEffort(input, shortCircuitResult);
     return shortCircuitResult;
   }
@@ -231,7 +427,7 @@ export async function worth_check(input: Input): Promise<WorthEnvelope> {
   timings_ms.phase2 = Date.now() - phase2Started;
   timings_ms.total = Date.now() - totalStarted;
 
-  const result = finalize([...phase1, ...phase2], timings_ms, false);
+  const result = finalize([...phase1, ...phase2], timings_ms, false, [], context);
   await recordLedgerBestEffort(input, result);
   return result;
 }

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { CommonResultCoreSchema, DispositionSchema, VerdictSchema } from './common.js';
 import { FindingSchema } from './findings.js';
+import { RoutingDecisionSchema, SourceSnapshotSchema } from './routing.js';
 
 export const NextActionSchema = z.object({
   kind: z.string().min(1),
@@ -35,7 +36,9 @@ export const CheckResultSchema = CommonResultCoreSchema.extend({
   verdict: VerdictSchema,
   disposition: DispositionSchema,
   next_actions: z.array(NextActionSchema).default([]),
-  findings: z.array(FindingSchema).default([])
+  findings: z.array(FindingSchema).default([]),
+  routing: RoutingDecisionSchema.optional(),
+  source_snapshot: SourceSnapshotSchema.optional()
 }).merge(LegacyCompatibilitySchema);
 
 export type CheckResult = z.infer<typeof CheckResultSchema>;

@@ -310,6 +310,8 @@ export async function persistCheckResultBestEffort(result: {
   findings?: DecisionRecord['findings'];
   reasons?: string[];
   signals?: string[];
+  routing?: DecisionRecord['routing'];
+  source_snapshot?: DecisionRecord['source_snapshot'];
   gitworthy_version?: string;
   schema_version?: string;
 }): Promise<void> {
@@ -344,6 +346,8 @@ export async function persistCheckResultBestEffort(result: {
       findings: result.findings ?? [],
       reasons: result.reasons ?? [],
       signals: result.signals ?? [],
+      ...(result.routing ? { routing: result.routing } : {}),
+      ...(result.source_snapshot ? { source_snapshot: result.source_snapshot } : {}),
       has_track_o_covariates: hasCovariates,
       ...(result.gitworthy_version ? { gitworthy_version: result.gitworthy_version } : {}),
       ...(result.schema_version
