@@ -147,7 +147,7 @@ function isExplicitCloser(item: Record<string, unknown>): boolean {
     && !(item.draft === true && item.closes_issue !== true);
 }
 
-function buildLinkedFacts(subResults: SubResult[], findings: Finding[]): RouteLinkedFacts {
+function buildLinkedFacts(subResults: SubResult[], findings: Finding[], issue?: IssueSnapshot): RouteLinkedFacts {
   const prs = linkedPrEvidence(subResults);
   const activeClosers = prs.filter((item) => isExplicitCloser(item));
   const activeRelated = prs.filter((item) => item.state === 'open' && !isExplicitCloser(item));
@@ -160,7 +160,7 @@ function buildLinkedFacts(subResults: SubResult[], findings: Finding[]): RouteLi
     mergedClosers: mergedClosers.length,
     assigned: findings.some((item) => item.type === 'assigned'),
     claimRequired: findings.some((item) => item.type === 'claim_required'),
-    issueOpen: true,
+    issueOpen: issue?.state ? issue.state !== 'closed' : undefined,
     substantivePriorAttempt: closedUnmerged.some((item) => item.substantive === true)
   };
 }
@@ -268,7 +268,7 @@ function buildRouteFacts(
     disposition: decision.disposition,
     findings: decision.findings,
     mandatoryFailures: coverage.failed_checks,
-    linked: buildLinkedFacts(subResults, decision.findings),
+    linked: buildLinkedFacts(subResults, decision.findings, issue),
     quality: quality
       ? { looksLikeBug: quality.looks_like_bug, repro: quality.repro, softAsk: quality.soft_ask }
       : decision.findings.some((item) => item.type === 'needs_repro')

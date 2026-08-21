@@ -251,6 +251,37 @@ describe('routeContribution safety mutations', () => {
     expect(input.verdict).toBe('SKIP');
   });
 
+  it('does not salvage while assignment or claim protocol is unresolved', () => {
+    const decision = routeContribution(facts({
+      verdict: 'VERIFY',
+      disposition: 'claim_first',
+      findings: [finding('assigned', { strength: 'definitive' })],
+      linked: linked({
+        assigned: true,
+        closedUnmergedAttempts: 1,
+        issueOpen: true,
+        substantivePriorAttempt: true
+      })
+    }));
+    expect(decision.primary_mode).toBe('WATCH');
+    expect(decision.primary_mode).not.toBe('SALVAGE');
+    expect(decision.hard_constraints).toContain('claim_unresolved');
+  });
+
+  it('does not salvage a closed issue even with a substantive prior attempt', () => {
+    const decision = routeContribution(facts({
+      verdict: 'VERIFY',
+      disposition: 'review',
+      findings: [finding('linked_pr_closed', { strength: 'definitive' })],
+      linked: linked({
+        closedUnmergedAttempts: 1,
+        issueOpen: false,
+        substantivePriorAttempt: true
+      })
+    }));
+    expect(decision.primary_mode).not.toBe('SALVAGE');
+  });
+
   it('does not promote ACT-like weak proof to BUILD', () => {
     const decision = routeContribution(facts({
       verdict: 'ACT',
