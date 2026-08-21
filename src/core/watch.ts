@@ -7,6 +7,7 @@ import { githubJson } from '../lib/github.js';
 import { stateFingerprint } from '../lib/state-fingerprint.js';
 import { getWatchRecord, listWatchRecords, putWatchRecord, removeWatchRecord } from '../lib/watch-store.js';
 import { GitworthyError, createEnvelope, type Envelope } from './envelope.js';
+import { linked_work } from './linked-work.js';
 import type { OpportunityTarget } from '../contracts/opportunities.js';
 import {
   WatchRecordSchema,
@@ -69,11 +70,27 @@ export async function snapshotTarget(target: OpportunityTarget): Promise<{ snaps
   }
   if (target.kind === 'issue') {
     const issue = await githubJson<GithubIssue>(`/repos/${target.repo}/issues/${target.issue_number}`);
+    const linked = await linked_work({ repo: target.repo, issue_number: target.issue_number });
+    const linked_prs = (linked.evidence as Array<{
+      kind?: string;
+      number?: number;
+      state?: string;
+      draft?: boolean;
+      merged?: boolean;
+      updated_at?: string;
+    }>).filter((item) => item.kind === 'linked_pr' && typeof item.number === 'number')
+      .map((item) => ({
+        number: item.number!,
+        state: item.state ?? 'open',
+        draft: item.draft === true,
+        merged: item.merged === true,
+        updated_at: item.updated_at
+      }));
     const snapshot: WatchSnapshot = {
       issue_state: issue.state,
       issue_updated_at: issue.updated_at,
       assignees: (issue.assignees ?? []).map((row) => row.login ?? '').filter(Boolean),
-      linked_prs: []
+      linked_prs
     };
     return {
       snapshot,
@@ -83,7 +100,7 @@ export async function snapshotTarget(target: OpportunityTarget): Promise<{ snaps
         issue_state: snapshot.issue_state,
         issue_updated_at: snapshot.issue_updated_at,
         assignees: snapshot.assignees,
-        linked_prs: []
+        linked_prs
       })
     };
   }

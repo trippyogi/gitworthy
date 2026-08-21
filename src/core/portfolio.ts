@@ -408,6 +408,17 @@ export async function portfolio(input: PortfolioInput, deps: PortfolioDeps = {})
     const watch = deps.listWatch ? await deps.listWatch() : await listLocalWatches();
     if (watch.length === 0) notChecked.push('Watch registry is empty; WATCH routes never auto-create watches.');
     checked.push(`included ${watch.length} local watches`);
+    for (const record of watch as Array<{ target: OpportunityTarget }>) {
+      const already = items.some((item) => JSON.stringify(item.target) === JSON.stringify(record.target));
+      if (already) continue;
+      items.push(PortfolioItemSchema.parse({
+        target: record.target,
+        primary_mode: 'WATCH',
+        dispatch_state: 'watching',
+        score: 0.2,
+        reasons: ['Local watch registry; routing never auto-creates this record.']
+      }));
+    }
   }
 
   const maxItems = Math.max(1, input.max_items ?? 10);

@@ -209,6 +209,23 @@ describe('portfolio capacity and dispatch', () => {
     expect(result.items).toEqual([]);
   });
 
+  it('merges local watches into portfolio items when include_watch is set', async () => {
+    const result = await portfolio({ repo: 'o/r', include_prs: false, include_watch: true }, {
+      hunt: async () => ({
+        verdict_summary: 'hunt',
+        evidence: [],
+        signals: [],
+        checked: ['hunt'],
+        not_checked: ['none'],
+        cached: false,
+        fetched_at: '2026-08-01T00:00:00.000Z'
+      }),
+      listOutcomes: async () => [],
+      listWatch: async () => [{ target: { kind: 'issue', repo: 'o/r', issue_number: 77 } }]
+    });
+    expect(result.items.some((item) => item.primary_mode === 'WATCH' && item.dispatch_state === 'watching')).toBe(true);
+  });
+
   it('rejects repo and org together', async () => {
     await expect(portfolio({ repo: 'o/r', org: 'acme' })).rejects.toMatchObject({
       code: 'portfolio_invalid_input'
