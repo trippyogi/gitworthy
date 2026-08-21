@@ -225,10 +225,10 @@ describe('portfolio capacity and dispatch', () => {
         cached: false,
         fetched_at: '2026-08-01T00:00:00.000Z'
       }),
-      listOutcomes: async () => [
-        outcome({ event: 'selected', target: { repo: 'other/x', issue_number: 9 }, data: { contribution_mode: 'BUILD' } }),
-        outcome({ event: 'pr_opened', target: { repo: 'other/y', issue_number: 8 }, data: { contribution_mode: 'BUILD' } })
-      ]
+      listOutcomes: async (input) => {
+        expect(input.repo).toBe('acme/one');
+        return [];
+      }
     });
     expect(result.capacity.used.BUILD ?? 0).toBe(0);
     expect(result.items[0]?.dispatch_state).toBe('ready');
@@ -254,6 +254,122 @@ describe('portfolio capacity and dispatch', () => {
       listOutcomes: async () => []
     });
     expect(result.items).toEqual([]);
+  });
+
+  it('fans out bounded PR scans across org hunt repos', async () => {
+    const scanned: string[] = [];
+    const result = await portfolio({ org: 'acme', max_items: 10 }, {
+      hunt: async () => ({
+        verdict_summary: 'hunt',
+        evidence: [
+          {
+            kind: 'hunt_candidate',
+            repo: 'acme/one',
+            issue_number: 1,
+            title: 'Fix crash',
+            worth_check: {
+              verdict: 'ACT',
+              disposition: 'greenfield',
+              findings: [],
+              routing: {
+                routing_version: 1,
+                primary_mode: 'BUILD',
+                alternate_modes: [],
+                build_contention: 'GREEN',
+                confidence: 'high',
+                reasons: ['greenfield'],
+                hard_constraints: [],
+                next_actions: [],
+                evidenceability: { score: 0.8, reasons: [] },
+                effort_bucket: 'fast',
+                coverage: {
+                  mandatory_checks_complete: true,
+                  failed_checks: [],
+                  skipped_checks: [],
+                  budget_truncated: false,
+                  rate_limit_degraded: false,
+                  advisory_missing: []
+                }
+              }
+            }
+          },
+          {
+            kind: 'hunt_candidate',
+            repo: 'acme/two',
+            issue_number: 2,
+            title: 'Docs',
+            worth_check: {
+              verdict: 'VERIFY',
+              disposition: 'review',
+              findings: [],
+              routing: {
+                routing_version: 1,
+                primary_mode: 'REVIEW',
+                alternate_modes: [],
+                build_contention: 'YELLOW',
+                confidence: 'medium',
+                reasons: ['review'],
+                hard_constraints: [],
+                next_actions: [],
+                evidenceability: { score: 0.5, reasons: [] },
+                effort_bucket: 'medium',
+                coverage: {
+                  mandatory_checks_complete: true,
+                  failed_checks: [],
+                  skipped_checks: [],
+                  budget_truncated: false,
+                  rate_limit_degraded: false,
+                  advisory_missing: []
+                }
+              }
+            }
+          }
+        ],
+        signals: [],
+        checked: ['hunt'],
+        not_checked: ['none'],
+        cached: false,
+        fetched_at: '2026-08-01T00:00:00.000Z'
+      }),
+      listOutcomes: async () => [],
+      pr_scan: async (input) => {
+        scanned.push(`${input.repo}:${input.inventory_limit}:${input.enrich_limit}`);
+        return {
+          pr_scan_version: 1,
+          repo: input.repo,
+          inventory_count: 1,
+          filtered_count: 0,
+          enriched_count: input.enrich_limit === 0 ? 0 : 1,
+          budget_truncated: false,
+          opportunities: [{
+            target: { kind: 'pull_request', repo: input.repo, pr_number: 9 },
+            inventory: {
+              target: { kind: 'pull_request', repo: input.repo, pr_number: 9 },
+              repo: input.repo,
+              number: 9,
+              title: 'Fix crash',
+              author: 'alice',
+              draft: false,
+              state: 'open',
+              merged: false,
+              created_at: '2026-08-01T00:00:00.000Z',
+              updated_at: '2026-08-01T00:00:00.000Z',
+              cheap_rank: 0.7
+            },
+            enriched: input.enrich_limit !== 0,
+            hint_mode: 'REVIEW',
+            hint_reasons: ['org fan-out'],
+            hard_constraints: []
+          }],
+          checked: ['mock'],
+          not_checked: ['mock']
+        };
+      }
+    });
+    expect(scanned.some((row) => row.startsWith('acme/one:'))).toBe(true);
+    expect(scanned.some((row) => row.startsWith('acme/two:'))).toBe(true);
+    expect(result.items.some((item) => item.target.kind === 'pull_request' && item.target.repo === 'acme/one')).toBe(true);
+    expect(result.not_checked.join(' ')).not.toMatch(/does not fan out PR scans/);
   });
 
   it('rejects repo and org together', async () => {

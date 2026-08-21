@@ -9,6 +9,8 @@ import { GENERIC_CONTRIBUTION_PROFILE, matchDomains, parseContributionProfile } 
 import { scoreOpportunity } from './opportunity-score.js';
 import { routeContribution } from '../decision/contribution-route.js';
 import { listOutcomes } from '../lib/store-query.js';
+import { getActiveRunBudget } from '../lib/run-budget.js';
+import { PR_ENRICH_LIMIT, PR_INVENTORY_LIMIT } from '../contracts/pr-scan.js';
 import type { OutcomeEvent } from '../contracts/outcomes.js';
 import type { ContributionMode, RoutingDecision, RouteFacts } from '../contracts/routing.js';
 import type { ContributionProfile } from '../contracts/contribution-profile.js';
@@ -20,6 +22,9 @@ import {
   type PortfolioCapacity,
   type PortfolioItem
 } from '../contracts/portfolio.js';
+
+/** Org portfolio fans out PR scans to at most this many hunt repos (not every org repo). */
+export const ORG_PR_SCAN_REPO_CAP = 5;
 
 const ACTIVE_EVENTS = new Set(['selected', 'patch_started', 'pr_opened']);
 const TERMINAL_EVENTS = new Set([
@@ -344,6 +349,66 @@ function diversify(items: PortfolioItem[], maxItems: number): PortfolioItem[] {
   return picked;
 }
 
+function reposForOrgPrScan(candidates: HuntCandidate[], maxRepos?: number): string[] {
+  const counts = new Map<string, number>();
+  for (const candidate of candidates) {
+    if (!candidate.repo) continue;
+    counts.set(candidate.repo, (counts.get(candidate.repo) ?? 0) + 1);
+  }
+  const cap = Math.min(ORG_PR_SCAN_REPO_CAP, Math.max(1, maxRepos ?? ORG_PR_SCAN_REPO_CAP));
+  return [...counts.entries()]
+    .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
+    .slice(0, cap)
+    .map(([repo]) => repo);
+}
+
+async function scanPrsBounded(input: {
+  repos: string[];
+  profile: ContributionProfile;
+  capacity: PortfolioCapacity;
+  runPrScan: typeof pr_scan;
+  checked: string[];
+  notChecked: string[];
+}): Promise<{ items: PortfolioItem[]; budgetTruncated: boolean }> {
+  const items: PortfolioItem[] = [];
+  let remainingInventory = PR_INVENTORY_LIMIT;
+  let remainingEnrich = PR_ENRICH_LIMIT;
+  let budgetTruncated = false;
+  const perRepoInventory = Math.max(1, Math.floor(PR_INVENTORY_LIMIT / Math.max(1, input.repos.length)));
+
+  for (const repo of input.repos) {
+    const budget = getActiveRunBudget();
+    if (budget?.counters.exhausted || remainingInventory <= 0) {
+      budgetTruncated = true;
+      input.notChecked.push(`PR scan skipped for ${repo} after inventory/budget cap.`);
+      continue;
+    }
+    const inventoryLimit = Math.min(remainingInventory, perRepoInventory);
+    const enrichLimit = remainingEnrich;
+    try {
+      const scan = await input.runPrScan({
+        repo,
+        stale_pr_days: input.profile.stale_pr_days,
+        inventory_limit: inventoryLimit,
+        enrich_limit: enrichLimit
+      });
+      remainingInventory -= scan.inventory_count;
+      remainingEnrich -= scan.enriched_count;
+      if (scan.budget_truncated) budgetTruncated = true;
+      input.checked.push(`${repo} PR inventory ${scan.inventory_count}, enriched ${scan.enriched_count}`);
+      for (const opportunity of scan.opportunities) {
+        items.push(itemFromPr(opportunity, input.profile, input.capacity));
+      }
+    } catch (error) {
+      input.notChecked.push(`PR scan failed for ${repo}: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+  if (budgetTruncated) {
+    input.notChecked.push('Org PR fan-out was partial or budget-degraded; inventory stays ≤25 and enrich ≤5.');
+  }
+  return { items, budgetTruncated };
+}
+
 /** Rank issue + PR opportunities without a global ACT/VERIFY/SKIP verdict. */
 export async function portfolio(input: PortfolioInput, deps: PortfolioDeps = {}): Promise<PortfolioResult> {
   if (Boolean(input.repo) === Boolean(input.org)) {
@@ -378,10 +443,11 @@ export async function portfolio(input: PortfolioInput, deps: PortfolioDeps = {})
     candidates.map((item) => item.repo).filter((repo): repo is string => Boolean(repo))
   );
   if (input.repo) huntRepos.add(input.repo);
-  const rawOutcomes = await loadOutcomes({ repo: input.repo, limit: 500 });
   const outcomes = input.repo
-    ? rawOutcomes
-    : rawOutcomes.filter((event) => huntRepos.has(event.target.repo));
+    ? await loadOutcomes({ repo: input.repo, limit: 500 })
+    : (await Promise.all(
+      [...huntRepos].map((repo) => loadOutcomes({ repo, limit: 200 }))
+    )).flat();
   const capacity = computeCapacity(outcomes, profile);
 
   const items: PortfolioItem[] = [];
@@ -390,19 +456,27 @@ export async function portfolio(input: PortfolioInput, deps: PortfolioDeps = {})
     if (item) items.push(item);
   }
 
-  if (input.include_prs !== false && input.repo) {
-    const scan = await runPrScan({
-      repo: input.repo,
-      stale_pr_days: profile.stale_pr_days,
-      inventory_limit: 25,
-      enrich_limit: 5
-    });
-    checked.push(`PR inventory ${scan.inventory_count}, enriched ${scan.enriched_count}`);
-    for (const opportunity of scan.opportunities) {
-      items.push(itemFromPr(opportunity, profile, capacity));
+  if (input.include_prs !== false) {
+    const prRepos = input.repo ? [input.repo] : reposForOrgPrScan(candidates, input.max_repos);
+    if (input.org && prRepos.length === 0) {
+      notChecked.push('Org PR fan-out needs hunt candidate repos; none were present.');
+    } else if (input.org) {
+      const uniqueHuntRepos = new Set(candidates.map((item) => item.repo).filter((repo): repo is string => Boolean(repo)));
+      if (uniqueHuntRepos.size > prRepos.length) {
+        notChecked.push(`Org PR fan-out capped at ${prRepos.length} of ${uniqueHuntRepos.size} hunt repos (inventory ≤${PR_INVENTORY_LIMIT}, enrich ≤${PR_ENRICH_LIMIT}).`);
+      }
     }
-  } else if (input.org) {
-    notChecked.push('Org portfolio does not fan out PR scans; pass a repo for pr_scan.');
+    if (prRepos.length > 0) {
+      const scanned = await scanPrsBounded({
+        repos: prRepos,
+        profile,
+        capacity,
+        runPrScan,
+        checked,
+        notChecked
+      });
+      items.push(...scanned.items);
+    }
   }
 
   if (input.include_watch) {

@@ -3,7 +3,7 @@
 ## Unreleased
 
 - Later routing slices (GW-050): honest CI triage classes, caller-supplied history scan, existing platform hints, and eval-anomaly opportunity ingest.
-- Contribution routing v2 (GW-043–047): `worth_check` can attach a `routing` decision; `gitworthy portfolio` / MCP `portfolio` ranks issue+PR opportunities by contribution mode with separate `dispatch_state`; `gitworthy prs` / MCP `pr_scan` is a bounded two-stage PR inventory. Verdict policy is unchanged. Hermes `contribution_profile` examples stay in docs, not global defaults.
+- Contribution routing v2 (GW-043–047): `worth_check` can attach a `routing` decision; `gitworthy portfolio` / MCP `portfolio` ranks issue+PR opportunities by contribution mode with separate `dispatch_state`; `gitworthy prs` / MCP `pr_scan` is a bounded two-stage PR inventory. Verdict policy is unchanged. Hermes `contribution_profile` examples stay in docs, not global defaults. Org portfolio fans out PR scans to at most 5 hunt repos (inventory ≤25, enrich ≤5). Advisory `failed_checks` do not demote BUILD.
 - Agent Plugins v1.0.0 packaging: `plugin.json`, `mcp.json`, canonical `skills/gitworthy/SKILL.md`, CI sync check (`pnpm agent-plugins:check`).
 - Docs: [`CORPUS_CONTRIB.md`](./docs/CORPUS_CONTRIB.md) — how dogfooders grow Track O (local) vs Track F (public fixtures) without mixing corpora.
 - Track O Phase 2: `outcome backfill` / MCP `store_outcome_backfill` reconstructs terminal outcomes from authored third-party PRs (`reconstructed` partition; dry-run default).
