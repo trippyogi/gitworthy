@@ -26,7 +26,7 @@ Evidence tools support investigation; they are not substitutes for `worth_check`
 | primary | `doctor`, `worth_check`, `hunt`, `portfolio`, `brief`, `brief_show`, `store_outcome_record`, `store_outcome_reconcile`, `store_outcome_backfill` |
 | evidence | `scan`, `org_scan`, `pr_scan`, `branch_scan`, `issue_vs_main`, `release_gap`, `dupe_cluster`, `related_cluster`, `linked_work`, `contention`, `scope_check`, `contrib_policy`, `list_probe_templates` |
 | config | `config_validate`, `config_show`, `profile_show` |
-| store | `ledger_*`, `store_target_show`, `store_decision_list`, `store_recheck`, `store_export` |
+| store | `ledger_*`, `watch_*`, `store_target_show`, `store_decision_list`, `store_recheck`, `store_export` |
 | admin | `store_migrate_ledger`, `store_rebuild_indexes`, `capture_*`, `case_promote` |
 
 Each registration includes a long description, MCP annotations, and `_meta.gitworthy_role` (see `src/mcp/tool-meta.ts`).
