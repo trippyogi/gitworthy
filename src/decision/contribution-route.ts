@@ -33,9 +33,7 @@ function hasHeuristicOnlyTitleOverlap(facts: RouteFacts): boolean {
 }
 
 function failedMandatory(facts: RouteFacts): boolean {
-  return facts.mandatoryFailures.length > 0
-    || facts.coverage.failed_checks.length > 0
-    || hasFinding(facts, 'mandatory_check_failed');
+  return facts.mandatoryFailures.length > 0 || hasFinding(facts, 'mandatory_check_failed');
 }
 
 function providersIncomplete(facts: RouteFacts): boolean {

@@ -160,6 +160,15 @@ describe('routeContribution decision table', () => {
     expect(decision.reasons.join(' ')).toMatch(/not strong enough for SALVAGE|Age or inactivity/);
   });
 
+  it('does not treat advisory provider failures as mandatory BUILD blockers', () => {
+    const decision = routeContribution(facts({
+      coverage: coverage({ failed_checks: ['branch_scan', 'dupe_cluster'] })
+    }));
+    expect(decision.primary_mode).toBe('BUILD');
+    expect(decision.confidence).toBe('high');
+    expect(decision.hard_constraints).not.toContain('suppress_build');
+  });
+
   it('routes provider failure to low-confidence non-BUILD', () => {
     const decision = routeContribution(facts({
       verdict: 'VERIFY',

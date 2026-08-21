@@ -267,7 +267,9 @@ function buildRouteFacts(
     verdict: decision.verdict,
     disposition: decision.disposition,
     findings: decision.findings,
-    mandatoryFailures: coverage.failed_checks,
+    mandatoryFailures: coverage.failed_checks.filter((name) => (
+      name === 'linked_work' || name === 'contrib_policy' || (!shortCircuited && name === 'issue_vs_main')
+    )),
     linked: buildLinkedFacts(subResults, decision.findings, issue),
     quality: quality
       ? { looksLikeBug: quality.looks_like_bug, repro: quality.repro, softAsk: quality.soft_ask }
