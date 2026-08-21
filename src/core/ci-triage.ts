@@ -3,6 +3,8 @@
  * Does not infer STALE_FIXTURE from metadata.
  */
 
+import { createEnvelope, type Envelope } from './envelope.js';
+
 export const CI_TRIAGE_CLASSES = [
   'head_only_failure',
   'base_failure',
@@ -76,4 +78,48 @@ export function classifyCi(input: { head: CiCheck[]; base?: CiCheck[] }): CiTria
   }
   reasons.push('Head and base failures overlap only in part.');
   return { class: 'shared_failure', reasons, failed_on_head: headFails, failed_on_base: baseFails };
+}
+
+function nextActionFor(classified: CiTriageResult): string {
+  switch (classified.class) {
+    case 'head_only_failure':
+      return 'Inspect the failing head check on this branch; do not treat it as a stale fixture.';
+    case 'base_failure':
+      return 'Base is already red; wait or fix the shared base before treating this as a head-only regression.';
+    case 'shared_failure':
+      return 'Failure is shared with base; do not treat it as unique to this change.';
+    case 'flaky_suspected':
+      return 'Same check passed and failed across attempts; rerun or quarantine before routing.';
+    default:
+      return 'Supply head and base check conclusions before using CI class as routing evidence.';
+  }
+}
+
+/** Envelope wrapper for CLI/MCP. Never emits stale_fixture. */
+export function ci_triage(input: { head: CiCheck[]; base?: CiCheck[] }): Envelope & CiTriageResult & {
+  confidence: 'low' | 'medium';
+  next_actions: Array<{ action: string; command?: string; message: string }>;
+} {
+  const classified = classifyCi(input);
+  const next = nextActionFor(classified);
+  return {
+    ...createEnvelope({
+      verdict_summary: `CI triage class ${classified.class}.`,
+      evidence: [{
+        kind: 'ci_triage',
+        class: classified.class,
+        reasons: classified.reasons,
+        failed_on_head: classified.failed_on_head,
+        failed_on_base: classified.failed_on_base
+      }],
+      checked: ['classified supplied head/base check conclusions'],
+      not_checked: [
+        'CI triage never infers stale_fixture from metadata.',
+        input.base === undefined ? 'Base check runs were not supplied.' : 'Used caller-supplied base conclusions only.'
+      ]
+    }),
+    ...classified,
+    confidence: classified.class === 'unknown' ? 'low' : 'medium',
+    next_actions: [{ action: 'inspect_ci', message: next }]
+  };
 }

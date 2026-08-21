@@ -48,6 +48,8 @@ Before growing volume, read the taxonomy in [`CORPUS.md`](./CORPUS.md): suite pa
 
 Do not invent frozen cases without adjudication. Heuristic-only SKIP must not appear in the corpus.
 
+Routing accuracy is a separate headline from verdict precision. Snapshot-backed routing cases (`partition: snapshot`) are admitted only from real captures plus human adjudication of `routing.primary_mode`. Reconstructed/synthetic partitions stay out of the frozen accuracy denominator. Until those captures exist, headline routing accuracy stays empty — do not invent snapshot-backed routing cases from memory.
+
 ## Track O (outcome calibration)
 
 Separate from frozen. Joins a stored T0 decision to a later PR outcome for product insight — does **not** block CI or redefine 1.0. Spec: [`TRACK_O.md`](./TRACK_O.md).

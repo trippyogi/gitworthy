@@ -15,7 +15,14 @@ export type EvalAnomalyInput = {
 
 export type EvalAnomalyResult = Envelope & {
   target: OpportunityTarget;
+  confidence: 'high';
+  next_actions: Array<{ action: string; message: string }>;
 };
+
+/** Canonical public name for MCP/CLI; keep ingest_eval_anomaly as the implementation alias. */
+export function opportunity_ingest(input: EvalAnomalyInput): EvalAnomalyResult {
+  return ingest_eval_anomaly(input);
+}
 
 export function ingest_eval_anomaly(input: EvalAnomalyInput): EvalAnomalyResult {
   if (!input.external_id.trim() || !input.source.trim()) {
@@ -44,6 +51,8 @@ export function ingest_eval_anomaly(input: EvalAnomalyInput): EvalAnomalyResult 
       checked: ['accepted an externally supplied eval anomaly'],
       not_checked: ['GitWorthy does not scrape eval farms; the caller must supply the anomaly.']
     }),
-    target
+    target,
+    confidence: 'high' as const,
+    next_actions: [{ action: 'route_eval', message: 'Treat as an EVAL opportunity; do not invent a GitHub issue from this ingest.' }]
   };
 }

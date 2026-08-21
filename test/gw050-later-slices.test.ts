@@ -1,7 +1,11 @@
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { execa } from 'execa';
 import { describe, expect, it } from 'vitest';
-import { classifyCi } from '../src/core/ci-triage.js';
-import { history_scan } from '../src/core/history-scan.js';
-import { ingest_eval_anomaly } from '../src/core/eval-anomaly.js';
+import { classifyCi, ci_triage } from '../src/core/ci-triage.js';
+import { history_scan, normalizeHistoryPath } from '../src/core/history-scan.js';
+import { ingest_eval_anomaly, opportunity_ingest } from '../src/core/eval-anomaly.js';
 import { extractPlatformHints } from '../src/core/contribution-profile.js';
 
 describe('GW-050a ci-triage', () => {
@@ -32,6 +36,13 @@ describe('GW-050a ci-triage', () => {
       head: [{ name: 'test', conclusion: 'failure' }],
       base: [{ name: 'test', conclusion: 'success' }]
     }))).not.toMatch(/stale_fixture/i);
+    const wrapped = ci_triage({
+      head: [{ name: 'test', conclusion: 'failure' }],
+      base: [{ name: 'test', conclusion: 'success' }]
+    });
+    expect(wrapped.class).toBe('head_only_failure');
+    expect(wrapped.confidence).toBe('medium');
+    expect(wrapped.next_actions[0]?.message).toMatch(/failing head check/);
   });
 });
 
@@ -48,6 +59,36 @@ describe('GW-050b history-scan', () => {
     });
     expect(result.hits).toHaveLength(1);
     expect(result.checked.join(' ')).toMatch(/bounded/);
+  });
+
+  it('rejects option-like and parent paths', () => {
+    expect(normalizeHistoryPath('../secret')).toBeNull();
+    expect(normalizeHistoryPath('-n')).toBeNull();
+    expect(normalizeHistoryPath('C:/Windows/system32')).toBeNull();
+    expect(normalizeHistoryPath('src/core/hunt.ts')).toBe('src/core/hunt.ts');
+  });
+
+  it('reads live commits from a matching local checkout', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'gw-history-'));
+    const previous = process.env.GITWORTHY_LOCAL_REPO;
+    try {
+      await execa('git', ['init'], { cwd: dir });
+      await execa('git', ['config', 'user.email', 'history@gitworthy.local'], { cwd: dir });
+      await execa('git', ['config', 'user.name', 'gitworthy-history'], { cwd: dir });
+      await execa('git', ['remote', 'add', 'origin', 'https://github.com/acme/demo.git'], { cwd: dir });
+      await writeFile(path.join(dir, 'src-foo.ts'), 'export const foo = 1;\n');
+      await execa('git', ['add', 'src-foo.ts'], { cwd: dir });
+      await execa('git', ['commit', '-m', 'add foo helper'], { cwd: dir });
+      process.env.GITWORTHY_LOCAL_REPO = dir;
+      const result = await history_scan({ repo: 'acme/demo', paths: ['src-foo.ts'], symbols: ['foo'] });
+      expect(result.hits.length).toBeGreaterThan(0);
+      expect(result.hits[0]?.subject).toMatch(/foo/);
+      expect(result.checked.join(' ')).toMatch(/argv-only/);
+    } finally {
+      if (previous === undefined) delete process.env.GITWORTHY_LOCAL_REPO;
+      else process.env.GITWORTHY_LOCAL_REPO = previous;
+      await rm(dir, { recursive: true, force: true });
+    }
   });
 });
 
@@ -73,5 +114,9 @@ describe('GW-050d eval anomaly ingest', () => {
       source: 'hermes-eval',
       repo: 'nous/hermes-agent'
     });
+    expect(opportunity_ingest({
+      external_id: 'case-9',
+      source: 'hermes-eval'
+    }).target.kind).toBe('eval_anomaly');
   });
 });
