@@ -104,6 +104,17 @@ describe('REVIEW / WATCH / SALVAGE heuristics', () => {
     expect(decision.hint_reasons.join(' ')).toMatch(/Age or inactivity alone is not abandonment/);
   });
 
+  it('does not salvage a stale open PR when the linked issue is closed', () => {
+    const decision = classifyPrHint({
+      stale: true,
+      maintainer_interest: true,
+      credible_work: true,
+      requested_changes: true,
+      issue_open: false
+    }, open);
+    expect(decision.hint_mode).not.toBe('SALVAGE');
+  });
+
   it('requires a high bar for SALVAGE and carries attribution constraints', () => {
     const decision = classifyPrHint({
       stale: true,

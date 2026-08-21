@@ -181,7 +181,9 @@ export function classifyPrHint(enrichmentInput: Partial<PrEnrichment>, inventory
 
   const salvageStrong = (
     (inventory.state === 'closed' && enrichment.substantive && enrichment.issue_open === true && enrichment.maintainer_positive_review)
-    || (inventory.state === 'open' && enrichment.stale && enrichment.maintainer_interest && enrichment.credible_work && (enrichment.requested_changes || enrichment.maintainer_positive_review))
+    || (inventory.state === 'open' && enrichment.stale && enrichment.maintainer_interest && enrichment.credible_work
+      && (enrichment.requested_changes || enrichment.maintainer_positive_review)
+      && enrichment.issue_open !== false)
   );
   const salvageWeakOnly = enrichment.stale && !enrichment.maintainer_interest && !enrichment.requested_changes && !enrichment.maintainer_positive_review;
 
