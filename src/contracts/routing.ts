@@ -1,8 +1,13 @@
 import { z } from 'zod';
 import { DispositionSchema, VerdictSchema } from './common.js';
-import { NextActionSchema } from './check.js';
 import type { Finding } from './findings.js';
 import type { ContentionReport } from './contention.js';
+
+/** Matches NextActionSchema in check.ts without importing it (CheckResult embeds RoutingDecision). */
+const RoutingNextActionSchema = z.object({
+  kind: z.string().min(1),
+  message: z.string().min(1)
+});
 
 export const ROUTING_VERSION = 1 as const;
 
@@ -50,6 +55,28 @@ export const EvidenceabilitySchema = z.object({
   reasons: z.array(z.string())
 }).strict();
 
+export const SourceSnapshotLinkedPrSchema = z.object({
+  number: z.number().int().positive(),
+  state: z.string().min(1),
+  draft: z.boolean().optional(),
+  merged: z.boolean().optional(),
+  updated_at: z.string().optional(),
+  head_sha: z.string().optional(),
+  closes_issue: z.boolean().optional()
+}).strict();
+
+export const SourceSnapshotSchema = z.object({
+  observed_at: z.string().datetime(),
+  repo_head_sha: z.string().optional(),
+  issue: z.object({
+    state: z.string().optional(),
+    updated_at: z.string().optional(),
+    assignees: z.array(z.string()).optional()
+  }).strict().optional(),
+  linked_prs: z.array(SourceSnapshotLinkedPrSchema).default([]),
+  state_fingerprint: z.string().min(1)
+}).strict();
+
 export const RoutingDecisionSchema = z.object({
   routing_version: z.literal(ROUTING_VERSION),
   primary_mode: ContributionModeSchema,
@@ -58,7 +85,7 @@ export const RoutingDecisionSchema = z.object({
   confidence: RoutingConfidenceSchema,
   reasons: z.array(z.string()),
   hard_constraints: z.array(z.string()).default([]),
-  next_actions: z.array(NextActionSchema).default([]),
+  next_actions: z.array(RoutingNextActionSchema).default([]),
   evidenceability: EvidenceabilitySchema,
   effort_bucket: EffortBucketSchema.default('unknown'),
   coverage: RoutingCoverageSchema
@@ -71,6 +98,7 @@ export type EffortBucket = z.infer<typeof EffortBucketSchema>;
 export type RoutingCoverage = z.infer<typeof RoutingCoverageSchema>;
 export type RoutingDecision = z.infer<typeof RoutingDecisionSchema>;
 export type Evidenceability = z.infer<typeof EvidenceabilitySchema>;
+export type SourceSnapshot = z.infer<typeof SourceSnapshotSchema>;
 
 export type ReproHint = 'present' | 'weak' | 'missing';
 

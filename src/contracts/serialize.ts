@@ -3,6 +3,7 @@ import { packageVersion } from '../lib/package-meta.js';
 import { mergeBudgetMetrics } from '../lib/run-budget.js';
 import { GitworthyError } from '../core/envelope.js';
 import { CheckResult, CheckResultSchema } from './check.js';
+import type { RoutingDecision, SourceSnapshot } from './routing.js';
 import { SCHEMA_VERSION, newDecisionId, newRunId } from './common.js';
 import { ErrorResult, ErrorResultSchema, type ErrorDetail } from './errors.js';
 import { DoctorResultSchema } from './doctor.js';
@@ -26,6 +27,8 @@ type LegacyEnvelopeLike = {
   sub_results?: unknown[];
   timings_ms?: Record<string, number>;
   perf?: Record<string, unknown>;
+  routing?: RoutingDecision;
+  source_snapshot?: SourceSnapshot;
 };
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -136,6 +139,8 @@ export function toCheckResult(legacy: LegacyEnvelopeLike & Record<string, unknow
     verdict: legacy.verdict ?? 'VERIFY',
     disposition: legacy.disposition ?? 'review',
     next_actions: nextActionsFor(legacy),
+    ...(legacy.routing ? { routing: legacy.routing } : {}),
+    ...(legacy.source_snapshot ? { source_snapshot: legacy.source_snapshot } : {}),
     verdict_summary: legacy.verdict_summary,
     evidence: legacy.evidence,
     signals: legacy.signals,

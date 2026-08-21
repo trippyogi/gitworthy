@@ -195,7 +195,8 @@ export {
   RoutingCoverageSchema,
   RoutingAlternateModeSchema,
   EvidenceabilitySchema,
-  RoutingDecisionSchema
+  RoutingDecisionSchema,
+  SourceSnapshotSchema
 } from './routing.js';
 export type {
   ContributionMode,
@@ -205,6 +206,7 @@ export type {
   RoutingCoverage,
   RoutingDecision,
   Evidenceability,
+  SourceSnapshot,
   RouteFacts,
   RouteLinkedFacts,
   RouteQualityFacts,

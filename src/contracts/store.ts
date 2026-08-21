@@ -3,6 +3,7 @@ import { DispositionSchema, SCHEMA_VERSION, SchemaVersionSchema, VerdictSchema }
 import { FindingSchema } from './findings.js';
 import { NextActionSchema, TargetIdentitySchema } from './check.js';
 import { OutcomeEventSchema } from './outcomes.js';
+import { RoutingDecisionSchema, SourceSnapshotSchema } from './routing.js';
 
 export const STORE_RECORD_VERSION = 1 as const;
 
@@ -54,7 +55,9 @@ export const DecisionRecordSchema = z.object({
   /**
    * Phase 2 backfill: no live T0 snapshot. Keep out of snapshot-backed headline metrics.
    */
-  reconstructed: z.boolean().optional().default(false)
+  reconstructed: z.boolean().optional().default(false),
+  routing: RoutingDecisionSchema.optional(),
+  source_snapshot: SourceSnapshotSchema.optional()
 });
 
 export const TargetIndexSchema = z.object({

@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { CaptureManifestSchema, type CaptureManifest } from '../src/contracts/capture.js';
+import { SourceSnapshotSchema } from '../src/contracts/routing.js';
 import { createHttpClient, redactHeaders, redactUrl } from '../src/lib/http-client.js';
 import { scrubJsonSecrets, scrubSecretText } from '../src/lib/redaction.js';
 import { withCaptureSession } from '../src/lib/capture-session.js';
@@ -276,6 +277,26 @@ describe('capture redaction and manifests (GW-018)', () => {
       expect(() => captureBundleDir(id)).toThrow(expect.objectContaining({ code: 'invalid_capture_id' }));
     }
     await expect(capture_show({ capture_id: '../escape' })).rejects.toMatchObject({ code: 'invalid_capture_id' });
+  });
+
+  it('rejects source snapshots that try to store diffs, comments, or secrets', () => {
+    expect(() => SourceSnapshotSchema.parse({
+      observed_at: '2026-08-02T00:00:00.000Z',
+      linked_prs: [],
+      state_fingerprint: 'abc',
+      diff: '+++ secret patch',
+      comments: ['do not store'],
+      token: 'ghp_secret'
+    })).toThrow();
+    const parsed = SourceSnapshotSchema.parse({
+      observed_at: '2026-08-02T00:00:00.000Z',
+      issue: { state: 'open', assignees: ['dev'] },
+      linked_prs: [{ number: 1, state: 'open', closes_issue: true }],
+      state_fingerprint: 'abc'
+    });
+    expect(parsed).not.toHaveProperty('diff');
+    expect(parsed).not.toHaveProperty('comments');
+    expect(parsed.linked_prs[0]).not.toHaveProperty('patch');
   });
 
   it('rejects and quarantines malformed captures', async () => {

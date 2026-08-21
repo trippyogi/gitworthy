@@ -33,9 +33,7 @@ function hasHeuristicOnlyTitleOverlap(facts: RouteFacts): boolean {
 }
 
 function failedMandatory(facts: RouteFacts): boolean {
-  return facts.mandatoryFailures.length > 0
-    || facts.coverage.failed_checks.length > 0
-    || hasFinding(facts, 'mandatory_check_failed');
+  return facts.mandatoryFailures.length > 0 || hasFinding(facts, 'mandatory_check_failed');
 }
 
 function providersIncomplete(facts: RouteFacts): boolean {
@@ -280,6 +278,38 @@ function pickMode(facts: RouteFacts, contention: BuildContention): ModePick {
     };
   }
 
+  if (needsRepro(facts) && (facts.verdict === 'VERIFY' || facts.verdict === 'ACT')) {
+    return {
+      primary: 'REPRODUCE',
+      alternates: [alternate('WATCH', 0.35, 'Watch if a repro cannot be gathered yet.')],
+      reasons: [
+        'Bug-shaped issue lacks sufficient proof it still fails on current main.',
+        'Routing will not promote weak or missing proof to BUILD.'
+      ],
+      nextActions: [{
+        kind: 'reproduce',
+        message: 'Reproduce the failure on current main before any implementation work.'
+      }],
+      constraints,
+      heuristicPrimary: !hasDefinitiveFinding(facts, 'needs_repro')
+    };
+  }
+
+  if (assignedOrClaimed(facts)) {
+    constraints.push('claim_unresolved');
+    return {
+      primary: 'WATCH',
+      alternates: [alternate('REVIEW', 0.3, 'Review only after ownership is resolved.')],
+      reasons: ['Ownership is unresolved (assignment or claim protocol). Do not recommend BUILD.'],
+      nextActions: [{
+        kind: 'coordinate',
+        message: 'Coordinate or satisfy the repository claim protocol. Reevaluate when assignment is released or the claim is satisfied.'
+      }],
+      constraints,
+      heuristicPrimary: false
+    };
+  }
+
   if (salvageQualified(facts)) {
     constraints.push(...SALVAGE_CONSTRAINTS);
     return {
@@ -312,38 +342,6 @@ function pickMode(facts: RouteFacts, contention: BuildContention): ModePick {
       }],
       constraints,
       heuristicPrimary: true
-    };
-  }
-
-  if (needsRepro(facts) && (facts.verdict === 'VERIFY' || facts.verdict === 'ACT')) {
-    return {
-      primary: 'REPRODUCE',
-      alternates: [alternate('WATCH', 0.35, 'Watch if a repro cannot be gathered yet.')],
-      reasons: [
-        'Bug-shaped issue lacks sufficient proof it still fails on current main.',
-        'Routing will not promote weak or missing proof to BUILD.'
-      ],
-      nextActions: [{
-        kind: 'reproduce',
-        message: 'Reproduce the failure on current main before any implementation work.'
-      }],
-      constraints,
-      heuristicPrimary: !hasDefinitiveFinding(facts, 'needs_repro')
-    };
-  }
-
-  if (assignedOrClaimed(facts)) {
-    constraints.push('claim_unresolved');
-    return {
-      primary: 'WATCH',
-      alternates: [alternate('REVIEW', 0.3, 'Review only after ownership is resolved.')],
-      reasons: ['Ownership is unresolved (assignment or claim protocol). Do not recommend BUILD.'],
-      nextActions: [{
-        kind: 'coordinate',
-        message: 'Coordinate or satisfy the repository claim protocol. Reevaluate when assignment is released or the claim is satisfied.'
-      }],
-      constraints,
-      heuristicPrimary: false
     };
   }
 
