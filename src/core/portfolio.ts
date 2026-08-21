@@ -63,6 +63,7 @@ export type PortfolioResult = Envelope & {
 
 type HuntCandidate = {
   kind?: string;
+  status?: string;
   repo?: string;
   issue_number?: number;
   title?: string;
@@ -158,6 +159,7 @@ function applySafetyGate(
       ...item,
       primary_mode: nextMode,
       dispatch_state: 'blocked_by_constraint',
+      routing: routing ? { ...routing, primary_mode: nextMode, confidence: routing.confidence === 'high' ? 'medium' : routing.confidence } : routing,
       reasons: [...item.reasons, 'Safety gate blocked BUILD; verdict is unchanged.']
     };
   }
@@ -166,6 +168,7 @@ function applySafetyGate(
       ...item,
       primary_mode: 'REVIEW',
       dispatch_state: item.dispatch_state === 'queued_by_capacity' ? 'queued_by_capacity' : 'ready',
+      routing: { ...routing, primary_mode: 'REVIEW', confidence: 'medium' },
       reasons: [...item.reasons, 'Mandatory check failure cannot keep a high-confidence BUILD.']
     };
   }
@@ -219,6 +222,7 @@ function itemFromHunt(
   capacity: PortfolioCapacity
 ): PortfolioItem | null {
   if (!candidate.repo || !candidate.issue_number) return null;
+  if (candidate.status === 'failed' || !candidate.worth_check) return null;
   const routing = candidate.worth_check?.routing ?? routeContribution(factsFromHunt(candidate));
   const domain = matchDomains({ title: candidate.title }, profile);
   const scored = scoreOpportunity({

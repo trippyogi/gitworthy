@@ -187,6 +187,28 @@ describe('portfolio capacity and dispatch', () => {
     expect(result.items[0]?.dispatch_state).toBe('ready');
   });
 
+  it('skips failed hunt candidates instead of synthesizing BUILD', async () => {
+    const result = await portfolio({ repo: 'o/r', include_prs: false }, {
+      hunt: async () => ({
+        verdict_summary: 'hunt',
+        evidence: [{
+          kind: 'hunt_candidate',
+          status: 'failed',
+          repo: 'o/r',
+          issue_number: 5,
+          title: 'Broken preflight'
+        }],
+        signals: [],
+        checked: ['hunt'],
+        not_checked: ['worth_check failed'],
+        cached: false,
+        fetched_at: '2026-08-01T00:00:00.000Z'
+      }),
+      listOutcomes: async () => []
+    });
+    expect(result.items).toEqual([]);
+  });
+
   it('rejects repo and org together', async () => {
     await expect(portfolio({ repo: 'o/r', org: 'acme' })).rejects.toMatchObject({
       code: 'portfolio_invalid_input'
