@@ -79,8 +79,8 @@ describe('portfolio capacity and dispatch', () => {
         fetched_at: '2026-08-01T00:00:00.000Z'
       }),
       listOutcomes: async () => [
-        outcome({ event: 'selected', data: { contribution_mode: 'BUILD' } }),
-        outcome({ event: 'pr_opened', target: { repo: 'o/r', issue_number: 2 }, data: { contribution_mode: 'BUILD' } })
+        outcome({ event: 'selected', contribution_mode: 'BUILD' }),
+        outcome({ event: 'pr_opened', target: { repo: 'o/r', issue_number: 2 }, contribution_mode: 'BUILD' })
       ]
     });
     expect(result.items[0]?.primary_mode).toBe('BUILD');

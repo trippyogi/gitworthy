@@ -93,6 +93,31 @@
     "pr_url": {
       "type": "string",
       "format": "uri"
+    },
+    "contribution_mode": {
+      "type": "string",
+      "enum": [
+        "BUILD",
+        "REVIEW",
+        "SALVAGE",
+        "REPRODUCE",
+        "EVAL",
+        "DOC",
+        "WATCH",
+        "PASS"
+      ]
+    },
+    "investigation_class": {
+      "type": "string",
+      "enum": [
+        "repro",
+        "ci_triage",
+        "history",
+        "review",
+        "salvage",
+        "docs",
+        "eval"
+      ]
     }
   },
   "required": [

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Routing eval (GW-049): optional `contribution_mode` on outcomes, additive eval `ground_truth.routing`, reconstructed routing corpus kept out of frozen headline accuracy, `false_build_occupied` stays 0 for definitive ownership.
 - Local watch registry (GW-048): `gitworthy watch add|list|show|recheck|remove` and MCP `watch_*`. Fingerprint recheck reports exact deltas. No auto-create from WATCH routes and no GitHub writes.
 - Contribution routing v2 (GW-043–047): `worth_check` can attach a `routing` decision; `gitworthy portfolio` / MCP `portfolio` ranks issue+PR opportunities by contribution mode with separate `dispatch_state`; `gitworthy prs` / MCP `pr_scan` is a bounded two-stage PR inventory. Verdict policy is unchanged. Hermes `contribution_profile` examples stay in docs, not global defaults. Org portfolio fans out PR scans to at most 5 hunt repos (inventory ≤25, enrich ≤5). Advisory `failed_checks` do not demote BUILD.
 - Agent Plugins v1.0.0 packaging: `plugin.json`, `mcp.json`, canonical `skills/gitworthy/SKILL.md`, CI sync check (`pnpm agent-plugins:check`).

@@ -162,6 +162,72 @@
             "type": "string",
             "minLength": 1
           }
+        },
+        "routing": {
+          "type": "object",
+          "properties": {
+            "primary_mode": {
+              "type": "string",
+              "enum": [
+                "BUILD",
+                "REVIEW",
+                "SALVAGE",
+                "REPRODUCE",
+                "EVAL",
+                "DOC",
+                "WATCH",
+                "PASS"
+              ]
+            },
+            "acceptable_modes": {
+              "default": [],
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "BUILD",
+                  "REVIEW",
+                  "SALVAGE",
+                  "REPRODUCE",
+                  "EVAL",
+                  "DOC",
+                  "WATCH",
+                  "PASS"
+                ]
+              }
+            },
+            "forbidden_modes": {
+              "default": [],
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "BUILD",
+                  "REVIEW",
+                  "SALVAGE",
+                  "REPRODUCE",
+                  "EVAL",
+                  "DOC",
+                  "WATCH",
+                  "PASS"
+                ]
+              }
+            },
+            "build_contention": {
+              "type": "string",
+              "enum": [
+                "GREEN",
+                "YELLOW",
+                "RED"
+              ]
+            }
+          },
+          "required": [
+            "primary_mode",
+            "acceptable_modes",
+            "forbidden_modes"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [

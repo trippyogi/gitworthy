@@ -11,6 +11,7 @@ Full detail: [`../eval/README.md`](../eval/README.md), [`../eval/METRICS.md`](..
 | **frozen** | Offline fixture replay | Yes |
 | **live** | Public GitHub/npm/git | Advisory |
 | **private** | Local captures (gitignored) | No |
+| **reconstructed routing** | In-process `routeContribution` fixtures | Advisory; never mixed into frozen headline accuracy |
 
 ```sh
 pnpm eval:frozen

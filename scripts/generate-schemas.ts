@@ -22,6 +22,7 @@ import { PortfolioItemSchema } from '../src/contracts/portfolio.js';
 import { PrScanResultSchema } from '../src/contracts/pr-scan.js';
 import { OpportunityTargetSchema } from '../src/contracts/opportunities.js';
 import { ContributionProfileSchema } from '../src/contracts/contribution-profile.js';
+import { RoutingEvalMetricsSchema } from '../src/contracts/routing-eval.js';
 import {
   TrackOCovariatesRecordSchema,
   TrackOContingencyTableSchema,
@@ -61,6 +62,7 @@ const docs: Array<{ file: string; schema: z.ZodType }> = [
   { file: 'gitworthy-pr-scan.v1.schema.json', schema: PrScanResultSchema },
   { file: 'gitworthy-portfolio-item.v1.schema.json', schema: PortfolioItemSchema },
   { file: 'gitworthy-contribution-profile.v1.schema.json', schema: ContributionProfileSchema },
+  { file: 'gitworthy-routing-eval-metrics.v1.schema.json', schema: RoutingEvalMetricsSchema },
   { file: 'gitworthy-track-o-join-key.v1.schema.json', schema: TrackOJoinKeySchema },
   { file: 'gitworthy-track-o-covariates.v1.schema.json', schema: TrackOCovariatesRecordSchema },
   { file: 'gitworthy-track-o-contingency.v1.schema.json', schema: TrackOContingencyTableSchema }
