@@ -1,0 +1,206 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "routing_version": {
+      "type": "number",
+      "const": 1
+    },
+    "primary_mode": {
+      "type": "string",
+      "enum": [
+        "BUILD",
+        "REVIEW",
+        "SALVAGE",
+        "REPRODUCE",
+        "EVAL",
+        "DOC",
+        "WATCH",
+        "PASS"
+      ]
+    },
+    "alternate_modes": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "BUILD",
+              "REVIEW",
+              "SALVAGE",
+              "REPRODUCE",
+              "EVAL",
+              "DOC",
+              "WATCH",
+              "PASS"
+            ]
+          },
+          "score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "mode",
+          "score",
+          "reason"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "build_contention": {
+      "type": "string",
+      "enum": [
+        "GREEN",
+        "YELLOW",
+        "RED"
+      ]
+    },
+    "confidence": {
+      "type": "string",
+      "enum": [
+        "high",
+        "medium",
+        "low"
+      ]
+    },
+    "reasons": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "hard_constraints": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "next_actions": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "kind",
+          "message"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "evidenceability": {
+      "type": "object",
+      "properties": {
+        "score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "score",
+        "reasons"
+      ],
+      "additionalProperties": false
+    },
+    "effort_bucket": {
+      "default": "unknown",
+      "type": "string",
+      "enum": [
+        "fast",
+        "medium",
+        "deep",
+        "research",
+        "unknown"
+      ]
+    },
+    "coverage": {
+      "type": "object",
+      "properties": {
+        "mandatory_checks_complete": {
+          "type": "boolean"
+        },
+        "failed_checks": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "skipped_checks": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "budget_truncated": {
+          "default": false,
+          "type": "boolean"
+        },
+        "rate_limit_degraded": {
+          "default": false,
+          "type": "boolean"
+        },
+        "snapshot_age_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "advisory_missing": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "mandatory_checks_complete",
+        "failed_checks",
+        "skipped_checks",
+        "budget_truncated",
+        "rate_limit_degraded",
+        "advisory_missing"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "routing_version",
+    "primary_mode",
+    "alternate_modes",
+    "build_contention",
+    "confidence",
+    "reasons",
+    "hard_constraints",
+    "next_actions",
+    "evidenceability",
+    "effort_bucket",
+    "coverage"
+  ],
+  "additionalProperties": false
+}

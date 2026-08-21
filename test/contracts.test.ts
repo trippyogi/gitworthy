@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   CheckResultSchema,
   ErrorResultSchema,
+  RoutingDecisionSchema,
   SCHEMA_VERSION,
   toCheckResult,
   toErrorResult
@@ -159,6 +160,31 @@ describe('contracts', () => {
     });
     expect(error.error.category).toBe('network');
     expect(error.error.retryable).toBe(true);
+  });
+
+  it('parses a routing decision without requiring mode_scores', () => {
+    const parsed = RoutingDecisionSchema.parse({
+      routing_version: 1,
+      primary_mode: 'BUILD',
+      alternate_modes: [{ mode: 'WATCH', score: 0.2, reason: 'Recheck before publish.' }],
+      build_contention: 'GREEN',
+      confidence: 'high',
+      reasons: ['ACT / greenfield'],
+      hard_constraints: [],
+      next_actions: [{ kind: 'proceed', message: 'Re-check before a public action.' }],
+      evidenceability: { score: 0.9, reasons: ['repro present'] },
+      effort_bucket: 'unknown',
+      coverage: {
+        mandatory_checks_complete: true,
+        failed_checks: [],
+        skipped_checks: [],
+        budget_truncated: false,
+        rate_limit_degraded: false,
+        advisory_missing: []
+      }
+    });
+    expect(parsed.primary_mode).toBe('BUILD');
+    expect(parsed).not.toHaveProperty('mode_scores');
   });
 
   it('classifies CLI usage errors as input', () => {

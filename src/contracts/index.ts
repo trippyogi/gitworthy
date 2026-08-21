@@ -186,6 +186,31 @@ export type {
   NormalizedHttpMatch
 } from './provider-fixtures.js';
 
+export {
+  ROUTING_VERSION,
+  ContributionModeSchema,
+  BuildContentionSchema,
+  RoutingConfidenceSchema,
+  EffortBucketSchema,
+  RoutingCoverageSchema,
+  RoutingAlternateModeSchema,
+  EvidenceabilitySchema,
+  RoutingDecisionSchema
+} from './routing.js';
+export type {
+  ContributionMode,
+  BuildContention,
+  RoutingConfidence,
+  EffortBucket,
+  RoutingCoverage,
+  RoutingDecision,
+  Evidenceability,
+  RouteFacts,
+  RouteLinkedFacts,
+  RouteQualityFacts,
+  RouteCategoryHints
+} from './routing.js';
+
 export { toCheckResult, toStampedLegacyResult, toErrorResult } from './serialize.js';
 
 export {
