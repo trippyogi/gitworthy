@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## 0.4.1 - 2026-11-09
+
+- Require a known-open source issue before recommending BUILD, SALVAGE, REPRODUCE, DOC or EVAL. Closed or unknown issue states require verification, preserve PR-review and definitive-block precedence, and retain nullable `state_reason` in source snapshots.
 - Later routing slices (GW-050): honest CI triage classes, caller-supplied history scan with a default argv-only git helper, existing platform hints, and eval-anomaly opportunity ingest. CLI `ci-triage` / `history` / `opportunity-ingest` and MCP `ci_triage` / `history_scan` / `opportunity_ingest` are first-class; hunt stays issue scouting and portfolio stays contribution routing.
 - Routing eval (GW-049): optional `contribution_mode` on outcomes, additive eval `ground_truth.routing`, reconstructed routing corpus kept out of frozen headline accuracy, `false_build_occupied` stays 0 for definitive ownership.
 - Local watch registry (GW-048): `gitworthy watch add|list|show|recheck|remove` and MCP `watch_*`. Fingerprint recheck reports exact deltas. No auto-create from WATCH routes and no GitHub writes.
@@ -29,12 +32,12 @@
 - Add versioned, secret-free config files, skill profiles, and target manifests with CLI/MCP show/validate surfaces and effective-value provenance (GW-019).
 - Add deterministic read-only `brief <decision_id>` generation for stored decisions in human, JSON, and Markdown formats, with stale-decision warnings and optional config/profile provenance (GW-020 / #29).
 
-## 0.4.1
-
 - Dig-quality: ignore open draft PRs without an explicit closing relationship for linked-work verdict signals (keep as ignored evidence).
 - Dig-quality: map merged linked PRs on still-open issues to `close_candidate` VERIFY findings and CLOSE_CANDIDATE next_actions (not a vague VERIFY).
 - Dig-quality: rank competing open closers (prefer non-draft, then freshest) and emit land-pick primary + `competing_open_closer` inform findings with `LAND #N` next_actions.
 - Dig-quality: when bare clone fails, `issue_vs_main` falls back to `GITWORTHY_LOCAL_REPO` checkout or GitHub contents/raw probes for named path terms (typed `contents_fallback` / `local_checkout` modes).
+
+Compatibility: new source snapshots retain nullable `issue.state_reason`. New builds read old snapshots, but older strict readers reject snapshots containing this field, including `null`. Before rolling back, preserve the existing store and set `GITWORTHY_STORE_DIR` to a separate directory for the older build.
 
 ## 0.4.0
 

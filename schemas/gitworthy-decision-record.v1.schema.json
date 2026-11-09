@@ -412,6 +412,16 @@
             "state": {
               "type": "string"
             },
+            "state_reason": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
             "updated_at": {
               "type": "string"
             },

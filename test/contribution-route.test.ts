@@ -23,6 +23,7 @@ function linked(overrides: Partial<RouteLinkedFacts> = {}): RouteLinkedFacts {
     mergedClosers: 0,
     assigned: false,
     claimRequired: false,
+    issueOpen: true,
     ...overrides
   };
 }
@@ -187,6 +188,17 @@ describe('routeContribution decision table', () => {
 });
 
 describe('routeContribution safety mutations', () => {
+  it.each([false, undefined])('requires a known-open source before BUILD or SALVAGE (%s)', (issueOpen) => {
+    for (const priorAttempt of [false, true]) {
+      const decision = routeContribution(facts({
+        linked: linked({ issueOpen, closedUnmergedAttempts: priorAttempt ? 1 : 0, substantivePriorAttempt: priorAttempt })
+      }));
+      expect(decision.primary_mode).toBe('REVIEW');
+      expect(decision.hard_constraints).toContain('suppress_build');
+      expect(decision.alternate_modes.some((item) => item.mode === 'BUILD' || item.mode === 'SALVAGE')).toBe(false);
+    }
+  });
+
   it('never recommends BUILD when an active definitive closer exists', () => {
     const decision = routeContribution(facts({
       verdict: 'ACT',

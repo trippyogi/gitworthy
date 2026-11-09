@@ -28,7 +28,7 @@ const reconstructedRoutingCaseDrafts: Array<Omit<RoutingEvalCase, 'adversarial'>
       verdict: 'ACT',
       disposition: 'greenfield',
       quality: { looksLikeBug: true, repro: 'present', softAsk: false },
-      linked: { activeClosers: 0, activeRelatedPrs: 0, closedUnmergedAttempts: 0, mergedClosers: 0, assigned: false, claimRequired: false }
+      linked: { activeClosers: 0, activeRelatedPrs: 0, closedUnmergedAttempts: 0, mergedClosers: 0, assigned: false, claimRequired: false, issueOpen: true }
     }),
     expected: { primary_mode: 'BUILD', acceptable_modes: [], forbidden_modes: ['PASS'] }
   },
@@ -40,7 +40,7 @@ const reconstructedRoutingCaseDrafts: Array<Omit<RoutingEvalCase, 'adversarial'>
       verdict: 'VERIFY',
       disposition: 'greenfield',
       quality: { looksLikeBug: true, repro: 'missing', softAsk: false },
-      linked: { activeClosers: 0, activeRelatedPrs: 0, closedUnmergedAttempts: 0, mergedClosers: 0, assigned: false, claimRequired: false }
+      linked: { activeClosers: 0, activeRelatedPrs: 0, closedUnmergedAttempts: 0, mergedClosers: 0, assigned: false, claimRequired: false, issueOpen: true }
     }),
     expected: { primary_mode: 'REPRODUCE', acceptable_modes: ['WATCH'], forbidden_modes: ['BUILD'] }
   },
@@ -101,7 +101,7 @@ const reconstructedRoutingCaseDrafts: Array<Omit<RoutingEvalCase, 'adversarial'>
     facts: facts({
       verdict: 'VERIFY',
       disposition: 'claim_first',
-      linked: { activeClosers: 0, activeRelatedPrs: 0, closedUnmergedAttempts: 0, mergedClosers: 0, assigned: false, claimRequired: true }
+      linked: { activeClosers: 0, activeRelatedPrs: 0, closedUnmergedAttempts: 0, mergedClosers: 0, assigned: false, claimRequired: true, issueOpen: true }
     }),
     expected: { primary_mode: 'WATCH', acceptable_modes: [], forbidden_modes: ['BUILD'] }
   },
@@ -112,7 +112,7 @@ const reconstructedRoutingCaseDrafts: Array<Omit<RoutingEvalCase, 'adversarial'>
     facts: facts({
       verdict: 'VERIFY',
       disposition: 'greenfield',
-      linked: { activeClosers: 0, activeRelatedPrs: 0, closedUnmergedAttempts: 0, mergedClosers: 0, assigned: true, claimRequired: false }
+      linked: { activeClosers: 0, activeRelatedPrs: 0, closedUnmergedAttempts: 0, mergedClosers: 0, assigned: true, claimRequired: false, issueOpen: true }
     }),
     expected: { primary_mode: 'WATCH', acceptable_modes: [], forbidden_modes: ['BUILD'] }
   },
@@ -148,7 +148,7 @@ const reconstructedRoutingCaseDrafts: Array<Omit<RoutingEvalCase, 'adversarial'>
       verdict: 'ACT',
       disposition: 'greenfield',
       categoryHints: { documentation: true, evaluation: false },
-      linked: { activeClosers: 0, activeRelatedPrs: 0, closedUnmergedAttempts: 0, mergedClosers: 0, assigned: false, claimRequired: false }
+      linked: { activeClosers: 0, activeRelatedPrs: 0, closedUnmergedAttempts: 0, mergedClosers: 0, assigned: false, claimRequired: false, issueOpen: true }
     }),
     expected: { primary_mode: 'DOC', acceptable_modes: ['BUILD'], forbidden_modes: [] }
   },
@@ -160,7 +160,7 @@ const reconstructedRoutingCaseDrafts: Array<Omit<RoutingEvalCase, 'adversarial'>
       verdict: 'VERIFY',
       disposition: 'greenfield',
       coverage: { ...complete, mandatory_checks_complete: false, failed_checks: ['linked_work'] },
-      linked: { activeClosers: 0, activeRelatedPrs: 0, closedUnmergedAttempts: 0, mergedClosers: 0, assigned: false, claimRequired: false }
+      linked: { activeClosers: 0, activeRelatedPrs: 0, closedUnmergedAttempts: 0, mergedClosers: 0, assigned: false, claimRequired: false, issueOpen: true }
     }),
     expected: { primary_mode: 'WATCH', acceptable_modes: ['REVIEW', 'REPRODUCE', 'PASS'], forbidden_modes: ['BUILD'] }
   },
@@ -187,7 +187,7 @@ const reconstructedRoutingCaseDrafts: Array<Omit<RoutingEvalCase, 'adversarial'>
       verdict: 'VERIFY',
       disposition: 'crowded',
       findings: [{ id: '1', type: 'title_overlap_pr', strength: 'heuristic', effect: 'verify', source: 'test', message: 'overlap', data: {} }],
-      linked: { activeClosers: 0, activeRelatedPrs: 1, closedUnmergedAttempts: 0, mergedClosers: 0, assigned: false, claimRequired: false }
+      linked: { activeClosers: 0, activeRelatedPrs: 1, closedUnmergedAttempts: 0, mergedClosers: 0, assigned: false, claimRequired: false, issueOpen: true }
     }),
     expected: { primary_mode: 'REVIEW', acceptable_modes: ['WATCH', 'REPRODUCE'], forbidden_modes: [] }
   },

@@ -22,6 +22,7 @@ Invalid invocation exits `2`. Operational failure exits `1`.
 4. Every result includes meaningful **`checked`** and **`not_checked`**.
 5. **`ACT` is a queue entry, not permission to ship.** Always re-run `worth_check` / `store_recheck` immediately before implementation.
 6. **Contribution routing does not mutate verdicts.** `primary_mode` is the best form of contribution; `dispatch_state` is whether local capacity allows starting now. Portfolio has no global ACT/VERIFY/SKIP.
+7. **New work (BUILD, SALVAGE, REPRODUCE, DOC or EVAL) requires a known-open source issue.** A closed or unknown source requires verification of its state, closure reason, and any redirected destination. Closure alone yields VERIFY; existing definitive blockers and PR-review paths still apply.
 
 ## Dispositions
 

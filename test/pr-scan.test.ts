@@ -104,13 +104,13 @@ describe('REVIEW / WATCH / SALVAGE heuristics', () => {
     expect(decision.hint_reasons.join(' ')).toMatch(/Age or inactivity alone is not abandonment/);
   });
 
-  it('does not salvage a stale open PR when the linked issue is closed', () => {
+  it.each([false, undefined])('does not salvage a stale open PR unless the linked issue is known-open (%s)', (issueOpen) => {
     const decision = classifyPrHint({
       stale: true,
       maintainer_interest: true,
       credible_work: true,
       requested_changes: true,
-      issue_open: false
+      issue_open: issueOpen
     }, open);
     expect(decision.hint_mode).not.toBe('SALVAGE');
   });
@@ -231,6 +231,20 @@ describe('pr_scan two-stage flow', () => {
     expect(PR_ENRICH_LIMIT).toBe(5);
     expect(PrScanFilterSchema.parse({ inventory_limit: 25, enrich_limit: 5 }).inventory_limit).toBe(25);
     expect(() => PrScanFilterSchema.parse({ inventory_limit: 26 })).toThrow();
+  });
+
+  it.each([['open', true], ['closed', false], [undefined, undefined], ['unexpected', undefined]] as const)('normalizes linked issue state %s before salvage', async (state, issueOpen) => {
+    mocks.githubJson.mockImplementation(async (path: string) => {
+      if (path.includes('/pulls?')) return [pull()];
+      if (path.includes('/reviews')) return [{ state: 'CHANGES_REQUESTED', author_association: 'MEMBER' }];
+      if (path.includes('/check-runs')) return { check_runs: [] };
+      if (path.includes('/issues/')) return { state };
+      return pull();
+    });
+    const result = await pr_scan({ repo: 'o/r' });
+    const opportunity = result.opportunities[0];
+    expect(opportunity?.enrichment?.issue_open).toBe(issueOpen);
+    expect(opportunity?.hint_mode === 'SALVAGE').toBe(issueOpen === true);
   });
 
   it('does not salvage an unenriched stale draft', async () => {

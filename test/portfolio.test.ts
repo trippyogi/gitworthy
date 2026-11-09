@@ -256,6 +256,23 @@ describe('portfolio capacity and dispatch', () => {
     expect(result.items).toEqual([]);
   });
 
+  it('requires source verification for legacy hunt candidates without embedded routing', async () => {
+    const result = await portfolio({ repo: 'o/r', include_prs: false }, {
+      hunt: async () => ({
+        evidence: [{
+          kind: 'hunt_candidate', repo: 'o/r', issue_number: 5,
+          worth_check: { verdict: 'ACT', disposition: 'greenfield' }
+        }]
+      }),
+      listOutcomes: async () => []
+    });
+    expect(result.items[0]?.verdict).toBe('ACT');
+    expect(result.items[0]?.primary_mode).toBe('REVIEW');
+    expect(result.items[0]?.dispatch_state).toBe('ready');
+    expect(result.items[0]?.routing?.hard_constraints).toContain('suppress_build');
+    expect(result.items[0]?.next_actions[0]?.message).toContain('open source issue');
+  });
+
   it('merges local watches into portfolio items when include_watch is set', async () => {
     const result = await portfolio({ repo: 'o/r', include_prs: false, include_watch: true }, {
       hunt: async () => ({

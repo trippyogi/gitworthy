@@ -84,6 +84,10 @@ function nextActionsFor(legacy: LegacyEnvelopeLike): CheckResult['next_actions']
     }
     return actions;
   }
+  const lifecycle = findings.find((item) => item.type === 'source_issue_closed' || item.type === 'source_issue_state_unknown');
+  if (legacy.verdict === 'VERIFY' && typeof lifecycle?.message === 'string') {
+    return [{ kind: 'verify', message: lifecycle.message }];
+  }
   if (legacy.verdict === 'VERIFY' && legacy.disposition === 'claim_first') {
     return [{ kind: 'coordinate', message: 'Request assignment or follow the claim protocol before opening a pull request.' }];
   }
