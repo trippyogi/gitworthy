@@ -92,14 +92,12 @@ function hardNonWork(facts: RouteFacts): boolean {
 }
 
 function salvageQualified(facts: RouteFacts): boolean {
-  const issueOpen = facts.linked.issueOpen !== false;
   const closedCredible = facts.linked.closedUnmergedAttempts > 0
-    && facts.linked.substantivePriorAttempt === true
-    && issueOpen;
+    && facts.linked.substantivePriorAttempt === true;
   const staleRevivable = facts.linked.staleOpenPr === true
     && facts.linked.maintainerInterest === true
     && facts.linked.credibleWorkRemains === true;
-  return closedCredible || staleRevivable;
+  return facts.linked.issueOpen === true && (closedCredible || staleRevivable);
 }
 
 function ambiguousPriorAttempt(facts: RouteFacts): boolean {
@@ -212,7 +210,7 @@ function pickMode(facts: RouteFacts, contention: BuildContention): ModePick {
   const constraints: string[] = [];
   const closers = explicitActiveClosers(facts);
 
-  if (contention === 'RED' || failedMandatory(facts) || assignedOrClaimed(facts) || releasedFix(facts) || noPrPath(facts) || fullyResolved(facts)) {
+  if (facts.linked.issueOpen !== true || contention === 'RED' || failedMandatory(facts) || assignedOrClaimed(facts) || releasedFix(facts) || noPrPath(facts) || fullyResolved(facts)) {
     constraints.push('suppress_build');
   }
 
@@ -275,6 +273,23 @@ function pickMode(facts: RouteFacts, contention: BuildContention): ModePick {
       }],
       constraints,
       heuristicPrimary: false
+    };
+  }
+
+  if (facts.linked.issueOpen !== true) {
+    const closed = facts.linked.issueOpen === false;
+    return {
+      primary: 'REVIEW',
+      alternates: [],
+      reasons: [closed ? 'Source issue is closed; verify the closure or redirect before starting work.' : 'No source issue is confirmed open; verify the issue context before starting implementation.'],
+      nextActions: [{
+        kind: 'review',
+        message: closed
+          ? 'Read the closure reason and closing comments. If redirected, verify the destination issue and current ownership before investing.'
+          : 'Confirm there is an open source issue before starting implementation.'
+      }],
+      constraints,
+      heuristicPrimary: !closed
     };
   }
 

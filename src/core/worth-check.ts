@@ -47,6 +47,7 @@ type WorthEnvelope = Envelope & {
 
 type IssueSnapshot = {
   state?: string;
+  state_reason?: string | null;
   updated_at?: string;
   assignees: string[];
   title?: string;
@@ -160,7 +161,7 @@ function buildLinkedFacts(subResults: SubResult[], findings: Finding[], issue?: 
     mergedClosers: mergedClosers.length,
     assigned: findings.some((item) => item.type === 'assigned'),
     claimRequired: findings.some((item) => item.type === 'claim_required'),
-    issueOpen: issue?.state ? issue.state !== 'closed' : undefined,
+    issueOpen: issue?.state === 'open' ? true : issue?.state === 'closed' ? false : undefined,
     substantivePriorAttempt: closedUnmerged.some((item) => item.substantive === true)
   };
 }
@@ -235,6 +236,7 @@ function buildSourceSnapshot(input: {
     issue: input.issue
       ? {
         ...(input.issue.state ? { state: input.issue.state } : {}),
+        ...(input.issue.state_reason !== undefined ? { state_reason: input.issue.state_reason } : {}),
         ...(input.issue.updated_at ? { updated_at: input.issue.updated_at } : {}),
         assignees
       }
@@ -297,7 +299,8 @@ function finalize(
     errors,
     priorAttempts: density.priorAttempts,
     referencedCommits: density.referencedCommits,
-    networkPrs: density.networkPrs
+    networkPrs: density.networkPrs,
+    issue: context.issue ?? {}
   });
   const reasons = [...decision.reasons];
   if (extraNotChecked.length > 0) {
@@ -382,6 +385,7 @@ export async function worth_check(input: Input): Promise<WorthEnvelope> {
     issueKeywords = distinctiveTerms(issue.title, 8);
     issueSnap = {
       state: issue.state,
+      state_reason: issue.state_reason,
       updated_at: issue.updated_at,
       assignees: (issue.assignees ?? []).map((assignee) => assignee.login),
       title: issue.title,

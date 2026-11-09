@@ -1,14 +1,14 @@
 # Corpus status and taxonomy
 
-Last verified: offline `pnpm eval:frozen` + `pnpm eval:report` on current `main` lineage.
+Last verified: offline `pnpm eval:frozen` + `pnpm eval:report`, including the closed-source lifecycle regression.
 
 ## What “0.6 PASS” actually means
 
 | Signal | Current value | Meaning |
 |---|---|---|
-| Frozen suite rows | **31 / 31 passed** (target after contention pack), `failed=0` | Engine matches offline fixtures. **There is no 12/30 suite failure rate today.** |
+| Frozen suite rows | **32 / 32 passed**, `failed=0` | Engine matches offline fixtures. **There is no 12/30 suite failure rate today.** |
 | Quality milestone | `0.6.0` release **PASS** | Volume floor (≥30) + **zero false hard SKIP** on verdict-scored cases |
-| Verdict-scored cases | **5** | `worth_check` cases that emit `observed_verdict` (ACT/VERIFY/SKIP precision math) |
+| Verdict-scored cases | **6** | `worth_check` cases that emit `observed_verdict` (ACT/VERIFY/SKIP precision math) |
 | Mechanism-only cases | **26** | Sub-tool cases (`linked_work`, `contention`, `dupe_cluster`, …) with expected signals/paths; they **pass** the suite but are not counted in ACT/SKIP precision denominators |
 
 If someone says “12 of 30 fail,” that does **not** match the current frozen suite. Likely confusion with mechanism-only counts, an older report, or live-suite drift. Always re-check:
@@ -35,11 +35,12 @@ Cases where replay **fails** (`status=failed` / product regression).
 |---|---|---|
 | `frozen-worth-act-greenfield` | ACT | Honest greenfield |
 | `frozen-worth-verify-assigned` | VERIFY | Assignment gate |
+| `frozen-worth-closed-source-verify` | VERIFY | Closed-source lifecycle gate |
 | `frozen-worth-rate-limit-verify` | VERIFY | Provider failure caps at VERIFY |
 | `frozen-worth-skip-open-closer` | SKIP | Definitive open closer |
 | `frozen-worth-skip-released-fix` | SKIP | Released fix probe |
 
-**Current count: 5.** This is the thin precision denominator product should worry about — not suite pass rate.
+**Current count: 6.** This is the thin precision denominator product should worry about — not suite pass rate.
 
 ### C — Mechanism-only (path coverage)
 

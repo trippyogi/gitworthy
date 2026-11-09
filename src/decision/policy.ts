@@ -16,6 +16,8 @@ export type PolicyInput = {
   priorAttempts: number;
   referencedCommits: number;
   networkPrs: number;
+  // Signal-only callers may omit issue; issue checks pass {} when metadata is unavailable.
+  issue?: { state?: string; state_reason?: string | null };
 };
 
 export type PolicyDecision = {
@@ -219,7 +221,7 @@ function findingsForSignal(signal: Signal, subResults: SubResult[]): Finding[] {
         strength: 'definitive',
         effect: 'verify',
         source: 'linked_work',
-        message: 'CLOSE_CANDIDATE: a linked PR was merged while the issue remains open — confirm remaining work, then close or retarget the issue.'
+        message: 'CLOSE_CANDIDATE: a linked PR was merged; confirm whether work remains.'
       })];
     case 'linked_pr_closed':
       return [finding({
@@ -279,6 +281,20 @@ export function decideFromSignals(input: PolicyInput): PolicyDecision {
 
   for (const signal of input.signals) {
     findings.push(...findingsForSignal(signal, input.sub_results));
+  }
+
+  if (input.issue && input.issue.state !== 'open') {
+    const closed = input.issue.state === 'closed';
+    findings.push(finding({
+      type: closed ? 'source_issue_closed' : 'source_issue_state_unknown',
+      strength: closed ? 'definitive' : 'heuristic',
+      effect: 'verify',
+      source: 'github_issue',
+      message: closed
+        ? 'Source issue is closed; read the closure reason and comments, and verify any redirected destination before investing.'
+        : 'Source issue state could not be verified; confirm that the issue exists and is open before investing.',
+      data: { state: input.issue.state, state_reason: input.issue.state_reason }
+    }));
   }
 
   if (input.errors.length > 0) {

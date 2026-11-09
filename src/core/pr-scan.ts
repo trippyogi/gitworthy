@@ -183,7 +183,7 @@ export function classifyPrHint(enrichmentInput: Partial<PrEnrichment>, inventory
     (inventory.state === 'closed' && enrichment.substantive && enrichment.issue_open === true && enrichment.maintainer_positive_review)
     || (inventory.state === 'open' && enrichment.stale && enrichment.maintainer_interest && enrichment.credible_work
       && (enrichment.requested_changes || enrichment.maintainer_positive_review)
-      && enrichment.issue_open !== false)
+      && enrichment.issue_open === true)
   );
   const salvageWeakOnly = enrichment.stale && !enrichment.maintainer_interest && !enrichment.requested_changes && !enrichment.maintainer_positive_review;
 
@@ -325,7 +325,7 @@ async function enrichOne(
   if (linked) {
     try {
       const issue = await githubJson<GithubIssueLite>(`/repos/${repo}/issues/${linked}`);
-      issueOpen = issue.state !== 'closed';
+      issueOpen = issue.state === 'open' ? true : issue.state === 'closed' ? false : undefined;
       checked.push(`linked_issue#${linked}`);
     } catch {
       notChecked.push(`linked issue #${linked} unavailable`);

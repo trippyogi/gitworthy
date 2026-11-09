@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Require a known-open source issue before recommending BUILD, SALVAGE, REPRODUCE, DOC or EVAL. Closed or unknown issue states require verification, preserve PR-review and definitive-block precedence, and retain nullable `state_reason` in source snapshots.
 - Later routing slices (GW-050): honest CI triage classes, caller-supplied history scan with a default argv-only git helper, existing platform hints, and eval-anomaly opportunity ingest. CLI `ci-triage` / `history` / `opportunity-ingest` and MCP `ci_triage` / `history_scan` / `opportunity_ingest` are first-class; hunt stays issue scouting and portfolio stays contribution routing.
 - Routing eval (GW-049): optional `contribution_mode` on outcomes, additive eval `ground_truth.routing`, reconstructed routing corpus kept out of frozen headline accuracy, `false_build_occupied` stays 0 for definitive ownership.
 - Local watch registry (GW-048): `gitworthy watch add|list|show|recheck|remove` and MCP `watch_*`. Fingerprint recheck reports exact deltas. No auto-create from WATCH routes and no GitHub writes.

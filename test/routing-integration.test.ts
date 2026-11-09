@@ -12,7 +12,10 @@ const mocks = vi.hoisted(() => ({
   linkedEvidence: [] as Array<Record<string, unknown>>,
   releaseSignals: [] as Signal[],
   policySignals: [] as Signal[],
-  issueSignals: [] as Signal[]
+  issueSignals: [] as Signal[],
+  issueState: 'open' as string | undefined,
+  stateReason: null as string | null | undefined,
+  issueError: null as Error | null
 }));
 
 function envelope(signals: Signal[] = [], evidence: Array<Record<string, unknown>> = []) {
@@ -44,6 +47,20 @@ vi.mock('../src/core/linked-work.js', () => ({
 }));
 vi.mock('../src/core/release-gap.js', () => ({ release_gap: vi.fn(async () => envelope(mocks.releaseSignals)) }));
 vi.mock('../src/core/contrib-policy.js', () => ({ contrib_policy: vi.fn(async () => envelope(mocks.policySignals)) }));
+vi.mock('../src/lib/github.js', () => ({
+  githubJson: vi.fn(async () => {
+    if (mocks.issueError) throw mocks.issueError;
+    return {
+      state: mocks.issueState,
+      state_reason: mocks.stateReason,
+      title: 'Add widget mode',
+      body: 'Support another widget mode.',
+      labels: [],
+      assignees: []
+    };
+  })
+}));
+vi.mock('../src/lib/ledger.js', () => ({ upsertLedgerEntry: vi.fn() }));
 
 const { worth_check } = await import('../src/core/worth-check.js');
 
@@ -57,6 +74,9 @@ describe('worth_check routing integration', () => {
     mocks.releaseSignals = [];
     mocks.policySignals = [];
     mocks.issueSignals = [];
+    mocks.issueState = 'open';
+    mocks.stateReason = null;
+    mocks.issueError = null;
   });
 
   it('attaches BUILD routing to ACT / greenfield without changing the verdict', async () => {
@@ -110,6 +130,101 @@ describe('worth_check routing integration', () => {
     expect(result.verdict).toBe('VERIFY');
     expect(result.routing?.primary_mode).not.toBe('BUILD');
     expect(result.routing?.confidence).toBe('low');
+  });
+
+  it.each(['not_planned', 'completed', 'duplicate', null, undefined])('requires review of a closed source with reason %s', async (reason) => {
+    mocks.issueState = 'closed';
+    mocks.stateReason = reason;
+    const result = toCheckResult(await worth_check({ repo: 'o/r', issue_number: 1 }), { repo: 'o/r', issue_number: 1 });
+    expect(result.verdict).toBe('VERIFY');
+    expect(result.disposition).toBe('review');
+    expect(result.findings).toContainEqual(expect.objectContaining({
+      type: 'source_issue_closed',
+      effect: 'verify',
+      data: expect.objectContaining({ state: 'closed', state_reason: reason })
+    }));
+    expect(result.source_snapshot?.issue?.state).toBe('closed');
+    expect(result.source_snapshot?.issue?.state_reason).toBe(reason);
+    expect(result.routing?.primary_mode).toBe('REVIEW');
+    expect(result.routing?.hard_constraints).toContain('suppress_build');
+    expect(result.routing?.next_actions[0]?.message).toMatch(/closure|closing|redirect/i);
+    expect(result.next_actions[0]?.message).toMatch(/closure|closing|redirect/i);
+  });
+
+  it.each([undefined, 'unknown', 'unexpected'])('requires review when source state is %s', async (state) => {
+    mocks.issueState = state;
+    const result = toCheckResult(await worth_check({ repo: 'o/r', issue_number: 1 }), { repo: 'o/r', issue_number: 1 });
+    expect(result.verdict).toBe('VERIFY');
+    expect(result.evidence).toContainEqual(expect.objectContaining({ type: 'source_issue_state_unknown', effect: 'verify' }));
+    expect(result.routing?.primary_mode).toBe('REVIEW');
+    expect(result.routing?.hard_constraints).toContain('suppress_build');
+    expect(result.next_actions[0]?.message).toMatch(/exists and is open/);
+  });
+
+  it('requires lifecycle verification when the initial issue fetch fails', async () => {
+    mocks.issueError = new Error('API unavailable');
+    const result = await worth_check({ repo: 'o/r', issue_number: 1 });
+    expect(result.verdict).toBe('VERIFY');
+    expect(result.routing?.primary_mode).toBe('REVIEW');
+    expect(result.evidence).toContainEqual(expect.objectContaining({ type: 'source_issue_state_unknown' }));
+  });
+
+  it('allows a reopened issue to BUILD', async () => {
+    mocks.stateReason = 'reopened';
+    const result = await worth_check({ repo: 'o/r', issue_number: 1 });
+    expect(result.verdict).toBe('ACT');
+    expect(result.routing?.primary_mode).toBe('BUILD');
+    expect(result.source_snapshot?.issue?.state_reason).toBe('reopened');
+  });
+
+  it.each(['closed', undefined])('preserves mandatory-failure precedence for state %s', async (state) => {
+    mocks.issueState = state;
+    mocks.releaseSignals = ['released_fix'];
+    mocks.linkedError = new Error('API unavailable');
+    const result = await worth_check({ repo: 'o/r', issue_number: 1, npm_package: 'pkg' });
+    expect(result.verdict).toBe('VERIFY');
+    expect(result.evidence).toContainEqual(expect.objectContaining({ type: 'mandatory_check_failed' }));
+    expect(result.routing?.primary_mode).not.toBe('BUILD');
+    expect(result.routing?.confidence).toBe('low');
+  });
+
+  it('preserves definitive-block precedence for closed issues', async () => {
+    mocks.issueState = 'closed';
+    mocks.releaseSignals = ['released_fix'];
+    const result = await worth_check({ repo: 'o/r', issue_number: 1, npm_package: 'pkg' });
+    expect(result.verdict).toBe('SKIP');
+    expect(result.routing?.primary_mode).toBe('PASS');
+  });
+
+  it.each(['closed', undefined])('preserves active closer review for source state %s', async (state) => {
+    mocks.issueState = state;
+    mocks.linkedSignals = ['linked_pr_open'];
+    mocks.linkedEvidence = [{ kind: 'linked_pr', number: 99, state: 'open', closes_issue: true, source: 'timeline' }];
+    const result = await worth_check({ repo: 'o/r', issue_number: 1 });
+    expect(result.verdict).toBe('SKIP');
+    expect(result.disposition).toBe('land_only');
+    expect(result.routing?.primary_mode).toBe('REVIEW');
+    expect(result.routing?.hard_constraints).toContain('active_closer');
+  });
+
+  it('reviews closure before reproduction for a closed source', async () => {
+    mocks.issueState = 'closed';
+    mocks.issueSignals = ['needs_repro'];
+    const result = await worth_check({ repo: 'o/r', issue_number: 1 });
+    expect(result.verdict).toBe('VERIFY');
+    expect(result.routing?.primary_mode).toBe('REVIEW');
+  });
+
+  it.each(['linked_pr_merged', 'assigned', 'claim_required'] as Signal[])('prioritizes lifecycle verification over %s actions for a closed source', async (signal) => {
+    mocks.issueState = 'closed';
+    if (signal === 'claim_required') mocks.policySignals = [signal];
+    else mocks.linkedSignals = [signal];
+    if (signal === 'linked_pr_merged') mocks.linkedEvidence = [{ kind: 'linked_pr', number: 99, state: 'closed', merged: true }];
+    const result = toCheckResult(await worth_check({ repo: 'o/r', issue_number: 1 }), { repo: 'o/r', issue_number: 1 });
+    expect(result.verdict).toBe('VERIFY');
+    expect(result.routing?.primary_mode).toBe('REVIEW');
+    expect(result.next_actions[0]).toEqual({ kind: 'verify', message: expect.stringContaining('closure') });
+    expect(result.reasons?.join(' ')).not.toMatch(/issue remains open|then close or retarget/);
   });
 
   it('preserves routing through toCheckResult and durable records without routing still parse', () => {

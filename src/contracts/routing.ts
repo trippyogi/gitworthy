@@ -70,6 +70,7 @@ export const SourceSnapshotSchema = z.object({
   repo_head_sha: z.string().optional(),
   issue: z.object({
     state: z.string().optional(),
+    state_reason: z.string().nullable().optional(),
     updated_at: z.string().optional(),
     assignees: z.array(z.string()).optional()
   }).strict().optional(),

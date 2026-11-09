@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0-draft.1",
+  "case_version": 1,
+  "suite": "frozen",
+  "classification": "frozen",
+  "provenance": {
+    "notes": "Synthetic regression for closed source lifecycle; no private repository evidence."
+  },
+  "time_sensitive": false,
+  "id": "frozen-worth-closed-source-verify",
+  "name": "worth_check verifies a closed NOT_PLANNED source",
+  "function": "worth_check",
+  "input": {
+    "repo": "acme/widgets",
+    "issue_number": 305
+  },
+  "ground_truth": {
+    "verdict": "VERIFY",
+    "disposition": "review",
+    "failure_mode": "closed_source_not_greenfield",
+    "adjudicator_rationale": "A closed source is not eligible for new implementation; verify the closure and any redirected destination. Closure alone does not justify SKIP.",
+    "evidence_urls": [
+      "https://github.com/acme/widgets/issues/305"
+    ],
+    "required_findings": [
+      "source_issue_closed",
+      "not_planned"
+    ]
+  },
+  "provider_fixtures": "../fixtures/frozen-worth-closed-source-verify.provider.json"
+}

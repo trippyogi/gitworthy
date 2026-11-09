@@ -19,6 +19,7 @@ export type GithubIssue = {
   title: string;
   body: string | null;
   state: string;
+  state_reason?: string | null;
   labels: Array<{ name: string }>;
   assignees?: Array<{ login: string }>;
   comments: number;

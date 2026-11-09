@@ -4,7 +4,7 @@ Promotion and exclusion record for adjudicated offline cases. Live catalog class
 lives in `eval/live/cases.json`. Private experiments must not become release blockers
 without an explicit move into `eval/frozen/`.
 
-**Corpus size:** 31 frozen cases. Suite result: re-verify with `pnpm eval:frozen` after this pack lands (see [`../../docs/CORPUS.md`](../../docs/CORPUS.md) for verdict-scored vs mechanism-only taxonomy).
+**Corpus size:** 32 frozen cases. Suite result: re-verify with `pnpm eval:frozen` after this pack lands (see [`../../docs/CORPUS.md`](../../docs/CORPUS.md) for verdict-scored vs mechanism-only taxonomy).
 
 ## Frozen cases
 
@@ -37,6 +37,7 @@ without an explicit move into `eval/frozen/`.
 | `frozen-release-version-only` | `release_gap` | `release_gap_version_only_no_probe` |
 | `frozen-repo-rename-canonical` | `linked_work` | `renamed_repo_canonicalization` |
 | `frozen-worth-act-greenfield` | `worth_check` | `worth_check_act_greenfield` |
+| `frozen-worth-closed-source-verify` | `worth_check` | `closed_source_not_greenfield` |
 | `frozen-worth-rate-limit-verify` | `worth_check` | `auth_rate_limit_verify_path` |
 | `frozen-worth-skip-open-closer` | `worth_check` | `worth_check_skip_open_closer` |
 | `frozen-worth-skip-released-fix` | `worth_check` | `worth_check_skip_released_fix` |
